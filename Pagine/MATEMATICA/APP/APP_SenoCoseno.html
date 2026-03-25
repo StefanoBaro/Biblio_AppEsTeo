@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Oscillatore: Analisi x(t)</title>
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #12121e;
+            --purple: #9d4edd;
+            --green: #00f5d4;
+            --cyan: #00b4d8;
+            --text: #edede9;
+        }
+
+        body {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--surface);
+            border: 2px solid var(--purple);
+            border-radius: 12px;
+            padding: 20px;
+            width: 900px;
+            max-width: 95%;
+            box-shadow: 0 0 50px rgba(157, 78, 221, 0.15);
+        }
+
+        .formula-display {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--cyan);
+        }
+
+        .main-formula { font-size: 1.8rem; color: var(--green); margin-bottom: 10px; }
+        .sub-formulas { font-size: 1rem; color: var(--cyan); opacity: 0.9; }
+
+        canvas {
+            background: #08080f;
+            width: 100%;
+            height: auto;
+            border: 1px solid #222;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .control-group { display: flex; flex-direction: column; }
+        
+        label {
+            color: var(--purple);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            background: var(--green);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--green);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="formula-display">
+            <div class="main-formula" id="formula">x(t) = A · sin(ωt)</div>
+            <div class="sub-formulas" id="params">ω = 0.00 rad/s | T = 0.00 s</div>
+        </div>
+
+        <canvas id="oscCanvas" width="1000" height="400"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Ampiezza (A) <span id="txtA">1.0</span></label>
+                <input type="range" id="rangeA" min="0.1" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div class="control-group">
+                <label>Frequenza (f) [Hz] <span id="txtF">0.50</span></label>
+                <input type="range" id="rangeF" min="0.05" max="5.0" step="0.05" value="0.5">
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('oscCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const rangeA = document.getElementById('rangeA');
+    const rangeF = document.getElementById('rangeF');
+    const txtA = document.getElementById('txtA');
+    const txtF = document.getElementById('txtF');
+    const formulaEl = document.getElementById('formula');
+    const paramsEl = document.getElementById('params');
+
+    // Costanti di rendering
+    const PIXEL_PER_UNIT = 80; // 1 unità (A=1) = 80 pixel
+    const PIXEL_PER_SECOND = 150; // 1 secondo = 150 pixel orizzontali
+
+    function draw() {
+        const A = parseFloat(rangeA.value);
+        const f = parseFloat(rangeF.value);
+        const omega = 2 * Math.PI * f;
+        const T = 1 / f;
+
+        // Update Labels
+        txtA.textContent = A.toFixed(1);
+        txtF.textContent = f.toFixed(2);
+        formulaEl.innerHTML = `x(t) = ${A.toFixed(1)} · sin(${omega.toFixed(2)}t)`;
+        paramsEl.innerHTML = `ω ≈ ${omega.toFixed(2)} rad/s | T = ${T.toFixed(2)} s`;
+
+        // Reset Canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const w = canvas.width;
+        const h = canvas.height;
+        const midY = h / 2;
+        const startX = 60;
+
+        // Griglia temporale
+        ctx.strokeStyle = '#1a1a2e';
+        ctx.lineWidth = 1;
+        for(let t=0; t<10; t+=0.5) {
+            let xPos = startX + t * PIXEL_PER_SECOND;
+            ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, h); ctx.stroke();
+        }
+
+        // Assi
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, midY); ctx.lineTo(w, midY); // Asse t
+        ctx.moveTo(startX, 0); ctx.lineTo(startX, h); // Asse x(t)
+        ctx.stroke();
+
+        // Etichette assi
+        ctx.fillStyle = "#9d4edd";
+        ctx.font = "bold 16px monospace";
+        ctx.fillText("x(t)", startX - 50, 30);
+        ctx.fillText("t (s)", w - 50, midY + 30);
+
+        // Disegno Funzione
+        ctx.beginPath();
+        ctx.strokeStyle = '#00f5d4';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#00f5d4';
+
+        for (let px = 0; px < w - startX; px++) {
+            // t = pixel / scalaTemporale
+            const t = px / PIXEL_PER_SECOND;
+            
+            // x(t) = A * sin(omega * t)
+            const xt = A * Math.sin(omega * t);
+
+            const drawX = px + startX;
+            const drawY = midY - (xt * PIXEL_PER_UNIT);
+
+            if (px === 0) ctx.moveTo(drawX, drawY);
+            else ctx.lineTo(drawX, drawY);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+
+    [rangeA, rangeF].forEach(input => input.addEventListener('input', draw));
+    draw();
+</script>
+</body>
+</html>

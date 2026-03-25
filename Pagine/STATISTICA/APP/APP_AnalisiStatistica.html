@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV Statistical Canvas v4</title>
+  <style>
+    :root {
+      --bg: #0b0f15;
+      --panel: #131a24;
+      --panel-2: #1a2430;
+      --text: #e9eef5;
+      --muted: #9fb0c0;
+      --lavender: #b8a5ff;
+      --mint: #79ead5;
+      --border: rgba(184,165,255,0.18);
+      --good: #79ead5;
+      --warn: #ffd27a;
+      --bad: #ff8ca1;
+      --shadow: 0 12px 32px rgba(0,0,0,0.30);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(184,165,255,0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(121,234,213,0.10), transparent 26%),
+        var(--bg);
+      color: var(--text);
+    }
+    .app { max-width: 1450px; margin: 0 auto; padding: 24px; }
+    .hero { display:grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-bottom:18px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .grid-4 { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    h1,h2,h3 { margin:0 0 8px; }
+    h1 { font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; }
+    p { margin: 6px 0; color: var(--muted); }
+    .accent {
+      background: linear-gradient(90deg, var(--lavender), var(--mint));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .dropzone {
+      border: 1.5px dashed rgba(121,234,213,0.35);
+      background: rgba(255,255,255,0.02);
+      border-radius: 16px;
+      padding: 18px;
+      text-align:center;
+      transition: .2s ease;
+    }
+    .dropzone.drag { border-color: var(--lavender); background: rgba(184,165,255,0.08); }
+    .btn, button, select, input {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .btn, button { cursor:pointer; }
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(184,165,255,0.24), rgba(121,234,213,0.16));
+      border: 1px solid rgba(121,234,213,0.35);
+    }
+    .btn-ghost { background: rgba(255,255,255,0.02); }
+    .row { display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+    .controls { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .control label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .metric {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .metric .label { color: var(--muted); font-size: 12px; }
+    .metric .value { font-size: 22px; font-weight:700; margin-top:4px; }
+    .pill {
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:12px;
+      background: rgba(121,234,213,0.12); color: var(--mint); border:1px solid rgba(121,234,213,0.15);
+    }
+    .pill.warn { background: rgba(255,210,122,0.10); color:var(--warn); border-color: rgba(255,210,122,0.16); }
+    .pill.bad { background: rgba(255,140,161,0.10); color:var(--bad); border-color: rgba(255,140,161,0.16); }
+    .note { font-size: 12px; color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .hidden { display:none; }
+    table { width:100%; border-collapse: collapse; font-size: 14px; }
+    th,td { text-align:left; padding:10px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    canvas { width:100%; height:290px; background: rgba(255,255,255,0.02); border-radius:16px; border:1px solid rgba(255,255,255,0.05); }
+    .results-box { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5; }
+    @media (max-width: 1020px) {
+      .hero, .grid, .controls, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="hero">
+    <section class="panel">
+      <span class="pill">Canvas statistico v4</span>
+      <h1>Analisi CSV <span class="accent">più completa</span></h1>
+      <p>Upload CSV, statistiche descrittive, istogramma, correlazione, regressione, test di normalità, t-test, z-test, ANOVA e chi-quadro.</p>
+      <div class="dropzone" id="dropzone">
+        <p><strong>Trascina qui il file CSV</strong> oppure selezionalo.</p>
+        <div class="row" style="justify-content:center; margin-top:10px;">
+          <input type="file" id="fileInput" accept=".csv,text/csv" />
+          <button class="btn btn-primary" id="loadSampleBtn">Carica esempio</button>
+          <button class="btn btn-ghost" id="exportTxtBtn">Esporta report .txt</button>
+          <button class="btn btn-ghost" id="exportCsvBtn">Esporta riepilogo .csv</button>
+          <a class="btn btn-ghost" href="csv_stat_theory.html" target="_blank" rel="noopener">Teoria</a>
+        </div>
+        <p class="note">Separatori supportati: virgola, punto e virgola, tab, pipe. Tutto gira localmente nel browser.</p>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Scelta dei test</h2>
+      <p><strong>t-test</strong>: confronto di medie con σ ignota.</p>
+      <p><strong>z-test</strong>: utile quando la deviazione standard della popolazione è nota.</p>
+      <p><strong>Welch t-test</strong>: due gruppi con varianze potenzialmente diverse.</p>
+      <p><strong>ANOVA a una via</strong>: confronto di medie su 3+ gruppi.</p>
+      <p><strong>Chi-quadro</strong>: associazione tra due variabili categoriche.</p>
+      <p><strong>Regressione lineare</strong>: stima relazione lineare tra X e Y.</p>
+    </section>
+
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <section class="panel" style="margin-bottom:18px;">
+      <div class="grid-4">
+        <div class="metric"><div class="label">Righe</div><div class="value" id="rowCount">-</div></div>
+        <div class="metric"><div class="label">Colonne</div><div class="value" id="colCount">-</div></div>
+        <div class="metric"><div class="label">Numeriche</div><div class="value" id="numCount">-</div></div>
+        <div class="metric"><div class="label">Categoriche</div><div class="value" id="catCount">-</div></div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Statistiche descrittive + intervalli di confidenza</h2>
+        <div class="controls" style="margin-bottom:12px;">
+          <div class="control">
+            <label for="descColumn">Colonna numerica</label>
+            <select id="descColumn"></select>
+          </div>
+          <div class="control">
+            <label for="ciLevel">Livello di confidenza</label>
+            <select id="ciLevel">
+              <option value="0.90">90%</option>
+              <option value="0.95" selected>95%</option>
+              <option value="0.99">99%</option>
+            </select>
+          </div>
+        </div>
+        <div id="descTableWrap"></div>
+      </section>
+      <section class="panel">
+        <h2>Distribuzione</h2>
+        <canvas id="histCanvas" width="620" height="290"></canvas>
+        <p class="note" id="histNote">Istogramma della colonna selezionata.</p>
+      </section>
+    </div>
+
+    <div class="grid" style="margin-top:18px;">
+      <section class="panel">
+        <h2>Normalità</h2>
+        <div class="controls" style="margin-bottom:12px;">
+          <div class="control">
+            <label for="normalityColumn">Colonna numerica</label>
+            <select id="normalityColumn"></select>
+          </div>
+          <div class="control">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="runNormalityBtn">Esegui controllo</button>
+          </div>
+        </div>
+        <div id="normalityResult"></div>
+        <p class="note">Implementa un controllo rapido tramite skewness, kurtosis e test Jarque-Bera.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Correlazione e regressione</h2>
+        <div class="controls" style="margin-bottom:12px;">
+          <div class="control"><label for="corrX">Variabile X</label><select id="corrX"></select></div>
+          <div class="control"><label for="corrY">Variabile Y</label><select id="corrY"></select></div>
+        </div>
+        <div id="corrResult"></div>
+        <canvas id="scatterCanvas" width="620" height="290" style="margin-top:10px;"></canvas>
+      </section>
+    </div>
+
+    <div class="grid" style="margin-top:18px;">
+      <section class="panel">
+        <h2>Test sulle medie</h2>
+        <div class="controls">
+          <div class="control">
+            <label for="testType">Tipo test</label>
+            <select id="testType">
+              <option value="auto">Suggerito automaticamente</option>
+              <option value="one_t">t-test a un campione</option>
+              <option value="two_t">Welch t-test a due campioni</option>
+              <option value="one_z">z-test a un campione</option>
+            </select>
+          </div>
+          <div class="control"><label for="testColumn">Colonna numerica</label><select id="testColumn"></select></div>
+          <div class="control"><label for="groupColumn">Colonna gruppo</label><select id="groupColumn"><option value="">Nessuna</option></select></div>
+          <div class="control"><label for="mu0">Media nulla / riferimento</label><input type="number" id="mu0" value="0" step="any" /></div>
+          <div class="control"><label for="sigmaKnown">σ popolazione nota</label><input type="number" id="sigmaKnown" step="any" placeholder="es. 12.5" /></div>
+          <div class="control"><label>&nbsp;</label><button class="btn btn-primary" id="runTestBtn">Esegui test</button></div>
+        </div>
+        <div id="suggestionWrap" style="margin-top:12px;"></div>
+        <div id="testResult" style="margin-top:12px;"></div>
+      </section>
+
+      <section class="panel">
+        <h2>ANOVA / Chi-quadro</h2>
+        <div class="controls">
+          <div class="control"><label for="anovaValue">ANOVA: variabile numerica</label><select id="anovaValue"></select></div>
+          <div class="control"><label for="anovaGroup">ANOVA: fattore categoriale</label><select id="anovaGroup"></select></div>
+          <div class="control"><label>&nbsp;</label><button class="btn btn-primary" id="runAnovaBtn">Esegui ANOVA</button></div>
+          <div class="control"><label for="chiRow">Chi-quadro: variabile riga</label><select id="chiRow"></select></div>
+          <div class="control"><label for="chiCol">Chi-quadro: variabile colonna</label><select id="chiCol"></select></div>
+          <div class="control"><label>&nbsp;</label><button class="btn btn-primary" id="runChiBtn">Esegui chi-quadro</button></div>
+        </div>
+        <div id="anovaResult" style="margin-top:12px;"></div>
+        <div id="chiResult" style="margin-top:12px;"></div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:18px;">
+      <h2>Anteprima dati</h2>
+      <div id="previewWrap"></div>
+    </section>
+
+    <section class="panel" style="margin-top:18px;">
+      <h2>Report risultati</h2>
+      <div id="reportBox" class="results-box note">Qui apparirà il riepilogo testuale esportabile.</div>
+    </section>
+  </div>
+</div>
+
+<script>
+const state = {
+  rows: [], headers: [], numericColumns: [], categoricalColumns: [], reportLines: []
+};
+const $ = id => document.getElementById(id);
+const fmt = (x,d=4) => Number.isFinite(x) ? Number(x).toFixed(d) : '—';
+const alphaMap = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576};
+
+function parseCSV(text) {
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim() !== '');
+  if (!lines.length) return { headers: [], rows: [] };
+  const candidates = [',', ';', '\t', '|'];
+  const scores = candidates.map(sep => ({ sep, count: (lines[0].match(new RegExp('\\' + sep, 'g')) || []).length }));
+  scores.sort((a,b) => b.count - a.count);
+  const sep = scores[0].count > 0 ? scores[0].sep : ',';
+  function splitLine(line) {
+    const out=[]; let cur=''; let inQuotes=false;
+    for (let i=0;i<line.length;i++) {
+      const ch=line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (ch === sep && !inQuotes) { out.push(cur); cur=''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out.map(v => v.trim());
+  }
+  const headers = splitLine(lines[0]);
+  const rows = lines.slice(1).map(line => {
+    const values = splitLine(line); const obj={};
+    headers.forEach((h,i) => obj[h] = values[i] ?? '');
+    return obj;
+  });
+  return { headers, rows };
+}
+
+function coerceNumber(v) {
+  if (v === null || v === undefined) return NaN;
+  const s = String(v).trim().replace(/\s/g, '');
+  if (!s) return NaN;
+  const normalized = /^-?\d{1,3}(\.\d{3})*,\d+$/.test(s)
+    ? s.replace(/\./g,'').replace(',', '.')
+    : /^-?\d{1,3}(,\d{3})*\.\d+$/.test(s)
+      ? s.replace(/,/g,'')
+      : s.replace(',', '.');
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : NaN;
+}
+function getNumericValues(col) { return state.rows.map(r => coerceNumber(r[col])).filter(Number.isFinite); }
+function uniqueValues(col) { return [...new Set(state.rows.map(r => String(r[col]).trim()).filter(Boolean))]; }
+function mean(a) { return a.reduce((s,x) => s+x, 0) / a.length; }
+function variance(a, sample=true) {
+  if (a.length < (sample ? 2 : 1)) return NaN;
+  const m = mean(a); const ss = a.reduce((s,x) => s + (x-m)**2, 0);
+  return ss / (a.length - (sample ? 1 : 0));
+}
+function sd(a, sample=true) { return Math.sqrt(variance(a, sample)); }
+function quantile(sorted, q) {
+  const pos = (sorted.length - 1) * q; const base = Math.floor(pos); const rest = pos - base;
+  return sorted[base+1] !== undefined ? sorted[base] + rest * (sorted[base+1] - sorted[base]) : sorted[base];
+}
+function skewness(a) {
+  const n = a.length; if (n < 3) return NaN;
+  const m = mean(a), s = sd(a, true);
+  return (n / ((n - 1) * (n - 2))) * a.reduce((acc,x) => acc + ((x-m)/s)**3, 0);
+}
+function kurtosisExcess(a) {
+  const n = a.length; if (n < 4) return NaN;
+  const m = mean(a), s = sd(a, true);
+  const sum4 = a.reduce((acc, x) => acc + ((x - m) / s) ** 4, 0);
+  return (n * (n + 1) * sum4 - 3 * (n - 1) ** 2 * (n - 1)) / ((n - 1) * (n - 2) * (n - 3));
+}
+function pearson(x, y) {
+  const pairs = x.map((xi,i) => [xi, y[i]]).filter(([a,b]) => Number.isFinite(a) && Number.isFinite(b));
+  if (pairs.length < 3) return NaN;
+  const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
+  const mx = mean(xs), my = mean(ys);
+  let num=0, dx=0, dy=0;
+  for (let i=0;i<pairs.length;i++) { const a=xs[i]-mx, b=ys[i]-my; num += a*b; dx += a*a; dy += b*b; }
+  return num / Math.sqrt(dx*dy);
+}
+function chiSquareCDFApprox(x, k) {
+  if (!(x >= 0) || !(k > 0)) return NaN;
+  const z = (Math.pow(x / k, 1/3) - (1 - 2/(9*k))) / Math.sqrt(2/(9*k));
+  return normalCDF(z);
+}
+
+function gammaln(z) {
+  const cof=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let x=z, y=x, tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp); let ser=1.000000000190015;
+  for (let j=0;j<cof.length;j++) ser += cof[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+function betacf(a,b,x) {
+  const MAXIT=100, EPS=3e-7, FPMIN=1e-30;
+  let qab=a+b, qap=a+1, qam=a-1, c=1, d=1 - qab*x/qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN; d = 1/d; let h = d;
+  for (let m=1;m<=MAXIT;m++) {
+    let m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d; if (Math.abs(d)<FPMIN) d=FPMIN;
+    c=1+aa/c; if (Math.abs(c)<FPMIN) c=FPMIN;
+    d=1/d; h *= d*c;
+    aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d; if (Math.abs(d)<FPMIN) d=FPMIN;
+    c=1+aa/c; if (Math.abs(c)<FPMIN) c=FPMIN;
+    d=1/d; const del = d*c; h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+function ibeta(x,a,b) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(gammaln(a+b) - gammaln(a) - gammaln(b) + a*Math.log(x) + b*Math.log(1-x));
+  if (x < (a+1)/(a+b+2)) return bt * betacf(a,b,x)/a;
+  return 1 - bt * betacf(b,a,1-x)/b;
+}
+function studentTCDF(t,v) {
+  const x = v / (v + t*t);
+  const ib = ibeta(x, v/2, 0.5);
+  return t >= 0 ? 1 - 0.5*ib : 0.5*ib;
+}
+function erf(x) {
+  const sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t = 1 / (1 + p*x);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normalCDF(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
+
+function descriptiveStats(a) {
+  const s = [...a].sort((x,y)=>x-y); const m = mean(a); const st = sd(a, true);
+  return {
+    n: a.length, mean: m, sd: st, variance: variance(a, true), min: s[0], q1: quantile(s, 0.25),
+    median: quantile(s, 0.5), q3: quantile(s, 0.75), max: s[s.length - 1], skewness: skewness(a), kurtosis: kurtosisExcess(a)
+  };
+}
+function confidenceInterval(a, level) {
+  const z = alphaMap[level] || 1.96; const m = mean(a); const se = sd(a, true)/Math.sqrt(a.length);
+  return { low: m - z*se, high: m + z*se, level: Number(level) };
+}
+function oneSampleTTest(a, mu0) {
+  const n=a.length, m=mean(a), s=sd(a, true), t=(m - mu0)/(s/Math.sqrt(n)), df=n-1, p=2*(1-studentTCDF(Math.abs(t), df));
+  return { test:'t-test a un campione', statistic:t, df, p, estimate:m, se:s/Math.sqrt(n) };
+}
+function oneSampleZTest(a, mu0, sigma) {
+  const n=a.length, m=mean(a), z=(m - mu0)/(sigma/Math.sqrt(n)), p=2*(1-normalCDF(Math.abs(z)));
+  return { test:'z-test a un campione', statistic:z, df:null, p, estimate:m, se:sigma/Math.sqrt(n) };
+}
+function welchTTest(a,b) {
+  const n1=a.length, n2=b.length, m1=mean(a), m2=mean(b), v1=variance(a,true), v2=variance(b,true);
+  const se=Math.sqrt(v1/n1 + v2/n2), t=(m1-m2)/se, df=((v1/n1 + v2/n2)**2)/(((v1/n1)**2)/(n1-1) + ((v2/n2)**2)/(n2-1));
+  const p=2*(1-studentTCDF(Math.abs(t), df));
+  return { test:'Welch t-test a due campioni', statistic:t, df, p, estimate:m1-m2, se, mean1:m1, mean2:m2 };
+}
+function jarqueBera(a) {
+  const n = a.length; if (n < 8) return { jb: NaN, p: NaN };
+  const s = skewness(a), k = kurtosisExcess(a);
+  const jb = (n / 6) * (s*s + (k*k)/4);
+  const p = 1 - chiSquareCDFApprox(jb, 2);
+  return { jb, p, skew: s, kurt: k };
+}
+function linearRegression(xVals, yVals) {
+  const pairs = xVals.map((x,i)=>[x, yVals[i]]).filter(([a,b]) => Number.isFinite(a) && Number.isFinite(b));
+  if (pairs.length < 3) return null;
+  const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
+  const mx = mean(xs), my = mean(ys);
+  let sxx=0, sxy=0;
+  for (let i=0;i<xs.length;i++) { sxx += (xs[i]-mx)**2; sxy += (xs[i]-mx)*(ys[i]-my); }
+  const slope = sxy/sxx, intercept = my - slope*mx, r = pearson(xs, ys), r2 = r*r;
+  return { n: xs.length, slope, intercept, r, r2 };
+}
+function oneWayANOVA(numCol, groupCol) {
+  const groups = uniqueValues(groupCol).map(g => ({ name:g, vals: state.rows.filter(r => String(r[groupCol]).trim()===g).map(r => coerceNumber(r[numCol])).filter(Number.isFinite) })).filter(g => g.vals.length>0);
+  if (groups.length < 3) return null;
+  const all = groups.flatMap(g => g.vals); const grand = mean(all); const k = groups.length; const N = all.length;
+  let ssb=0, ssw=0;
+  groups.forEach(g => { const m = mean(g.vals); ssb += g.vals.length * (m-grand)**2; ssw += g.vals.reduce((acc,x)=>acc + (x-m)**2, 0); });
+  const dfb = k-1, dfw = N-k, msb = ssb/dfb, msw = ssw/dfw, F = msb/msw;
+  const eta2 = ssb / (ssb + ssw);
+  return { groups, N, k, ssb, ssw, dfb, dfw, msb, msw, F, eta2 };
+}
+function chiSquareTest(rowCol, colCol) {
+  const rowLevels = uniqueValues(rowCol), colLevels = uniqueValues(colCol);
+  if (rowLevels.length < 2 || colLevels.length < 2) return null;
+  const obs = rowLevels.map(() => colLevels.map(() => 0));
+  state.rows.forEach(r => {
+    const rv = String(r[rowCol]).trim(), cv = String(r[colCol]).trim();
+    const i = rowLevels.indexOf(rv), j = colLevels.indexOf(cv);
+    if (i >= 0 && j >= 0) obs[i][j]++;
+  });
+  const rowSums = obs.map(row => row.reduce((a,b)=>a+b,0));
+  const colSums = colLevels.map((_,j) => obs.reduce((s,row)=>s+row[j],0));
+  const N = rowSums.reduce((a,b)=>a+b,0);
+  let chi2 = 0;
+  const exp = obs.map((row,i) => row.map((_,j) => (rowSums[i] * colSums[j]) / N));
+  for (let i=0;i<obs.length;i++) for (let j=0;j<obs[0].length;j++) if (exp[i][j] > 0) chi2 += (obs[i][j]-exp[i][j])**2 / exp[i][j];
+  const df = (rowLevels.length - 1) * (colLevels.length - 1);
+  const p = 1 - chiSquareCDFApprox(chi2, df);
+  const cramersV = Math.sqrt(chi2 / (N * Math.min(rowLevels.length - 1, colLevels.length - 1)));
+  return { rowLevels, colLevels, obs, exp, N, chi2, df, p, cramersV };
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+function classifyColumns() {
+  state.numericColumns = state.headers.filter(h => {
+    const vals = state.rows.map(r => coerceNumber(r[h])).filter(Number.isFinite);
+    return vals.length >= Math.max(3, state.rows.length * 0.5);
+  });
+  state.categoricalColumns = state.headers.filter(h => !state.numericColumns.includes(h));
+}
+function fillSelect(id, values, allowBlank=false) {
+  const sel = $(id), current = sel.value;
+  sel.innerHTML = allowBlank ? '<option value="">Nessuna</option>' : '';
+  values.forEach(v => {
+    const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+  });
+  if (values.includes(current)) sel.value = current;
+  else if (allowBlank) sel.value = '';
+  else if (values.length) sel.value = values[0];
+}
+function renderOverview() {
+  $('rowCount').textContent = state.rows.length;
+  $('colCount').textContent = state.headers.length;
+  $('numCount').textContent = state.numericColumns.length;
+  $('catCount').textContent = state.categoricalColumns.length;
+}
+function renderPreview() {
+  const sample = state.rows.slice(0, 8);
+  let html = '<div style="overflow:auto"><table><thead><tr>' + state.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+  sample.forEach(row => { html += '<tr>' + state.headers.map(h => `<td>${escapeHtml(row[h] ?? '')}</td>`).join('') + '</tr>'; });
+  html += '</tbody></table></div>';
+  $('previewWrap').innerHTML = html;
+}
+function drawAxes(ctx,w,h,pad) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.moveTo(pad,h-pad); ctx.lineTo(pad,pad); ctx.stroke();
+}
+function roundRect(ctx,x,y,w,h,r,fill,stroke) {
+  if (w < 2*r) r = w/2; if (h < 2*r) r = h/2;
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  if (fill) ctx.fill(); if (stroke) ctx.stroke();
+}
+function drawHistogram(canvas, vals) {
+  const ctx = canvas.getContext('2d'), w=canvas.width, h=canvas.height, pad=34;
+  ctx.clearRect(0,0,w,h); drawAxes(ctx,w,h,pad); if (vals.length < 2) return;
+  const min=Math.min(...vals), max=Math.max(...vals), bins=Math.max(5, Math.min(16, Math.round(Math.sqrt(vals.length))));
+  const binWidth=(max-min || 1)/bins, counts=Array.from({length:bins}, ()=>0);
+  vals.forEach(v => { let idx=Math.floor((v-min)/binWidth); if (idx >= bins) idx = bins-1; if (idx < 0) idx=0; counts[idx]++; });
+  const maxCount=Math.max(...counts,1), plotW=w-pad*2, plotH=h-pad*2;
+  counts.forEach((c,i) => {
+    const bw=plotW/bins - 6, bh=(c/maxCount)*plotH, x=pad + i*(plotW/bins) + 3, y=h-pad-bh;
+    const grd=ctx.createLinearGradient(x,y,x,h-pad); grd.addColorStop(0,'rgba(184,165,255,0.95)'); grd.addColorStop(1,'rgba(121,234,213,0.86)'); ctx.fillStyle=grd;
+    roundRect(ctx,x,y,bw,bh,8,true,false);
+  });
+}
+function drawScatter(canvas, xVals, yVals, regression=null) {
+  const ctx=canvas.getContext('2d'), w=canvas.width, h=canvas.height, pad=34;
+  ctx.clearRect(0,0,w,h); drawAxes(ctx,w,h,pad);
+  const pairs=xVals.map((x,i)=>[x,yVals[i]]).filter(([a,b]) => Number.isFinite(a) && Number.isFinite(b));
+  if (pairs.length < 2) return;
+  const xs=pairs.map(p=>p[0]), ys=pairs.map(p=>p[1]);
+  const xmin=Math.min(...xs), xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys), plotW=w-pad*2, plotH=h-pad*2;
+  pairs.forEach(([x,y]) => {
+    const px=pad + ((x-xmin)/((xmax-xmin)||1))*plotW, py=h-pad - ((y-ymin)/((ymax-ymin)||1))*plotH;
+    ctx.beginPath(); ctx.fillStyle='rgba(121,234,213,0.88)'; ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+  });
+  if (regression) {
+    const y1 = regression.intercept + regression.slope * xmin;
+    const y2 = regression.intercept + regression.slope * xmax;
+    const p1x = pad, p2x = w - pad;
+    const p1y = h - pad - ((y1 - ymin)/((ymax-ymin)||1))*plotH;
+    const p2y = h - pad - ((y2 - ymin)/((ymax-ymin)||1))*plotH;
+    ctx.strokeStyle='rgba(184,165,255,0.95)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(p1x,p1y); ctx.lineTo(p2x,p2y); ctx.stroke();
+  }
+}
+
+function renderDesc() {
+  const col = $('descColumn').value, level = $('ciLevel').value;
+  const vals = getNumericValues(col);
+  if (vals.length < 2) { $('descTableWrap').innerHTML = '<span class="pill warn">Dati insufficienti.</span>'; return; }
+  const s = descriptiveStats(vals), ci = confidenceInterval(vals, level);
+  $('descTableWrap').innerHTML = `
+    <table><tbody>
+      <tr><th>n</th><td>${s.n}</td></tr>
+      <tr><th>Media</th><td>${fmt(s.mean)}</td></tr>
+      <tr><th>Deviazione standard</th><td>${fmt(s.sd)}</td></tr>
+      <tr><th>Varianza</th><td>${fmt(s.variance)}</td></tr>
+      <tr><th>Min</th><td>${fmt(s.min)}</td></tr>
+      <tr><th>Q1</th><td>${fmt(s.q1)}</td></tr>
+      <tr><th>Mediana</th><td>${fmt(s.median)}</td></tr>
+      <tr><th>Q3</th><td>${fmt(s.q3)}</td></tr>
+      <tr><th>Max</th><td>${fmt(s.max)}</td></tr>
+      <tr><th>Skewness</th><td>${fmt(s.skewness)}</td></tr>
+      <tr><th>Kurtosis excess</th><td>${fmt(s.kurtosis)}</td></tr>
+      <tr><th>IC media ${Math.round(level*100)}%</th><td>[${fmt(ci.low)}, ${fmt(ci.high)}]</td></tr>
+    </tbody></table>`;
+  drawHistogram($('histCanvas'), vals);
+  $('histNote').textContent = `Istogramma di ${col} (${vals.length} valori validi).`;
+  addReport(`Descrittive ${col}: n=${s.n}, media=${fmt(s.mean)}, sd=${fmt(s.sd)}, IC ${Math.round(level*100)}%=[${fmt(ci.low)}, ${fmt(ci.high)}]`, true);
+}
+function runNormality() {
+  const col = $('normalityColumn').value, vals = getNumericValues(col);
+  if (vals.length < 8) { $('normalityResult').innerHTML = '<span class="pill warn">Servono almeno 8 valori per Jarque-Bera.</span>'; return; }
+  const jb = jarqueBera(vals); const ok = jb.p >= 0.05;
+  $('normalityResult').innerHTML = `
+    <div class="metric">
+      <div class="label">Jarque-Bera su ${escapeHtml(col)}</div>
+      <div class="value">p = ${fmt(jb.p)}</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill ${ok ? '' : 'warn'}">${ok ? 'Compatibile con normalità' : 'Possibile deviazione dalla normalità'}</span>
+        <span class="pill">JB = ${fmt(jb.jb)}</span>
+        <span class="pill">Skew = ${fmt(jb.skew)}</span>
+        <span class="pill">Kurt = ${fmt(jb.kurt)}</span>
+      </div>
+    </div>`;
+  addReport(`Normalità ${col}: JB=${fmt(jb.jb)}, p=${fmt(jb.p)}, skew=${fmt(jb.skew)}, kurt=${fmt(jb.kurt)}. ${ok ? 'Compatibile con normalità' : 'Possibile non normalità'}`);
+}
+function renderCorrelation() {
+  const xCol=$('corrX').value, yCol=$('corrY').value;
+  const xVals = state.rows.map(r => coerceNumber(r[xCol]));
+  const yVals = state.rows.map(r => coerceNumber(r[yCol]));
+  const r = pearson(xVals,yVals), reg = linearRegression(xVals,yVals);
+  if (!Number.isFinite(r) || !reg) { $('corrResult').innerHTML = '<span class="pill warn">Servono almeno 3 coppie numeriche valide.</span>'; drawScatter($('scatterCanvas'), xVals, yVals, null); return; }
+  let strength='debole'; const ar=Math.abs(r); if (ar >= 0.7) strength='forte'; else if (ar >= 0.4) strength='moderata';
+  $('corrResult').innerHTML = `
+    <div class="metric">
+      <div class="label">Correlazione e regressione lineare</div>
+      <div class="value">r = ${fmt(r)}</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill">Relazione ${strength}</span>
+        <span class="pill">R² = ${fmt(reg.r2)}</span>
+        <span class="pill">pendenza = ${fmt(reg.slope)}</span>
+        <span class="pill">intercetta = ${fmt(reg.intercept)}</span>
+      </div>
+      <div class="note" style="margin-top:10px;">Modello: ${escapeHtml(yCol)} = ${fmt(reg.intercept)} + ${fmt(reg.slope)} · ${escapeHtml(xCol)}</div>
+    </div>`;
+  drawScatter($('scatterCanvas'), xVals, yVals, reg);
+  addReport(`Regressione ${yCol}~${xCol}: r=${fmt(r)}, R²=${fmt(reg.r2)}, intercetta=${fmt(reg.intercept)}, pendenza=${fmt(reg.slope)}`, true);
+}
+function suggestTest() {
+  const numCol=$('testColumn').value, groupCol=$('groupColumn').value, sigma=coerceNumber($('sigmaKnown').value), values=getNumericValues(numCol);
+  if (!numCol || values.length < 3) return { key:null, label:'Seleziona una colonna numerica valida con almeno 3 osservazioni.' };
+  if (groupCol) {
+    const groups=uniqueValues(groupCol);
+    if (groups.length === 2) return { key:'two_t', label:'Suggerimento: Welch t-test a due campioni (2 gruppi).' };
+  }
+  if (Number.isFinite(sigma) && sigma > 0) return { key:'one_z', label:'Suggerimento: z-test a un campione (σ nota).' };
+  return { key:'one_t', label: values.length < 30 ? 'Suggerimento: t-test a un campione.' : 'Suggerimento: t-test a un campione; con n grande è spesso simile allo z-test.' };
+}
+function renderSuggestion() {
+  const s=suggestTest();
+  $('suggestionWrap').innerHTML = s.key ? `<span class="pill">${s.label}</span>` : `<span class="pill warn">${s.label}</span>`;
+}
+function renderInterpretation(result, numCol, mu0) {
+  if (result.test.includes('due campioni')) {
+    const [g1,g2]=result.groups;
+    return `Confronto media di <span class="mono">${escapeHtml(numCol)}</span> tra <span class="mono">${escapeHtml(g1)}</span> (n=${result.n1}, media=${fmt(result.mean1)}) e <span class="mono">${escapeHtml(g2)}</span> (n=${result.n2}, media=${fmt(result.mean2)}). Differenza stimata = ${fmt(result.estimate)}.`;
+  }
+  return `Confronto della media di <span class="mono">${escapeHtml(numCol)}</span> rispetto a μ₀ = ${fmt(mu0)}. Media campionaria = ${fmt(result.estimate)}; errore standard = ${fmt(result.se)}.`;
+}
+function runTest() {
+  const mode=$('testType').value, suggestion=suggestTest(), testType = mode === 'auto' ? suggestion.key : mode;
+  const numCol=$('testColumn').value, mu0=coerceNumber($('mu0').value), sigma=coerceNumber($('sigmaKnown').value), values=getNumericValues(numCol);
+  if (!testType) { $('testResult').innerHTML = '<span class="pill warn">Impossibile suggerire un test.</span>'; return; }
+  let result;
+  if (testType === 'one_t') {
+    if (values.length < 2) return $('testResult').innerHTML = '<span class="pill warn">Servono almeno 2 osservazioni.</span>';
+    result = oneSampleTTest(values, mu0);
+  } else if (testType === 'one_z') {
+    if (!(sigma > 0)) return $('testResult').innerHTML = '<span class="pill warn">Inserisci una σ valida per lo z-test.</span>';
+    result = oneSampleZTest(values, mu0, sigma);
+  } else if (testType === 'two_t') {
+    const groupCol=$('groupColumn').value; if (!groupCol) return $('testResult').innerHTML = '<span class="pill warn">Seleziona una colonna gruppo.</span>';
+    const groups=uniqueValues(groupCol); if (groups.length !== 2) return $('testResult').innerHTML = `<span class="pill warn">La colonna gruppo deve avere esattamente 2 livelli. Trovati: ${groups.length}.</span>`;
+    const a=state.rows.filter(r => String(r[groupCol]).trim()===groups[0]).map(r => coerceNumber(r[numCol])).filter(Number.isFinite);
+    const b=state.rows.filter(r => String(r[groupCol]).trim()===groups[1]).map(r => coerceNumber(r[numCol])).filter(Number.isFinite);
+    if (a.length < 2 || b.length < 2) return $('testResult').innerHTML = '<span class="pill warn">Ogni gruppo deve avere almeno 2 osservazioni.</span>';
+    result = welchTTest(a,b); result.groups=groups; result.n1=a.length; result.n2=b.length;
+  }
+  const significant = result.p < 0.05;
+  $('testResult').innerHTML = `
+    <div class="metric">
+      <div class="label">${result.test}</div>
+      <div class="value">p = ${fmt(result.p)}</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill ${significant ? '' : 'warn'}">${significant ? 'Risultato significativo' : 'Non significativo a α=0.05'}</span>
+        <span class="pill">Statistica = ${fmt(result.statistic)}</span>
+        ${result.df !== null ? `<span class="pill">df = ${fmt(result.df,2)}</span>` : ''}
+      </div>
+      <div style="margin-top:10px; color: var(--muted)">${renderInterpretation(result, numCol, mu0)}</div>
+    </div>`;
+  addReport(`${result.test} su ${numCol}: statistica=${fmt(result.statistic)}, p=${fmt(result.p)}${result.df !== null ? `, df=${fmt(result.df,2)}` : ''}`);
+}
+function runANOVA() {
+  const numCol=$('anovaValue').value, groupCol=$('anovaGroup').value;
+  const out = oneWayANOVA(numCol, groupCol);
+  if (!out) { $('anovaResult').innerHTML = '<span class="pill warn">Servono almeno 3 gruppi con valori numerici validi.</span>'; return; }
+  $('anovaResult').innerHTML = `
+    <div class="metric">
+      <div class="label">ANOVA a una via</div>
+      <div class="value">F = ${fmt(out.F)}</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill">df = ${out.dfb}, ${out.dfw}</span>
+        <span class="pill">η² = ${fmt(out.eta2)}</span>
+        <span class="pill">Gruppi = ${out.k}</span>
+      </div>
+      <div class="note" style="margin-top:10px;">Questa ANOVA mostra la dimensione dell'effetto (η²). Per il p-value preciso conviene integrare anche una libreria statistica o backend.</div>
+    </div>`;
+  addReport(`ANOVA ${numCol} per ${groupCol}: F=${fmt(out.F)}, df=${out.dfb},${out.dfw}, eta²=${fmt(out.eta2)}`);
+}
+function runChiSquare() {
+  const rowCol=$('chiRow').value, colCol=$('chiCol').value;
+  if (rowCol === colCol) { $('chiResult').innerHTML = '<span class="pill warn">Scegli due variabili categoriche diverse.</span>'; return; }
+  const out = chiSquareTest(rowCol, colCol);
+  if (!out) { $('chiResult').innerHTML = '<span class="pill warn">Servono almeno 2 livelli per ciascuna variabile.</span>'; return; }
+  $('chiResult').innerHTML = `
+    <div class="metric">
+      <div class="label">Chi-quadro di indipendenza</div>
+      <div class="value">χ² = ${fmt(out.chi2)}</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill ${out.p < 0.05 ? '' : 'warn'}">p = ${fmt(out.p)}</span>
+        <span class="pill">df = ${out.df}</span>
+        <span class="pill">Cramér's V = ${fmt(out.cramersV)}</span>
+      </div>
+    </div>`;
+  addReport(`Chi-quadro ${rowCol} x ${colCol}: chi2=${fmt(out.chi2)}, df=${out.df}, p=${fmt(out.p)}, CramérV=${fmt(out.cramersV)}`);
+}
+function addReport(line, replaceSection=false) {
+  if (!line) return;
+  if (replaceSection) {
+    const prefix = line.split(':')[0];
+    state.reportLines = state.reportLines.filter(x => !x.startsWith(prefix + ':'));
+  }
+  state.reportLines.push(line);
+  $('reportBox').textContent = state.reportLines.join('\n');
+}
+function exportText() {
+  const content = state.reportLines.length ? state.reportLines.join('\n') : 'Nessun risultato ancora generato.';
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+  downloadBlob(blob, 'report_statistico.txt');
+}
+function exportSummaryCsv() {
+  if (!state.numericColumns.length) return;
+  let csv = 'colonna,n,media,sd,min,q1,mediana,q3,max\n';
+  state.numericColumns.forEach(col => {
+    const vals = getNumericValues(col);
+    if (vals.length < 2) return;
+    const s = descriptiveStats(vals);
+    csv += [col,s.n,s.mean,s.sd,s.min,s.q1,s.median,s.q3,s.max].join(',') + '\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  downloadBlob(blob, 'riepilogo_statistico.csv');
+}
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+}
+function refreshAll() {
+  if (!state.rows.length) return;
+  $('dashboard').classList.remove('hidden');
+  classifyColumns();
+  renderOverview();
+  fillSelect('descColumn', state.numericColumns);
+  fillSelect('normalityColumn', state.numericColumns);
+  fillSelect('corrX', state.numericColumns);
+  fillSelect('corrY', state.numericColumns);
+  fillSelect('testColumn', state.numericColumns);
+  fillSelect('groupColumn', state.headers, true);
+  fillSelect('anovaValue', state.numericColumns);
+  fillSelect('anovaGroup', state.categoricalColumns.length ? state.categoricalColumns : state.headers);
+  fillSelect('chiRow', state.categoricalColumns.length ? state.categoricalColumns : state.headers);
+  fillSelect('chiCol', state.categoricalColumns.length ? state.categoricalColumns : state.headers);
+  renderPreview();
+  if (state.numericColumns.length >= 2) $('corrY').value = state.numericColumns[1];
+  state.reportLines = [`Dataset caricato: ${state.rows.length} righe, ${state.headers.length} colonne.`];
+  $('reportBox').textContent = state.reportLines.join('\n');
+  renderDesc(); renderCorrelation(); renderSuggestion();
+}
+function loadText(text) {
+  const parsed = parseCSV(text);
+  state.headers = parsed.headers; state.rows = parsed.rows; refreshAll();
+}
+$('fileInput').addEventListener('change', async e => { const file=e.target.files?.[0]; if (!file) return; loadText(await file.text()); });
+$('loadSampleBtn').addEventListener('click', () => {
+  const sample = `group,segment,score,age,study_hours,channel\nA,North,72,21,3.5,Email\nA,North,75,22,4.0,Email\nA,South,78,20,4.5,Social\nA,South,74,23,3.8,Social\nA,West,80,22,5.1,Referral\nB,North,68,21,2.9,Email\nB,North,70,24,3.2,Email\nB,South,66,23,2.5,Social\nB,South,71,22,3.1,Social\nB,West,69,21,2.8,Referral\nA,West,82,24,5.3,Referral\nB,West,65,20,2.4,Referral\nC,North,77,25,4.6,Email\nC,South,79,24,4.8,Social\nC,West,81,23,5.0,Referral`;
+  loadText(sample);
+});
+$('exportTxtBtn').addEventListener('click', exportText);
+$('exportCsvBtn').addEventListener('click', exportSummaryCsv);
+['descColumn','ciLevel'].forEach(id => $(id).addEventListener('change', renderDesc));
+$('runNormalityBtn').addEventListener('click', runNormality);
+['corrX','corrY'].forEach(id => $(id).addEventListener('change', renderCorrelation));
+['testType','testColumn','groupColumn','sigmaKnown'].forEach(id => $(id).addEventListener('change', renderSuggestion));
+$('runTestBtn').addEventListener('click', runTest);
+$('runAnovaBtn').addEventListener('click', runANOVA);
+$('runChiBtn').addEventListener('click', runChiSquare);
+const dz=$('dropzone');
+['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', async e => { const file=e.dataTransfer.files?.[0]; if (!file) return; loadText(await file.text()); });
+</script>
+</body>
+</html>

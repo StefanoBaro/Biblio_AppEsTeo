@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APP_DRP</title>
+  <style>
+    :root{
+      --bg:#07161a;
+      --bg2:#0b1f24;
+      --card:#10282e;
+      --card2:#12333a;
+      --line:#1d4b54;
+      --line-soft:#163c44;
+      --text:#e6fffb;
+      --muted:#9cc9c3;
+      --teal:#41d6c3;
+      --teal-2:#2bb8a8;
+      --cyan:#67c7ff;
+      --blue:#63a9ff;
+      --green:#6ee7b7;
+      --red:#ff7f96;
+      --amber:#ffd166;
+      --shadow:0 10px 30px rgba(0,0,0,.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, #10343a 0%, transparent 28%),
+        radial-gradient(circle at top right, #0c2f39 0%, transparent 24%),
+        linear-gradient(180deg, var(--bg2), var(--bg));
+      color: var(--text);
+    }
+
+    h1 {
+      margin: 0 0 18px 0;
+      font-size: 30px;
+      color: var(--teal);
+      letter-spacing: .3px;
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      color: #d6fffa;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(18,51,58,.96), rgba(12,34,39,.96));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(4px);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #c9f5ef;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 14px;
+      background: #0a1d22;
+      color: var(--text);
+      outline: none;
+      transition: .2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(65,214,195,.15);
+    }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #042b2b;
+      background: linear-gradient(180deg, var(--teal), var(--teal-2));
+      box-shadow: 0 6px 16px rgba(43,184,168,.25);
+      transition: transform .12s ease, opacity .2s ease;
+    }
+
+    button:hover {
+      opacity: .96;
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: linear-gradient(180deg, #1b4952, #143b43);
+      box-shadow: none;
+      border: 1px solid #235965;
+    }
+
+    button.green {
+      color: #032321;
+      background: linear-gradient(180deg, #72f0d5, #3bc8b5);
+    }
+
+    .note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px;
+      background: linear-gradient(180deg, rgba(10,29,34,.95), rgba(12,37,43,.95));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .kpi .title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .kpi .value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--teal);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #091b20;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1000px;
+      background: transparent;
+    }
+
+    th, td {
+      border: 1px solid var(--line-soft);
+      padding: 9px 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      background: #123842;
+      color: #d7fffa;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      background: #0d2328;
+      color: var(--text);
+    }
+
+    td.rowhdr {
+      text-align: left;
+      font-weight: 700;
+      background: #112d33;
+      min-width: 240px;
+      color: #cffff8;
+    }
+
+    .danger {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    .ok {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 1200px;
+      height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #0a1c21, #0c2329);
+      display: block;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .formula {
+      background: linear-gradient(180deg, #0c2126, #0c1c21);
+      border: 1px dashed #2d6b76;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #c7f5ef;
+    }
+
+    .footer {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(65,214,195,.1);
+      border: 1px solid rgba(65,214,195,.25);
+      color: #cffff8;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 12px rgba(65,214,195,.7);
+    }
+
+    ::placeholder {
+      color: #7db1ab;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 11px; }
+      h1 { font-size: 20px; }
+      .kpi .value { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>APP_DRP</h1>
+    <div class="badge"><span class="dot"></span> Tema scuro verde acqua</div>
+  </div>
+
+  <div class="card">
+    <h2>Parametri generali</h2>
+    <div class="grid">
+      <div>
+        <label for="periods">Numero periodi</label>
+        <input type="number" id="periods" min="1" value="8">
+      </div>
+
+      <div>
+        <label for="initialStock">Giacenza iniziale</label>
+        <input type="number" id="initialStock" min="0" value="120">
+      </div>
+
+      <div>
+        <label for="safetyStock">Scorta di sicurezza</label>
+        <input type="number" id="safetyStock" min="0" value="20">
+      </div>
+
+      <div>
+        <label for="leadTime">Lead time (periodi)</label>
+        <input type="number" id="leadTime" min="0" value="1">
+      </div>
+
+      <div>
+        <label for="lotSize">Lotto fisso</label>
+        <input type="number" id="lotSize" min="1" value="100">
+      </div>
+
+      <div>
+        <label for="unitValue">Valore unitario merce (€)</label>
+        <input type="number" id="unitValue" min="0" step="0.01" value="12.50">
+      </div>
+
+      <div>
+        <label for="holdingRate">Tasso costo mantenimento (%)</label>
+        <input type="number" id="holdingRate" min="0" step="0.01" value="18">
+      </div>
+
+      <div>
+        <label for="orderingCost">Costo per ordine (€)</label>
+        <input type="number" id="orderingCost" min="0" step="0.01" value="45">
+      </div>
+    </div>
+
+    <div class="btns">
+      <button type="button" onclick="generateDemandInputs()">Genera periodi</button>
+      <button type="button" class="green" onclick="calculateDRP()">Calcola DRP</button>
+      <button type="button" class="secondary" onclick="loadExampleData()">Carica esempio</button>
+      <button type="button" class="secondary" onclick="exportCSV()">Esporta CSV</button>
+    </div>
+
+    <div class="note">
+      Se la giacenza proiettata scende sotto la scorta di sicurezza, viene creata una ricezione pianificata DRP arrotondata al lotto fisso.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Fabbisogni per periodo</h2>
+    <div id="demandInputs" class="grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>Risultati sintetici</h2>
+    <div id="kpis" class="kpi-grid"></div>
+    <div class="note" id="summaryText"></div>
+  </div>
+
+  <div class="card">
+    <h2>Tabella planning DRP</h2>
+    <div class="table-wrap">
+      <div id="tableContainer"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Grafico</h2>
+    <canvas id="chart" width="1200" height="360"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Formule usate</h2>
+    <div class="formula">
+      <strong>Giacenza media</strong> = media delle giacenze proiettate di fine periodo<br>
+      <strong>Costo di mantenimento</strong> = giacenza media × valore unitario × tasso di mantenimento<br>
+      <strong>Costo all'ordine totale</strong> = numero ordini × costo per ordine<br>
+      <strong>Costo totale logistico</strong> = costo di mantenimento + costo all'ordine totale<br>
+      <strong>Indice di rotazione</strong> = consumo totale / giacenza media
+    </div>
+    <div class="footer">
+      Il tasso di mantenimento va letto sullo stesso orizzonte temporale del planning.
+    </div>
+  </div>
+
+  <script>
+    let lastCalculation = null;
+
+    function generateDemandInputs() {
+      const periods = Math.max(1, parseInt(document.getElementById("periods").value) || 1);
+      const container = document.getElementById("demandInputs");
+      container.innerHTML = "";
+
+      for (let i = 1; i <= periods; i++) {
+        const box = document.createElement("div");
+        box.innerHTML = `
+          <label for="demand_${i}">Periodo ${i} - Fabbisogno lordo</label>
+          <input type="number" id="demand_${i}" min="0" value="0">
+        `;
+        container.appendChild(box);
+      }
+    }
+
+    function loadExampleData() {
+      document.getElementById("periods").value = 8;
+      document.getElementById("initialStock").value = 120;
+      document.getElementById("safetyStock").value = 20;
+      document.getElementById("leadTime").value = 1;
+      document.getElementById("lotSize").value = 100;
+      document.getElementById("unitValue").value = 12.5;
+      document.getElementById("holdingRate").value = 18;
+      document.getElementById("orderingCost").value = 45;
+
+      generateDemandInputs();
+
+      const sample = [40, 60, 35, 80, 50, 70, 30, 60];
+      sample.forEach((v, i) => {
+        const el = document.getElementById(`demand_${i + 1}`);
+        if (el) el.value = v;
+      });
+
+      calculateDRP();
+    }
+
+    function ceilToLot(qty, lot) {
+      if (qty <= 0) return 0;
+      return Math.ceil(qty / lot) * lot;
+    }
+
+
+    function calculateDRP() {
+      const periods = Math.max(1, parseInt(document.getElementById("periods").value) || 1);
+      const initialStock = parseFloat(document.getElementById("initialStock").value) || 0;
+      const safetyStock = parseFloat(document.getElementById("safetyStock").value) || 0;
+      const leadTime = Math.max(0, parseInt(document.getElementById("leadTime").value) || 0);
+      const lotSize = Math.max(1, parseFloat(document.getElementById("lotSize").value) || 1);
+      const unitValue = parseFloat(document.getElementById("unitValue").value) || 0;
+      const holdingRate = (parseFloat(document.getElementById("holdingRate").value) || 0) / 100;
+      const orderingCost = parseFloat(document.getElementById("orderingCost").value) || 0;
+
+      const grossReq = [];
+      for (let i = 0; i < periods; i++) {
+        grossReq.push(parseFloat(document.getElementById(`demand_${i + 1}`)?.value) || 0);
+      }
+
+      const orderArrivals = new Array(periods).fill(0);
+      const orderReleases = new Array(periods).fill(0);
+      const openingStock = new Array(periods).fill(0);
+      const netReq = new Array(periods).fill(0);
+      const projectedStock = new Array(periods).fill(0);
+      const avgStockPeriod = new Array(periods).fill(0);
+      let arrivalsBeyondHorizon = 0;
+
+      let prevStock = initialStock;
+
+      for (let t = 0; t < periods; t++) {
+        openingStock[t] = prevStock;
+
+        const availableBeforeNewOrder = openingStock[t] + orderArrivals[t];
+        const shortageVsTarget = grossReq[t] + safetyStock - availableBeforeNewOrder;
+
+        if (shortageVsTarget > 0) {
+          const qty = ceilToLot(shortageVsTarget, lotSize);
+          netReq[t] = shortageVsTarget;
+          orderReleases[t] = qty;
+
+          const arrivalPeriod = t + leadTime;
+          if (arrivalPeriod < periods) {
+            orderArrivals[arrivalPeriod] += qty;
+          } else {
+            arrivalsBeyondHorizon += qty;
+          }
+        }
+
+        const closing = openingStock[t] + orderArrivals[t] - grossReq[t];
+        projectedStock[t] = closing;
+        avgStockPeriod[t] = (openingStock[t] + closing) / 2;
+        prevStock = closing;
+      }
+
+      const totalDemand = grossReq.reduce((a, b) => a + b, 0);
+      const avgStock = avgStockPeriod.reduce((a, b) => a + b, 0) / periods;
+      const holdingCost = avgStock * unitValue * holdingRate;
+      const orderCount = orderReleases.filter(v => v > 0).length;
+      const totalOrderingCost = orderCount * orderingCost;
+      const totalCost = holdingCost + totalOrderingCost;
+      const rotationIndex = avgStock > 0 ? totalDemand / avgStock : 0;
+      const coverage = rotationIndex > 0 ? periods / rotationIndex : 0;
+
+      lastCalculation = {
+        periods,
+        params: {
+          initialStock, safetyStock, leadTime, lotSize, unitValue, holdingRate, orderingCost
+        },
+        grossReq,
+        orderArrivals,
+        orderReleases,
+        openingStock,
+        netReq,
+        projectedStock,
+        avgStockPeriod,
+        arrivalsBeyondHorizon,
+        totalDemand,
+        avgStock,
+        holdingCost,
+        orderCount,
+        totalOrderingCost,
+        totalCost,
+        rotationIndex,
+        coverage
+      };
+
+      renderKPIs(lastCalculation);
+      renderTable(lastCalculation);
+      drawChart(lastCalculation);
+    }
+
+    function renderKPIs(data) {
+      const kpis = [
+        { title: "Consumo totale", value: formatNum(data.totalDemand) + " u." },
+        { title: "Giacenza media", value: formatNum(data.avgStock) + " u." },
+        { title: "Numero ordini", value: formatNum(data.orderCount) },
+        { title: "Costo totale logistico", value: "€ " + formatNum(data.totalCost) },
+        { title: "Indice di rotazione", value: formatNum(data.rotationIndex) },
+        { title: "Copertura media", value: formatNum(data.coverage) + " periodi" }
+      ];
+
+      document.getElementById("kpis").innerHTML = kpis.map(k => `
+        <div class="kpi">
+          <div class="title">${k.title}</div>
+          <div class="value">${k.value}</div>
+        </div>
+      `).join("");
+
+      const extra = data.arrivalsBeyondHorizon > 0
+        ? ` Sono presenti ${formatNum(data.arrivalsBeyondHorizon)} u. ordinate ma con arrivo oltre l'orizzonte considerato.`
+        : "";
+
+      document.getElementById("summaryText").innerHTML =
+        `Il lead time sposta l'arrivo dell'ordine in avanti di ${data.params.leadTime} periodi: l'ordine esce oggi e arriva tutto insieme alla data prevista.` + extra;
+    }
+
+    function renderTable(data) {
+      const cols = Array.from({ length: data.periods }, (_, i) => `<th>P${i + 1}</th>`).join("");
+
+      const row = (name, arr, cls = "") => `
+        <tr>
+          <td class="rowhdr">${name}</td>
+          ${arr.map(v => `<td class="${cls}">${formatNum(v)}</td>`).join("")}
+        </tr>
+      `;
+
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th>Voce</th>
+              ${cols}
+            </tr>
+          </thead>
+          <tbody>
+            ${row("Giacenza inizio periodo", data.openingStock)}
+            ${row("Fabbisogno lordo", data.grossReq)}
+            ${row("Fabbisogno netto", data.netReq, "warn")}
+            ${row("Ordini in arrivo", data.orderArrivals, "ok")}
+            ${row("Ordini in uscita", data.orderReleases, "ok")}
+            ${row("Giacenza fine periodo", data.projectedStock)}
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById("tableContainer").innerHTML = table;
+    }
+
+    function drawChart(data) {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const margin = { top: 30, right: 20, bottom: 50, left: 55 };
+      const chartW = W - margin.left - margin.right;
+      const chartH = H - margin.top - margin.bottom;
+
+      const series = [
+        { name: "Fabbisogno", values: data.grossReq, color: "#b794f4" },
+        { name: "Giacenza finale", values: data.projectedStock, color: "#67c7ff" }
+      ];
+
+      const maxVal = Math.max(
+        10,
+        ...data.grossReq,
+        ...data.projectedStock,
+        ...data.orderArrivals,
+        ...data.openingStock
+      );
+      const minVal = Math.min(0, ...data.projectedStock);
+      const valueRange = Math.max(10, maxVal - minVal);
+
+      const xStep = data.periods > 1 ? chartW / (data.periods - 1) : chartW;
+
+      function getX(i) {
+        return margin.left + i * xStep;
+      }
+
+      function getY(v) {
+        return margin.top + chartH - ((v - minVal) / valueRange) * chartH;
+      }
+
+      ctx.strokeStyle = "#23545d";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= 5; i++) {
+        const value = minVal + (valueRange / 5) * i;
+        const y = getY(value);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(W - margin.right, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#9ec9c4";
+        ctx.font = "12px Arial";
+        ctx.fillText(formatNum(value), 8, y + 4);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, H - margin.bottom);
+      ctx.lineTo(W - margin.right, H - margin.bottom);
+      ctx.strokeStyle = "#3a7e88";
+      ctx.stroke();
+
+      if (minVal < 0) {
+        const zeroY = getY(0);
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = "#7b8794";
+        ctx.moveTo(margin.left, zeroY);
+        ctx.lineTo(W - margin.right, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      series.forEach(s => {
+        ctx.beginPath();
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2.4;
+
+        s.values.forEach((v, i) => {
+          const x = getX(i);
+          const y = getY(v);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+
+        s.values.forEach((v, i) => {
+          const x = getX(i);
+          const y = getY(v);
+          ctx.beginPath();
+          ctx.fillStyle = s.color;
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      for (let i = 0; i < data.periods; i++) {
+        const x = getX(i);
+        ctx.fillStyle = "#c8f7f1";
+        ctx.font = "12px Arial";
+        ctx.fillText("P" + (i + 1), x - 8, H - 20);
+      }
+
+      const legendX = W - 220;
+      const legendY = 18;
+      series.forEach((s, i) => {
+        const y = legendY + i * 22;
+        ctx.fillStyle = s.color;
+        ctx.fillRect(legendX, y, 14, 14);
+        ctx.fillStyle = "#e6fffb";
+        ctx.font = "13px Arial";
+        ctx.fillText(s.name, legendX + 22, y + 12);
+      });
+    }
+
+    function exportCSV() {
+      if (!lastCalculation) {
+        alert("Esegui prima il calcolo DRP.");
+        return;
+      }
+
+      const d = lastCalculation;
+      const rows = [
+        ["Voce", ...Array.from({ length: d.periods }, (_, i) => `P${i + 1}`)],
+        ["Giacenza inizio periodo", ...d.openingStock],
+        ["Fabbisogno lordo", ...d.grossReq],
+        ["Fabbisogno netto", ...d.netReq],
+        ["Ordini in arrivo", ...d.orderArrivals],
+        ["Ordini in uscita", ...d.orderReleases],
+        ["Giacenza fine periodo", ...d.projectedStock],
+        [],
+        ["Consumo totale", d.totalDemand],
+        ["Giacenza media", d.avgStock],
+        ["Costo mantenimento", d.holdingCost],
+        ["Numero ordini", d.orderCount],
+        ["Costo all'ordine totale", d.totalOrderingCost],
+        ["Costo totale logistico", d.totalCost],
+        ["Indice di rotazione", d.rotationIndex],
+        ["Copertura media", d.coverage],
+        ["Ordini oltre orizzonte", d.arrivalsBeyondHorizon]
+      ];
+
+      const csv = rows.map(r => r.join(";")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "APP_DRP.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function formatNum(n) {
+      return Number(n).toLocaleString("it-IT", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    generateDemandInputs();
+  </script>
+</body>
+</html>
