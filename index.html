@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Indice Materiale</title>
 <style>
+
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap');
 :root {
   --bg:#0a0c12; --bg2:#121723; --panel:rgba(17,22,31,.92); --panel2:rgba(23,29,42,.86);
@@ -78,6 +79,11 @@ border:1px solid rgba(255,255,255,.06); transition:transform .18s ease, border-c
   .headerline{margin-bottom:12px}
   .headerline h1{font-size:.98rem}
 }
+
+.data-guide{margin:0 0 14px; padding:12px 14px; border:1px dashed rgba(125,95,220,.24); border-radius:14px; background:rgba(255,255,255,.025); color:var(--soft); font-size:.92rem; line-height:1.55}
+.data-guide code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--vio2); font-size:.9em}
+.data-guide strong{color:var(--text)}
+.subject-card summary{cursor:pointer}
 </style>
 </head>
 <body>
@@ -87,6 +93,8 @@ border:1px solid rgba(255,255,255,.06); transition:transform .18s ease, border-c
     <h1>Indice Materiale</h1>
   </div>
 
+  <p class="data-guide"><strong>Come si aggiorna:</strong> modifica solo il blocco <code>const libraryData = [...]</code> in fondo al file. Per aggiungere una materia, duplica un oggetto materia. Per aggiungere una pagina, inserisci una voce dentro <code>Applicazioni</code>, <code>Esercizi</code> o <code>Teoria</code>. Ho aggiunto anche <strong>Statistica</strong> come sezione pronta.</p>
+
   <section class="toolbar">
     <div class="field">
       <label for="search">Cerca una pagina</label>
@@ -94,24 +102,7 @@ border:1px solid rgba(255,255,255,.06); transition:transform .18s ease, border-c
     </div>
     <div class="field">
       <label for="subjectFilter">Materia</label>
-      <select id="subjectFilter">
-        <option value="">Tutte</option>
-        <option value="LOGISTICA">Logistica</option>
-        <option value="MATEMATICA">Matematica</option>
-        <option value="ELETTROTECNICA">Elettrotecnica</option>
-        <option value="MECCANICA">Meccanica</option>
-        <option value="AUTOMAZIONE E ROBOTICA">Automazione e Robotica</option>
-        <option value="INFORMATICA">Informatica</option>
-        <option value="FISICA">Fisica</option>
-        <option value="CHIMICA">Chimica</option>
-        <option value="ARTE">Arte</option>
-        <option value="STORIA">Storia</option>
-        <option value="LINGUE STRANIERE">Lingue Straniere</option>
-        <option value="NATURA">Natura</option>
-        <option value="MUSICA">Musica</option>
-        <option value="YOGA">Yoga</option>
-        <option value="ARTI MARZIALI">Arti Marziali</option>
-      </select>
+      <select id="subjectFilter"><option value="">Tutte</option></select>
     </div>
     <div class="field">
       <label for="kindFilter">Tipo</label>
@@ -124,424 +115,528 @@ border:1px solid rgba(255,255,255,.06); transition:transform .18s ease, border-c
     </div>
     <div class="field">
       <label for="yearFilter">Anno</label>
-      <select id="yearFilter">
-        <option value="">Tutti</option>
-        <option>Anno 1</option>
-        <option>Anno 2</option>
-        <option>Anno 3</option>
-        <option>Anno da definire</option>
-      </select>
+      <select id="yearFilter"><option value="">Tutti</option></select>
     </div>
   </section>
 
-  <section class="stack">
-    
-    <details class="subject-card" open data-subject="LOGISTICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">LOGISTICA</div>
-            <div class="subject-meta">7 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>7 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>7</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_CalcolaEOQ.html" data-kind="APP" data-year="Anno 2" data-title="CalcolaEOQ">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">CalcolaEOQ</div>
-                  <div class="entry-desc">Calcolo lotto economico di acquisto</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_ClassificazioneABC.html" data-kind="APP" data-year="Anno 2" data-title="ClassificazioneABC">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">ClassificazioneABC</div>
-                  <div class="entry-desc">Classificazione ABC dei materiali</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_DisposizioneWMS.html" data-kind="APP" data-year="Anno 3" data-title="DisposizioneWMS">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">DisposizioneWMS</div>
-                  <div class="entry-desc">Ottimizzazione slotting e disposizione</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_FacilityLocation.html" data-kind="APP" data-year="Anno 3" data-title="FacilityLocation">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">FacilityLocation</div>
-                  <div class="entry-desc">Localizzazione ottima di impianti</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_Forecast.html" data-kind="APP" data-year="Anno 3" data-title="Forecast">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">Forecast</div>
-                  <div class="entry-desc">Previsione di serie storiche</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_PackagingConfig.html" data-kind="APP" data-year="Anno 2" data-title="PackagingConfig">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">PackagingConfig</div>
-                  <div class="entry-desc">Configurazione imballi e colli</div>
-                </a>
-                <a class="entry-card" href="Pagine/LOGISTICA/APP/APP_PlanningDRP.html" data-kind="APP" data-year="Anno 3" data-title="PlanningDRP">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">PlanningDRP</div>
-                  <div class="entry-desc">Planning DRP e approvvigionamenti</div>
-                </a></div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card" open data-subject="MATEMATICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">MATEMATICA</div>
-            <div class="subject-meta">2 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>1 APP</span>
-          <span>0 ES</span>
-          <span>1 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>1</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/MATEMATICA/APP/APP_SenoCoseno.html" data-kind="APP" data-year="Anno 1" data-title="SenoCoseno">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 1</span>
-                  </div>
-                  <div class="entry-title">SenoCoseno</div>
-                  <div class="entry-desc">Oscillatore e funzioni goniometriche</div>
-                </a></div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>1</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/MATEMATICA/TEO/TEO_GaussJordan.html" data-kind="TEO" data-year="Anno 2" data-title="GaussJordan">
-                  <div class="entry-top">
-                    <span class="kind">TEO</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">GaussJordan</div>
-                  <div class="entry-desc">Metodo di Gauss-Jordan e sistemi</div>
-                </a></div></div>
-      </div>
-    </details>
-    <details class="subject-card" open data-subject="ELETTROTECNICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">ELETTROTECNICA</div>
-            <div class="subject-meta">3 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>1 APP</span>
-          <span>0 ES</span>
-          <span>2 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>1</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/ELETTROTECNICA/APP/APP_KirchoffSolver.html" data-kind="APP" data-year="Anno 2" data-title="KirchoffSolver">
-                  <div class="entry-top">
-                    <span class="kind">APP</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">KirchoffSolver</div>
-                  <div class="entry-desc">Risolutore di circuiti con leggi di Kirchhoff</div>
-                </a></div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>2</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/ELETTROTECNICA/TEO/TEO_CircuitoRC.html" data-kind="TEO" data-year="Anno 2" data-title="CircuitoRC">
-                  <div class="entry-top">
-                    <span class="kind">TEO</span>
-                    <span class="year">Anno 2</span>
-                  </div>
-                  <div class="entry-title">CircuitoRC</div>
-                  <div class="entry-desc">Circuito RC e risposta temporale</div>
-                </a>
-                <a class="entry-card" href="Pagine/ELETTROTECNICA/TEO/TEO_PIDMotor.html" data-kind="TEO" data-year="Anno 3" data-title="PIDMotor">
-                  <div class="entry-top">
-                    <span class="kind">TEO</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">PIDMotor</div>
-                  <div class="entry-desc">Analisi motore e controllo PID</div>
-                </a></div></div>
-      </div>
-    </details>
-    <details class="subject-card" open data-subject="MECCANICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">MECCANICA</div>
-            <div class="subject-meta">1 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>1 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>1</span></div><div class="item-grid">
-                <a class="entry-card" href="Pagine/MECCANICA/TEO/TEO_CurvediCarico.html" data-kind="TEO" data-year="Anno 3" data-title="CurvediCarico">
-                  <div class="entry-top">
-                    <span class="kind">TEO</span>
-                    <span class="year">Anno 3</span>
-                  </div>
-                  <div class="entry-title">CurvediCarico</div>
-                  <div class="entry-desc">Curve di carico e lettura prestazioni</div>
-                </a></div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="AUTOMAZIONE E ROBOTICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">AUTOMAZIONE E ROBOTICA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="INFORMATICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">INFORMATICA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="FISICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">FISICA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="CHIMICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">CHIMICA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="ARTE">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">ARTE</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="STORIA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">STORIA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="LINGUE STRANIERE">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">LINGUE STRANIERE</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="NATURA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">NATURA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="MUSICA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">MUSICA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="YOGA">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">YOGA</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-    <details class="subject-card"  data-subject="ARTI MARZIALI">
-      <summary>
-        <div class="subject-title-wrap">
-          <span class="phi-mark" aria-hidden="true">Φ</span>
-          <div>
-            <div class="subject-title">ARTI MARZIALI</div>
-            <div class="subject-meta">0 contenuti</div>
-          </div>
-        </div>
-        <div class="subject-mini">
-          <span>0 APP</span>
-          <span>0 ES</span>
-          <span>0 TEO</span>
-        </div>
-      </summary>
-      <div class="subject-content">
-        <div class="section-block"><div class="section-head"><h3>Applicazioni</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Esercizi</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div><div class="section-block"><div class="section-head"><h3>Teoria</h3><span>0</span></div><div class="empty-slot">Spazio pronto da riempire</div></div>
-      </div>
-    </details>
-  </section>
+  <section class="stack" id="subjectsRoot"></section>
 
-  <p class="note">Percorsi allineati alla struttura attuale: <strong>Pagine / MATERIA / APP | ES | TEO</strong>. Quando aggiungerai nuovi file, basterà inserirli nella cartella corretta e aggiornare l’indice.</p>
+  <p class="note">Percorsi allineati alla struttura attuale: <strong>Pagine / MATERIA / APP | ES | TEO</strong>. Quando aggiungerai nuovi file, ti basta aggiornare il blocco dati in fondo al file.</p>
 </div>
 
 <script>
+const libraryData = [
+  {
+    "name": "LOGISTICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": [
+          {
+            "title": "CalcolaEOQ",
+            "desc": "Calcolo lotto economico di acquisto",
+            "kind": "APP",
+            "year": "Anno 2",
+            "path": "Pagine/LOGISTICA/APP/APP_CalcolaEOQ.html"
+          },
+          {
+            "title": "ClassificazioneABC",
+            "desc": "Classificazione ABC dei materiali",
+            "kind": "APP",
+            "year": "Anno 2",
+            "path": "Pagine/LOGISTICA/APP/APP_ClassificazioneABC.html"
+          },
+          {
+            "title": "DisposizioneWMS",
+            "desc": "Ottimizzazione slotting e disposizione",
+            "kind": "APP",
+            "year": "Anno 3",
+            "path": "Pagine/LOGISTICA/APP/APP_DisposizioneWMS.html"
+          },
+          {
+            "title": "FacilityLocation",
+            "desc": "Localizzazione ottima di impianti",
+            "kind": "APP",
+            "year": "Anno 3",
+            "path": "Pagine/LOGISTICA/APP/APP_FacilityLocation.html"
+          },
+          {
+            "title": "Forecast",
+            "desc": "Previsione di serie storiche",
+            "kind": "APP",
+            "year": "Anno 3",
+            "path": "Pagine/LOGISTICA/APP/APP_Forecast.html"
+          },
+          {
+            "title": "PackagingConfig",
+            "desc": "Configurazione imballi e colli",
+            "kind": "APP",
+            "year": "Anno 2",
+            "path": "Pagine/LOGISTICA/APP/APP_PackagingConfig.html"
+          },
+          {
+            "title": "PlanningDRP",
+            "desc": "Planning DRP e approvvigionamenti",
+            "kind": "APP",
+            "year": "Anno 3",
+            "path": "Pagine/LOGISTICA/APP/APP_PlanningDRP.html"
+          }
+        ]
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "MATEMATICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": [
+          {
+            "title": "SenoCoseno",
+            "desc": "Oscillatore e funzioni goniometriche",
+            "kind": "APP",
+            "year": "Anno 1",
+            "path": "Pagine/MATEMATICA/APP/APP_SenoCoseno.html"
+          }
+        ]
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": [
+          {
+            "title": "GaussJordan",
+            "desc": "Metodo di Gauss-Jordan e sistemi",
+            "kind": "TEO",
+            "year": "Anno 2",
+            "path": "Pagine/MATEMATICA/TEO/TEO_GaussJordan.html"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ELETTROTECNICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": [
+          {
+            "title": "KirchoffSolver",
+            "desc": "Risolutore di circuiti con leggi di Kirchhoff",
+            "kind": "APP",
+            "year": "Anno 2",
+            "path": "Pagine/ELETTROTECNICA/APP/APP_KirchoffSolver.html"
+          }
+        ]
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": [
+          {
+            "title": "CircuitoRC",
+            "desc": "Circuito RC e risposta temporale",
+            "kind": "TEO",
+            "year": "Anno 2",
+            "path": "Pagine/ELETTROTECNICA/TEO/TEO_CircuitoRC.html"
+          },
+          {
+            "title": "PIDMotor",
+            "desc": "Analisi motore e controllo PID",
+            "kind": "TEO",
+            "year": "Anno 3",
+            "path": "Pagine/ELETTROTECNICA/TEO/TEO_PIDMotor.html"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "MECCANICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": [
+          {
+            "title": "CurvediCarico",
+            "desc": "Curve di carico e lettura prestazioni",
+            "kind": "TEO",
+            "year": "Anno 3",
+            "path": "Pagine/MECCANICA/TEO/TEO_CurvediCarico.html"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "AUTOMAZIONE E ROBOTICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "INFORMATICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "FISICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "CHIMICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "ARTE",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "STORIA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "LINGUE STRANIERE",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "NATURA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "MUSICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "YOGA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "ARTI MARZIALI",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": []
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": []
+      }
+    ]
+  },
+  {
+    "name": "STATISTICA",
+    "sections": [
+      {
+        "name": "Applicazioni",
+        "kind": "APP",
+        "entries": [
+          {
+            "title": "AnalisiStatisica",
+            "desc": "Test Statistici su Campioni CSV",
+            "kind": "APP",
+            "year": "Anno 2",
+            "path": "Pagine/STATISTICA/APP/APP_AnalisiStatistica.html"
+          }
+        ]
+      },
+      {
+        "name": "Esercizi",
+        "kind": "ES",
+        "entries": []
+      },
+      {
+        "name": "Teoria",
+        "kind": "TEO",
+        "entries": [
+          {
+            "title": "AnalisiStatisica",
+            "desc": "Test Statistici su Campioni CSV",
+            "kind": "TEO",
+            "year": "Anno 2",
+            "path": "Pagine/STATISTICA/TEO/TEO_AnalisiStatistica.html"
+          }
+        ]
+      }
+    ]
+  }
+];
+
 const search = document.getElementById('search');
 const subjectFilter = document.getElementById('subjectFilter');
 const kindFilter = document.getElementById('kindFilter');
 const yearFilter = document.getElementById('yearFilter');
-const subjectCards = [...document.querySelectorAll('.subject-card')];
+const subjectsRoot = document.getElementById('subjectsRoot');
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fillFilters() {
+  const subjectNames = libraryData.map(s => s.name);
+  const years = [...new Set(libraryData.flatMap(s => s.sections.flatMap(sec => sec.entries.map(e => e.year))).filter(Boolean))];
+  subjectFilter.innerHTML = '<option value="">Tutte</option>' + subjectNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name.charAt(0) + name.slice(1).toLowerCase())}</option>`).join('');
+  yearFilter.innerHTML = '<option value="">Tutti</option>' + years.map(y => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join('');
+}
+
+function render() {
+  subjectsRoot.innerHTML = libraryData.map(subject => renderSubject(subject)).join('');
+  applyFilters();
+}
+
+function renderSubject(subject) {
+  const counts = {APP:0, ES:0, TEO:0};
+  let total = 0;
+  const sectionsHtml = subject.sections.map(section => {
+    const count = section.entries.length;
+    if (section.kind) counts[section.kind] += count;
+    total += count;
+    const entriesHtml = count ? `<div class="item-grid">${section.entries.map(renderEntry).join('')}</div>` : '<div class="empty-slot">Spazio pronto da riempire</div>';
+    return `<div class="section-block">
+      <div class="section-head"><h3>${escapeHtml(section.name)}</h3><span>${count}</span></div>
+      ${entriesHtml}
+    </div>`;
+  }).join('');
+
+  return `<details class="subject-card" ${total ? 'open' : ''} data-subject="${escapeHtml(subject.name)}">
+    <summary>
+      <div class="subject-title-wrap">
+        <span class="phi-mark" aria-hidden="true">Φ</span>
+        <div>
+          <div class="subject-title">${escapeHtml(subject.name)}</div>
+          <div class="subject-meta">${total} contenuti</div>
+        </div>
+      </div>
+      <div class="subject-mini">
+        <span>${counts.APP} APP</span>
+        <span>${counts.ES} ES</span>
+        <span>${counts.TEO} TEO</span>
+      </div>
+    </summary>
+    <div class="subject-content">${sectionsHtml}</div>
+  </details>`;
+}
+
+function renderEntry(entry) {
+  return `<a class="entry-card" href="${escapeHtml(entry.path)}" data-kind="${escapeHtml(entry.kind)}" data-year="${escapeHtml(entry.year)}" data-title="${escapeHtml(entry.title)}">
+    <div class="entry-top">
+      <span class="kind">${escapeHtml(entry.kind)}</span>
+      <span class="year">${escapeHtml(entry.year)}</span>
+    </div>
+    <div class="entry-title">${escapeHtml(entry.title)}</div>
+    <div class="entry-desc">${escapeHtml(entry.desc)}</div>
+  </a>`;
+}
 
 function applyFilters() {
   const q = search.value.trim().toLowerCase();
   const subject = subjectFilter.value;
   const kind = kindFilter.value;
   const year = yearFilter.value;
+  const subjectCards = [...document.querySelectorAll('.subject-card')];
 
   subjectCards.forEach(card => {
     const entries = [...card.querySelectorAll('.entry-card')];
@@ -557,17 +652,26 @@ function applyFilters() {
     });
 
     card.querySelectorAll('.section-block').forEach(section => {
-      const hasVisible = [...section.querySelectorAll('.entry-card')].some(el => !el.hidden);
+      const entryCards = [...section.querySelectorAll('.entry-card')];
+      const hasVisible = entryCards.some(el => !el.hidden);
       const empty = section.querySelector('.empty-slot');
-      section.hidden = !hasVisible && !empty;
-      if (empty) empty.hidden = hasVisible || q || subject || kind || year;
+      const hasEntries = entryCards.length > 0;
+      if (hasEntries) {
+        section.hidden = !hasVisible;
+      } else {
+        section.hidden = false;
+        if (empty) empty.hidden = !!(q || subject || kind || year);
+      }
     });
 
-    card.hidden = visible === 0 && (q || subject || kind || year);
+    const onlyEmptySections = entries.length === 0 && (!subject || matchesSubject) && !q && !kind && !year;
+    card.hidden = !(visible > 0 || onlyEmptySections);
     if ((q || subject || kind || year) && visible > 0) card.open = true;
   });
 }
 
+fillFilters();
+render();
 [search, subjectFilter, kindFilter, yearFilter].forEach(el => el.addEventListener('input', applyFilters));
 </script>
 </body>
