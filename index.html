@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biblioteca Digitale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600;800&display=swap');
+
+:root {
+  --bg1: #05060a;
+  --bg2: #0a0e17;
+  --bg3: #101624;
+  --vio: #8b5cf6;
+  --vio-glow: rgba(139, 92, 246, 0.5);
+  --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.4);
+  --sky: #0ea5e9;
+  --text: #f8fafc;
+  --glass: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow-x: hidden; background: var(--bg1); }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 50% -20%, rgba(139, 92, 246, 0.15), transparent 50%),
+    linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+}
+
+/* Canvas di sfondo astratto */
+#bg-curves {
+  position: fixed; inset: 0; z-index: 0; opacity: 0.4; pointer-events: none;
+}
+
+.page {
+  position: relative; z-index: 1;
+  max-width: 1400px; margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.top-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.title-group h1 {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #fff, var(--sky), var(--vio));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+}
+
+.header-logo { width: 140px; height: auto; opacity: 0.9; }
+
+/* Tree View Container */
+.tree-view {
+  display: flex; align-items: center; justify-content: center;
+  perspective: 1000px;
+}
+
+.node-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  height: 750px;
+}
+
+/* SVG Links Stile Cyberpunk */
+.links {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+
+.links path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1.5;
+}
+
+/* Effetto scorrimento luce sulle linee */
+.link-flow {
+  stroke: var(--vio);
+  stroke-width: 2;
+  stroke-dasharray: 10, 100;
+  stroke-dashoffset: 100;
+  animation: flow 4s linear infinite;
+  opacity: 0.6;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -100; }
+}
+
+/* Design dei Nodi */
+.node {
+  position: absolute;
+  width: 112px; height: 112px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 2;
+}
+
+/* Natura uguale agli altri */
+.node[data-subject="NATURA"] {
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.node:hover {
+  transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
+  border-color: var(--vio);
+  box-shadow: 0 0 30px var(--vio-glow);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.node span {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #fff;
+  padding: 0 10px;
+  transition: color 0.3s;
+}
+
+.node:hover span {
+  color: var(--sky);
+}
+
+/* Animazione fluttuante per i nodi */
+@keyframes float {
+  0%, 100% { transform: translate(-50%, -52%); }
+  50% { transform: translate(-50%, -48%); }
+}
+
+.node {
+  animation: float 4s ease-in-out infinite;
+  animation-delay: calc(var(--delay) * 1s);
+}
+
+@media (max-width: 768px) {
+  .node-stage { height: 900px; }
+  .node { width: 90px; height: 90px; }
+  .node span { font-size: 0.65rem; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-curves"></canvas>
+
+<div class="page">
+  <div class="top-header">
+    <div class="title-group">
+      <h1>Biblioteca</h1>
+    </div>
+    <img class="header-logo" src="logo.png" alt="Logo" />
+  </div>
+
+  <section class="tree-view">
+    <div class="node-stage" id="nodeStage">
+      <svg class="links" id="linksSvg"></svg>
+
+      <a class="node" style="--delay: 0" data-subject="LOGISTICA" href="Materie/Logistica.html"><span>Logistica</span></a>
+      <a class="node" style="--delay: 0.5" data-subject="MATEMATICA" href="Materie/Matematica.html"><span>Matematica</span></a>
+      <a class="node" style="--delay: 1.2" data-subject="ELETTROTECNICA" href="Materie/Elettrotecnica.html"><span>Elettrotecnica</span></a>
+      <a class="node" style="--delay: 0.8" data-subject="ARTE" href="Materie/Arte.html"><span>Arte</span></a>
+      <a class="node" style="--delay: 2.1" data-subject="SPORT" href="Materie/Sport.html"><span>Sport</span></a>
+      <a class="node" style="--delay: 1.5" data-subject="MECCANICA" href="Materie/Meccanica.html"><span>Meccanica</span></a>
+      <a class="node" style="--delay: 0.3" data-subject="CHIMICA" href="Materie/Chimica.html"><span>Chimica</span></a>
+      <a class="node" style="--delay: 1.8" data-subject="MUSICA" href="Materie/Musica.html"><span>Musica</span></a>
+      <a class="node" style="--delay: 0.9" data-subject="STATISTICA" href="Materie/Statistica.html"><span>Statistica</span></a>
+      <a class="node" style="--delay: 2.5" data-subject="FISICA" href="Materie/Fisica.html"><span>Fisica</span></a>
+      <a class="node" style="--delay: 0" data-subject="NATURA" href="Materie/Natura.html"><span>Natura</span></a>
+    </div>
+  </section>
+</div>
+
+<script>
+// SFONDO ANIMATO
+const bgCanvas = document.getElementById('bg-curves');
+const bgCtx = bgCanvas.getContext('2d');
+let bw, bh;
+function resizeBg(){
+  bw = bgCanvas.width = window.innerWidth;
+  bh = bgCanvas.height = window.innerHeight;
+}
+function drawBg(){
+  bgCtx.clearRect(0,0,bw,bh);
+  const t = Date.now() * 0.0005;
+  for(let i=0; i<6; i++){
+    bgCtx.beginPath();
+    bgCtx.strokeStyle = i % 2 === 0 ? 'rgba(139, 92, 246, 0.1)' : 'rgba(14, 165, 233, 0.1)';
+    bgCtx.lineWidth = 2;
+    for(let x=0; x<bw; x+=30){
+      const y = bh/2 + Math.sin(x*0.001 + t + i) * (100 + i*20);
+      if(x===0) bgCtx.moveTo(x,y); else bgCtx.lineTo(x,y);
+    }
+    bgCtx.stroke();
+  }
+  requestAnimationFrame(drawBg);
+}
+window.addEventListener('resize', resizeBg);
+resizeBg();
+drawBg();
+
+// LOGICA LAYOUT NODI
+const stage = document.getElementById('nodeStage');
+const svg = document.getElementById('linksSvg');
+const nodes = [...stage.querySelectorAll('.node')];
+
+function curvedPath(x1, y1, x2, y2, bend = 0.18) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const nx = -dy;
+  const ny = dx;
+  const len = Math.hypot(nx, ny) || 1;
+  const ox = (nx / len) * Math.hypot(dx, dy) * bend;
+  const oy = (ny / len) * Math.hypot(dx, dy) * bend;
+  const c1x = x1 + dx * 0.25 + ox * 0.45;
+  const c1y = y1 + dy * 0.25 + oy * 0.45;
+  const c2x = x1 + dx * 0.75 + ox * 0.65;
+  const c2y = y1 + dy * 0.75 + oy * 0.65;
+  return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+}
+
+function layoutNodes(){
+  const rect = stage.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  const small = window.innerWidth <= 768;
+  const rx = w * (small ? 0.34 : 0.38);
+  const ry = h * (small ? 0.29 : 0.35);
+
+  // Musica, Arte e Sport vicini nel cluster in basso
+  const pos = {
+    NATURA:         {x: cx, y: cy},
+    MATEMATICA:     {x: cx, y: cy - ry},
+    LOGISTICA:      {x: cx - rx, y: cy - ry * 0.5},
+    ELETTROTECNICA: {x: cx + rx, y: cy - ry * 0.5},
+    MECCANICA:      {x: cx - rx * 1.05, y: cy + ry * 0.12},
+    STATISTICA:     {x: cx + rx * 1.05, y: cy + ry * 0.12},
+    CHIMICA:        {x: cx - rx * 0.78, y: cy + ry * 0.78},
+    FISICA:         {x: cx + rx * 0.78, y: cy + ry * 0.78},
+    ARTE:           {x: cx - rx * 0.26, y: cy + ry * 1.02},
+    SPORT:          {x: cx, y: cy + ry * 1.18},
+    MUSICA:         {x: cx + rx * 0.26, y: cy + ry * 1.02},
+  };
+
+  nodes.forEach(node => {
+    const p = pos[node.dataset.subject];
+    if(p){
+      node.style.left = `${p.x}px`;
+      node.style.top = `${p.y}px`;
+      node.style.transform = 'translate(-50%, -50%)';
+    }
+  });
+
+  let paths = "";
+  const bends = {
+    MATEMATICA: 0.10,
+    LOGISTICA: -0.10,
+    ELETTROTECNICA: 0.10,
+    MECCANICA: -0.12,
+    STATISTICA: 0.12,
+    CHIMICA: -0.16,
+    FISICA: 0.16,
+    ARTE: -0.08,
+    SPORT: 0.00,
+    MUSICA: 0.08
+  };
+
+  Object.keys(pos).forEach(key => {
+    if(key !== "NATURA") {
+      const p = pos[key];
+      const d = curvedPath(cx, cy, p.x, p.y, bends[key] ?? 0.12);
+      paths += `<path d="${d}" />`;
+      paths += `<path d="${d}" class="link-flow" />`;
+    }
+  });
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = paths;
+}
+
+window.addEventListener('resize', layoutNodes);
+layoutNodes();
+</script>
+</body>
+</html>
