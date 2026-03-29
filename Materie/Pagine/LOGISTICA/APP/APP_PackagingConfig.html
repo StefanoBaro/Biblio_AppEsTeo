@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Logistica Pro 2D - Debordo & Teoria</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap');
+
+        :root {
+            --bg: #06030e;
+            --emerald: #00ff88;
+            --violet: #bc13fe;
+            --glass: rgba(20, 10, 35, 0.9);
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; 
+            font-family: 'Montserrat', sans-serif; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; overflow-x: hidden;
+        }
+
+        #bg-curves { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.4; }
+
+        .container {
+            width: 1100px; display: grid; grid-template-columns: 350px 1fr; gap: 25px;
+            background: var(--glass); backdrop-filter: blur(20px);
+            padding: 30px; border-radius: 24px; border: 1px solid rgba(188, 19, 254, 0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.7); margin: 20px;
+            position: relative; z-index: 1;
+        }
+
+        h1 { grid-column: 1/3; text-align: center; margin: 0 0 10px; color: var(--emerald); font-size: 1.8rem; }
+
+        .input-sidebar { display: flex; flex-direction: column; gap: 15px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px; }
+        .section-label { color: var(--violet); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .input-group { position: relative; }
+        .input-group label { position: absolute; top: -8px; left: 8px; font-size: 0.6rem; background: #140a23; padding: 0 4px; color: var(--emerald); }
+
+        input { 
+            width: 100%; padding: 12px; background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(188, 19, 254, 0.4); border-radius: 8px; 
+            color: white; font-family: 'Montserrat'; outline: none; box-sizing: border-box;
+        }
+
+        button {
+            padding: 16px; border: none; border-radius: 10px;
+            background: linear-gradient(135deg, var(--violet), #6e0dd0);
+            color: white; font-weight: 600; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; margin-top: 5px;
+        }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(188, 19, 254, 0.4); }
+        
+        button.info-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--emerald);
+            color: var(--emerald);
+            font-size: 0.7rem;
+        }
+
+        /* Modal / Overlay Teoria */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6, 3, 14, 0.95); z-index: 100;
+            display: none; justify-content: center; align-items: center;
+            padding: 40px; box-sizing: border-box;
+        }
+        .theory-card {
+            background: var(--glass); border: 1px solid var(--violet);
+            border-radius: 20px; padding: 40px; max-width: 800px;
+            max-height: 80vh; overflow-y: auto; position: relative;
+        }
+        .theory-card h2 { color: var(--emerald); border-bottom: 1px solid rgba(0, 255, 136, 0.3); padding-bottom: 10px; }
+        .theory-card p, .theory-card li { line-height: 1.6; font-size: 0.9rem; opacity: 0.9; }
+        .close-theory {
+            position: absolute; top: 20px; right: 20px;
+            color: var(--violet); cursor: pointer; font-weight: bold; font-size: 1.2rem;
+        }
+
+        .viz-area { display: flex; flex-direction: column; gap: 20px; }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; }
+        .stat-item { text-align: center; display: flex; flex-direction: column-reverse; }
+        .stat-item b { display: block; color: var(--emerald); font-size: 1.2rem; }
+        .stat-item span { font-size: 0.65rem; opacity: 0.7; text-transform: uppercase; margin-bottom: 4px; }
+
+        .canvas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .canvas-container { background: #000; border-radius: 12px; padding: 15px; border: 1px solid rgba(0,255,136,0.1); text-align: center; }
+        canvas.view-2d { background: #050505; width: 100%; height: 280px; border-radius: 4px; margin-top: 10px; }
+        .view-label { font-size: 0.7rem; color: var(--emerald); text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-curves"></canvas>
+
+<div id="theoryOverlay" class="overlay">
+    <div class="theory-card">
+        <span class="close-theory" onclick="toggleTheory()">✖ CLOSE</span>
+        <h2>Fondamenti Teorici dell'Ottimizzazione</h2>
+        <p>L'applicazione utilizza un approccio combinato di geometria computazionale e ricerca euristica per risolvere il problema del <i>Bin Packing</i> bidimensionale applicato alla logistica.</p>
+        
+        <h3>1. Orientamento Spaziale ($R^3$)</h3>
+        <p>Il sistema analizza le 3 rotazioni principali del pacco unitario. Decide quale dimensione ($x, y$ o $z$) fungerà da altezza per massimizzare il numero di piani verticali disponibili nel contenitore.</p>
+        
+        <h3>2. Algoritmo di Guillotine Cut (2D)</h3>
+        <p>Per ogni strato, l'algoritmo non si limita a una divisione lineare. Esso simula uno "split" (taglio a ghigliottina) dell'area totale in due sotto-sezioni:</p>
+        <ul>
+            <li><b>Blocco A:</b> Riempimento con pacchi in orientamento standard.</li>
+            <li><b>Blocco B:</b> Riempimento con pacchi ruotati di 90° per sfruttare i residui di spazio (incastro).</li>
+        </ul>
+
+        <h3>3. Gestione del Debordo (Overhang)</h3>
+        <p>Il debordo percentuale aumenta virtualmente l'area di calcolo ($L \times (1 + \%X)$). Questo è fondamentale nel carico su pallet dove la merce può sporgere leggermente dai bordi fisici per ottimizzare il volume del mezzo di trasporto, a patto di mantenere la stabilità strutturale.</p>
+    </div>
+</div>
+
+<div class="container">
+    <h1>Smart Logistic Optimizer <small style="font-size: 0.8rem; opacity: 0.6;">(mm)</small></h1>
+
+    <div class="input-sidebar">
+        <div>
+            <span class="section-label">Contenitore (mm)</span>
+            <div class="grid-3">
+                <div class="input-group"><label>X</label><input type="number" id="cx" value="1000"></div>
+                <div class="input-group"><label>Y</label><input type="number" id="cy" value="1000"></div>
+                <div class="input-group"><label>Z</label><input type="number" id="cz" value="2200"></div>
+            </div>
+        </div>
+        <div>
+            <span class="section-label">Debordo Ammesso (%)</span>
+            <div class="grid-2">
+                <div class="input-group"><label>LATO X %</label><input type="number" id="overX" value="0"></div>
+                <div class="input-group"><label>LATO Y %</label><input type="number" id="overY" value="0"></div>
+            </div>
+        </div>
+        <div>
+            <span class="section-label">Pacco Unitario (mm)</span>
+            <div class="grid-3">
+                <div class="input-group"><label>X</label><input type="number" id="px" value="300"></div>
+                <div class="input-group"><label>Y</label><input type="number" id="py" value="340"></div>
+                <div class="input-group"><label>Z</label><input type="number" id="pz" value="220"></div>
+            </div>
+        </div>
+        <div>
+            <span class="section-label">Peso per unità (kg)</span>
+            <input type="number" id="w_unit" value="5">
+        </div>
+        <button onclick="optimize()">Calcola Ottimizzazione</button>
+        <button class="info-btn" onclick="toggleTheory()">📖 Teoria e Logica</button>
+    </div>
+
+    <div class="viz-area">
+        <div class="stats-bar">
+            <div class="stat-item"><b><span id="r-count">0</span></b><span>Totale Pacchi</span></div>
+            <div class="stat-item"><b><span id="r-dist">--</span></b><span>Schema Strato</span></div>
+            <div class="stat-item"><b><span id="r-weight">0</span></b><span>Peso (kg)</span></div>
+            <div class="stat-item"><b><span id="r-vol">0%</span></b><span>Efficienza</span></div>
+        </div>
+
+        <div class="canvas-grid">
+            <div class="canvas-container">
+                <span class="view-label">Vista dall'alto (Incastro + Debordo)</span>
+                <canvas id="planView" class="view-2d"></canvas>
+            </div>
+            <div class="canvas-container">
+                <span class="view-label">Vista Fronte (Profilo XZ)</span>
+                <canvas id="frontView" class="view-2d"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleTheory() {
+        const overlay = document.getElementById('theoryOverlay');
+        overlay.style.display = (overlay.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // --- Sfondo Animato ---
+    const bgCanvas = document.getElementById('bg-curves');
+    const bgCtx = bgCanvas.getContext('2d');
+    let bw, bh;
+    function resizeBg() { bw = bgCanvas.width = window.innerWidth; bh = bgCanvas.height = window.innerHeight; }
+    function drawBg() {
+        bgCtx.clearRect(0, 0, bw, bh);
+        bgCtx.strokeStyle = '#bc13fe';
+        bgCtx.lineWidth = 1;
+        const t = Date.now() * 0.0008;
+        for(let i=0; i<8; i++) {
+            bgCtx.beginPath();
+            for(let x=0; x<bw; x+=20) {
+                let y = bh/2 + Math.sin(x*0.002 + t + i) * 80;
+                if(x===0) bgCtx.moveTo(x, y); else bgCtx.lineTo(x, y);
+            }
+            bgCtx.stroke();
+        }
+        requestAnimationFrame(drawBg);
+    }
+    window.addEventListener('resize', resizeBg);
+    resizeBg(); drawBg();
+
+    // --- LOGICA DI INCASTRO ---
+    function solve2DPacking(W, D, w, d) {
+        let best = { count: 0, layout: [] };
+        for (let i = 0; i <= Math.floor(W / w); i++) {
+            let col1_w = i * w;
+            let col2_w = W - col1_w;
+            let n1 = i * Math.floor(D / d);
+            let n2 = Math.floor(col2_w / d) * Math.floor(D / w);
+            if (n1 + n2 > best.count) {
+                best.count = n1 + n2;
+                best.layout = [
+                    { x: 0, y: 0, w: col1_w, d: D, pw: w, pd: d, countX: i, countY: Math.floor(D/d) },
+                    { x: col1_w, y: 0, w: col2_w, d: D, pw: d, pd: w, countX: Math.floor(col2_w/d), countY: Math.floor(D/w) }
+                ];
+            }
+        }
+        for (let j = 0; j <= Math.floor(D / d); j++) {
+            let row1_d = j * d;
+            let row2_d = D - row1_d;
+            let n1 = Math.floor(W / w) * j;
+            let n2 = Math.floor(W / d) * Math.floor(row2_d / w);
+            if (n1 + n2 > best.count) {
+                best.count = n1 + n2;
+                best.layout = [
+                    { x: 0, y: 0, w: W, d: row1_d, pw: w, pd: d, countX: Math.floor(W/w), countY: j },
+                    { x: 0, y: row1_d, w: W, d: row2_d, pw: d, pd: w, countX: Math.floor(W/d), countY: Math.floor(row2_d/w) }
+                ];
+            }
+        }
+        return best;
+    }
+
+    function optimize() {
+        const C_NOMINAL = [parseInt(document.getElementById('cx').value), parseInt(document.getElementById('cy').value), parseInt(document.getElementById('cz').value)];
+        const overX = parseFloat(document.getElementById('overX').value) / 100;
+        const overY = parseFloat(document.getElementById('overY').value) / 100;
+        const C_UTILE = [C_NOMINAL[0] * (1 + overX), C_NOMINAL[1] * (1 + overY), C_NOMINAL[2]];
+        const P = [parseInt(document.getElementById('px').value), parseInt(document.getElementById('py').value), parseInt(document.getElementById('pz').value)];
+        const wu = parseFloat(document.getElementById('w_unit').value);
+
+        const orientations = [{h: P[2], w: P[0], d: P[1]}, {h: P[0], w: P[2], d: P[1]}, {h: P[1], w: P[0], d: P[2]}];
+        let bestResult = { total: 0 };
+
+        orientations.forEach(o => {
+            let piani = Math.floor(C_UTILE[2] / o.h);
+            if (piani > 0) {
+                let pack2D = solve2DPacking(C_UTILE[0], C_UTILE[1], o.w, o.d);
+                let total = piani * pack2D.count;
+                if (total > bestResult.total) {
+                    bestResult = { total, piani, perPiano: pack2D.count, layout: pack2D.layout, o, C: C_NOMINAL, C_UTILE };
+                }
+            }
+        });
+
+        document.getElementById('r-count').innerText = bestResult.total;
+        document.getElementById('r-dist').innerText = `${bestResult.perPiano} pz x ${bestResult.piani} piani`;
+        document.getElementById('r-weight').innerText = (bestResult.total * wu).toLocaleString();
+        const pVol = (P[0] * P[1] * P[2]) * bestResult.total;
+        document.getElementById('r-vol').innerText = ((pVol / (C_NOMINAL[0]*C_NOMINAL[1]*C_NOMINAL[2])) * 100).toFixed(1) + "%";
+
+        drawPlan('planView', bestResult);
+        drawFront('frontView', bestResult);
+    }
+
+    function drawPlan(id, result) {
+        const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
+        cvs.width = cvs.clientWidth * 2; cvs.height = cvs.clientHeight * 2;
+        const scale = Math.min((cvs.width-80)/result.C_UTILE[0], (cvs.height-80)/result.C_UTILE[1]);
+        const offX = (cvs.width - result.C[0]*scale)/2; const offY = (cvs.height - result.C[1]*scale)/2;
+        ctx.strokeStyle = '#bc13fe'; ctx.lineWidth = 4; ctx.strokeRect(offX, offY, result.C[0]*scale, result.C[1]*scale);
+        result.layout.forEach(block => {
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.15)'; ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1;
+            for(let i=0; i<block.countX; i++) {
+                for(let j=0; j<block.countY; j++) {
+                    ctx.fillRect(offX + (block.x + i*block.pw)*scale, offY + (block.y + j*block.pd)*scale, block.pw*scale, block.pd*scale);
+                    ctx.strokeRect(offX + (block.x + i*block.pw)*scale, offY + (block.y + j*block.pd)*scale, block.pw*scale, block.pd*scale);
+                }
+            }
+        });
+    }
+
+    function drawFront(id, result) {
+        const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
+        cvs.width = cvs.clientWidth * 2; cvs.height = cvs.clientHeight * 2;
+        const scale = Math.min((cvs.width-80)/result.C_UTILE[0], (cvs.height-80)/result.C[2]);
+        const offX = (cvs.width - result.C[0]*scale)/2; const offY = (cvs.height - result.C[2]*scale)/2;
+        ctx.strokeStyle = '#bc13fe'; ctx.lineWidth = 4; ctx.strokeRect(offX, offY, result.C[0]*scale, result.C[2]*scale);
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.2)'; ctx.strokeStyle = '#00ff88';
+        for(let z=0; z<result.piani; z++) {
+            ctx.fillRect(offX, offY + (z*result.o.h)*scale, result.C[0]*scale, result.o.h*scale);
+            ctx.strokeRect(offX, offY + (z*result.o.h)*scale, result.C[0]*scale, result.o.h*scale);
+        }
+    }
+
+    window.onload = optimize;
+</script>
+</body>
+</html>
