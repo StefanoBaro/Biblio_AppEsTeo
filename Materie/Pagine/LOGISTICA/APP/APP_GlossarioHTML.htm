@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossario Unificato Logistica e Trasporti</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --accent-color: #58a6ff;
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+            --border-color: #30363d;
+            --hover-bg: #1c2128;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { max-width: 1100px; width: 100%; }
+
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .subtitle { color: var(--text-muted); font-size: 0.9em; }
+
+        /* Barra di ricerca */
+        .search-container { position: sticky; top: 10px; z-index: 100; margin-bottom: 30px; }
+        .search-box {
+            width: 100%;
+            padding: 15px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1em;
+            outline: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .search-box:focus { border-color: var(--accent-color); }
+
+        /* Accordion Style */
+        .accordion {
+            background-color: var(--card-bg);
+            color: var(--accent-color);
+            cursor: pointer;
+            padding: 20px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            outline: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: 0.4s;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active, .accordion:hover { background-color: var(--hover-bg); }
+        .accordion:after { content: '\002B'; font-size: 1.5em; }
+        .active:after { content: "\2212"; }
+
+        .panel {
+            padding: 0 15px;
+            background-color: var(--bg-color);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Items */
+        .item {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+        }
+        .item:last-child { border-bottom: none; }
+        .term { color: var(--accent-color); font-weight: bold; font-size: 1.1em; }
+        .desc { color: var(--text-main); line-height: 1.6; font-size: 0.95em; }
+
+        #noResults { display: none; text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.2em; }
+
+        @media (max-width: 768px) {
+            .item { grid-template-columns: 1fr; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Glossario Logistica & Trasporti</h1>
+        <p class="subtitle">Database unificato e ordinato per lo studio</p>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="search" class="search-box" placeholder="Cerca un termine (es. ABC, VMI, Lead Time...)" onkeyup="filterSearch()">
+    </div>
+
+    <button class="accordion">Sezione A - B</button>
+    <div class="panel">
+        <div class="item">
+            <span class="term">ABC</span>
+            <span class="desc">Analisi proposta da Vilfredo Pareto (legge 80/20) per la classificazione di articoli, clienti o fornitori. Indica che una piccola parte degli articoli genera la maggior parte del valore.</span>
+        </div>
+        <div class="item">
+            <span class="term">ADR</span>
+            <span class="desc">Accordo europeo relativo ai trasporti internazionali su strada di merci pericolose.</span>
+        </div>
+        <div class="item">
+            <span class="term">AGV (Automated Guided Vehicle)</span>
+            <span class="desc">Veicolo senza guidatore a guida automatica che segue percorsi definiti per il carico e lo scarico dei pezzi.</span>
+        </div>
+        <div class="item">
+            <span class="term">AS/RS</span>
+            <span class="desc">Automated Storage and Retrieval System: sistema automatizzato di stoccaggio e prelievo della merce.</span>
+        </div>
+        <div class="item">
+            <span class="term">Auto ID</span>
+            <span class="desc">Identificazione automatica (es. barcode) per inserire dati in un computer senza intervento manuale.</span>
+        </div>
+        <div class="item">
+            <span class="term">Autoarticolato</span>
+            <span class="desc">Complesso formato da trattore e semirimorchio (lunghezza max 16,5m).</span>
+        </div>
+        <div class="item">
+            <span class="term">Autotrasportatore</span>
+            <span class="desc">Operatore che offre disponibilità di mezzi per il trasporto merci per conto terzi.</span>
+        </div>
+        <div class="item">
+            <span class="term">Autotreno</span>
+            <span class="desc">Complesso formato da motrice (autocarro) e rimorchio (lunghezza max 18,75m).</span>
+        </div>
+        <div class="item">
+            <span class="term">Baia di Carico</span>
+            <span class="desc">Zona del magazzino attrezzata per carico/scarico automezzi.</span>
+        </div>
+    </div>
+
+    <button class="accordion">Sezione C - F</button>
+    <div class="panel">
+        <div class="item">
+            <span class="term">Cassa Mobile (Swap Body)</span>
+            <span class="desc">Unità di carico intermodale dotata di sostegni, ottimizzata per strada e ferrovia.</span>
+        </div>
+        <div class="item">
+            <span class="term">Cross Docking</span>
+            <span class="desc">Spostamento immediato della merce dalla ricezione alla spedizione senza stoccaggio a terra.</span>
+        </div>
+        <div class="item">
+            <span class="term">Demand Plan</span>
+            <span class="desc">Piano della domanda futura espresso in volumi di vendita.</span>
+        </div>
+        <div class="item">
+            <span class="term">Distribution Network</span>
+            <span class="desc">Rete composta da impianti e magazzini collegati per la distribuzione.</span>
+        </div>
+        <div class="item">
+            <span class="term">Forecast (Previsione)</span>
+            <span class="desc">Stima della domanda futura basata su dati storici o modelli matematici.</span>
+        </div>
+    </div>
+
+    <button class="accordion">Sezione G - L</button>
+    <div class="panel">
+        <div class="item">
+            <span class="term">GHA (Ground Handling Agent)</span>
+            <span class="desc">Società che fornisce servizi a terra negli aeroporti (carico/scarico, handling).</span>
+        </div>
+        <div class="item">
+            <span class="term">GSA (General Sales Agent)</span>
+            <span class="desc">Rappresentante commerciale di una compagnia aerea in una specifica area.</span>
+        </div>
+        <div class="item">
+            <span class="term">IF (Impresa Ferroviaria)</span>
+            <span class="desc">Soggetto che gestisce la locomotiva e il personale per la tratta ferroviaria.</span>
+        </div>
+        <div class="item">
+            <span class="term">Lead Time</span>
+            <span class="desc">Tempo di risposta: intervallo tra l'ordine e l'effettiva disponibilità della merce.</span>
+        </div>
+        <div class="item">
+            <span class="term">Lotto Economico d'Acquisto</span>
+            <span class="desc">Quantità ottimale da ordinare per minimizzare i costi di gestione.</span>
+        </div>
+    </div>
+
+    <button class="accordion">Sezione M - S</button>
+    <div class="panel">
+        <div class="item">
+            <span class="term">MTO</span>
+            <span class="desc">Multimodal Transport Operator: colui che organizza e si assume la responsabilità dell'intera catena di trasporto.</span>
+        </div>
+        <div class="item">
+            <span class="term">NVOCC</span>
+            <span class="desc">Non Vessel Operating Common Carrier: vettore marittimo che non possiede navi proprie.</span>
+        </div>
+        <div class="item">
+            <span class="term">Padroncino</span>
+            <span class="desc">Autotrasportatore autonomo con proprio mezzo che lavora per conto terzi.</span>
+        </div>
+        <div class="item">
+            <span class="term">Punto di Riordino</span>
+            <span class="desc">Livello di scorta al quale deve essere emesso un nuovo ordine.</span>
+        </div>
+        <div class="item">
+            <span class="term">Scorta di Sicurezza</span>
+            <span class="desc">Scorta extra per proteggersi dal rischio di stock-out.</span>
+        </div>
+        <div class="item">
+            <span class="term">Spedizioniere</span>
+            <span class="desc">Intermediario che organizza la consegna delle merci affidandosi a diversi vettori.</span>
+        </div>
+        <div class="item">
+            <span class="term">Supply Plan</span>
+            <span class="desc">Insieme dei piani di fornitura e produzione basati sul piano di domanda.</span>
+        </div>
+    </div>
+
+    <button class="accordion">Sezione T - W</button>
+    <div class="panel">
+        <div class="item">
+            <span class="term">TEU (Twenty-foot Equivalent Unit)</span>
+            <span class="desc">Unità standard equivalente a un container da 20 piedi.</span>
+        </div>
+        <div class="item">
+            <span class="term">Trasportatore</span>
+            <span class="desc">Azienda che gestisce internamente l'intero viaggio della merce con propria flotta.</span>
+        </div>
+        <div class="item">
+            <span class="term">Trasporto Intermodale</span>
+            <span class="desc">Trasferimento di merci con più modalità usando la stessa unità di carico senza rottura del carico.</span>
+        </div>
+        <div class="item">
+            <span class="term">Trend</span>
+            <span class="desc">Tendenza di crescita o decrescita sistematica delle vendite nel tempo.</span>
+        </div>
+        <div class="item">
+            <span class="term">Underforecasting</span>
+            <span class="desc">Sottostima della domanda futura, con rischio di rottura di stock.</span>
+        </div>
+        <div class="item">
+            <span class="term">UTI (Unità di Trasporto Intermodale)</span>
+            <span class="desc">Container, semirimorchi o casse mobili utilizzate nell'intermodalità.</span>
+        </div>
+        <div class="item">
+            <span class="term">VMI (Vendor Managed Inventory)</span>
+            <span class="desc">Metodo in cui il fornitore gestisce i rifornimenti al magazzino del cliente in base alla domanda.</span>
+        </div>
+        <div class="item">
+            <span class="term">WMS (Warehouse Management System)</span>
+            <span class="desc">Sistema informatico integrato per la gestione operativa del magazzino.</span>
+        </div>
+    </div>
+
+    <div id="noResults">Nessun termine trovato. Prova con una parola diversa.</div>
+</div>
+
+<script>
+    // Gestione Accordion
+    var acc = document.getElementsByClassName("accordion");
+    for (var i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            } 
+        });
+    }
+
+    // Gestione Ricerca
+    function filterSearch() {
+        var input = document.getElementById('search').value.toLowerCase();
+        var items = document.getElementsByClassName('item');
+        var anyFound = false;
+
+        for (var i = 0; i < items.length; i++) {
+            var text = items[i].innerText.toLowerCase();
+            if (text.includes(input)) {
+                items[i].style.display = "grid";
+                anyFound = true;
+                // Apri automaticamente il pannello se si sta cercando attivamente
+                if (input.length > 1) {
+                    var panel = items[i].parentElement;
+                    panel.style.maxHeight = "2000px";
+                    panel.previousElementSibling.classList.add("active");
+                }
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+
+        // Mostra messaggio se non ci sono risultati
+        document.getElementById('noResults').style.display = anyFound ? "none" : "block";
+    }
+</script>
+
+</body>
+</html>
