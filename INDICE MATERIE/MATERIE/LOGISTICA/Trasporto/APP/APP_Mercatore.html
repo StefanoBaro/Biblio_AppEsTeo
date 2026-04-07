@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Mercator Theory Explained</title>
+    <style>
+        body { margin: 0; background: #0a0e14; color: #64ffda; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; }
+        canvas { background: #0d1117; border: 1px solid #1f6feb; box-shadow: 0 0 30px rgba(100,255,218,0.1); margin-top: 20px; }
+        .math-box { width: 800px; padding: 20px; background: #161b22; margin-top: 20px; border-radius: 8px; border-left: 5px solid #64ffda; }
+        code { color: #f1c40f; }
+        b { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-top:30px;">DIAGRAMMA DI PROIEZIONE CILINDRICA CONFORME</h2>
+    <canvas id="theoryCanvas" width="800" height="500"></canvas>
+
+    <div class="math-box">
+        <h3>La Formula Segreta</h3>
+        <p>Perché un grado a Rotterdam (51°N) occupa più pixel di un grado a Singapore (1°N)?</p>
+        <p>Mentre la coordinata <b>X (Longitudine)</b> è lineare:</p>
+        <code>x = (lon + 180) * (width / 360)</code>
+        
+        <p>La coordinata <b>Y (Latitudine)</b> deve essere corretta logaritmicamente per preservare gli angoli:</p>
+        <code>y = ln( tan(π/4 + lat/2) )</code>
+        <p>Questa formula "stira" lo spazio tra i paralleli per compensare il fatto che i meridiani, sulla mappa, non convergono mai verso i poli.</p>
+    </div>
+
+<script>
+    const canvas = document.getElementById('theoryCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function draw() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const midY = h / 2;
+
+        // Disegno Griglia di confronto
+        ctx.strokeStyle = "#1f6feb33";
+        for(let i=0; i<=w; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); }
+        
+        // Disegno Equatore
+        ctx.strokeStyle = "#64ffda";
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(w, midY); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#64ffda";
+        ctx.fillText("EQUATORE (0°)", 10, midY - 10);
+
+        // Funzione Mercatore Pura per il diagramma
+        function getMercatorY(lat) {
+            let latRad = lat * Math.PI / 180;
+            // Formula di Mercatore: ln(tan(pi/4 + lat/2))
+            let mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
+            // Scaliamo il risultato per il canvas
+            return midY - (w / (2 * Math.PI)) * mercN;
+        }
+
+        // Disegno i paralleli ogni 10 gradi per mostrare lo "stretching"
+        for(let lat = -80; lat <= 80; lat += 10) {
+            let y = getMercatorY(lat);
+            ctx.strokeStyle = lat === 0 ? "#64ffda" : "#1f6feb66";
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            ctx.fillStyle = "#8892b0";
+            if (lat % 20 === 0) ctx.fillText(lat + "°N", w - 40, y - 5);
+        }
+
+        // ESEMPIO ROTTA: Genova (44N) -> Rotterdam (51N)
+        const genova = { lat: 44.4, lon: 8.9, n: "Genova" };
+        const rotterdam = { lat: 51.9, lon: 4.4, n: "Rotterdam" };
+
+        function drawPoint(p, color) {
+            let x = (p.lon + 20) * 10; // Zoom locale per l'esempio
+            let y = getMercatorY(p.lat);
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillText(p.n + " (" + p.lat + "°)", x + 10, y + 5);
+            return {x, y};
+        }
+
+        ctx.translate(200, 0); // Spostiamo l'esempio al centro
+        let p1 = drawPoint(genova, "#f1c40f");
+        let p2 = drawPoint(rotterdam, "#f1c40f");
+
+        // Linea della rotta (Loxodrome)
+        ctx.strokeStyle = "#fff";
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        
+        // Annotazione
+        ctx.fillStyle = "#fff";
+        ctx.font = "12px Arial";
+        ctx.fillText("Rotta a prua costante (Lossodromia)", (p1.x + p2.x)/2 + 20, (p1.y + p2.y)/2);
+    }
+
+    draw();
+</script>
+</body>
+</html>
