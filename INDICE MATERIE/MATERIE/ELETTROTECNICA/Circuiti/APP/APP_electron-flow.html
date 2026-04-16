@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Electron Flow</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#00f5ff;--bg:#060612;--panel:#0a0a1a;--border:rgba(255,255,255,0.07)}
+body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:'Courier New',monospace;color:#fff}
+
+#panel{width:220px;min-width:220px;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:14px;padding:14px;overflow-y:auto}
+#panel::-webkit-scrollbar{width:3px}
+#panel::-webkit-scrollbar-thumb{background:#1a1a3a;border-radius:2px}
+
+.logo{text-align:center;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.logo h1{font-size:13px;letter-spacing:3px;color:var(--accent)}
+.logo p{font-size:9px;color:#333;margin-top:3px;letter-spacing:1px}
+
+.lbl{font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+
+.seg-btns{display:flex;flex-wrap:wrap;gap:4px}
+.seg-btn{flex:1;min-width:60px;padding:5px 4px;background:transparent;border:1px solid #1a1a2e;
+  color:#555;border-radius:4px;cursor:pointer;font-size:10px;font-family:monospace;transition:all .15s;text-align:center}
+.seg-btn:hover{border-color:#333;color:#888}
+.seg-btn.active{font-weight:bold}
+
+.slider-row{margin-bottom:10px}
+.slider-meta{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-bottom:3px}
+.slider-meta b{color:#ccc;font-weight:normal}
+input[type=range]{width:100%;cursor:pointer;accent-color:var(--accent)}
+
+.ctrl-btn{width:100%;padding:8px 0;background:transparent;border:1px solid #222;
+  color:#555;border-radius:4px;cursor:pointer;font-size:11px;font-family:monospace;transition:all .15s}
+.ctrl-btn:hover{border-color:#444;color:#aaa}
+.ctrl-btn.on{background:rgba(0,245,255,.08);border-color:var(--accent);color:var(--accent)}
+
+.info-box{background:rgba(255,255,255,.02);border:1px solid #0d0d22;border-radius:6px;padding:10px;font-size:9px;line-height:1.8;color:#444}
+.info-box span{color:#aaa}
+
+#viewport{flex:1;position:relative;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+
+#hud{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.6);
+  padding:6px 14px;border-radius:6px;border:1px solid #0d0d22;font-size:11px;color:var(--accent);pointer-events:none}
+#stats{position:absolute;bottom:12px;left:14px;background:rgba(0,0,0,.4);
+  padding:5px 10px;border-radius:5px;font-size:9px;color:#333;pointer-events:none;line-height:1.9}
+
+.divider{border:none;border-top:1px solid var(--border);margin:0}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="logo"><h1>ELECTRON FLOW</h1><p>Circuit Particle Sim</p></div>
+
+  <div>
+    <div class="lbl">Circuit Type</div>
+    <div class="seg-btns">
+      <button class="seg-btn active" data-c="series">Series</button>
+      <button class="seg-btn" data-c="parallel">Parallel</button>
+      <button class="seg-btn" data-c="rc">RC Loop</button>
+      <button class="seg-btn" data-c="bridge">Bridge</button>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div>
+    <div class="lbl">Parameters</div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Voltage (V)</span><b id="v-volt">12.0</b></div>
+      <input type="range" id="s-volt" min="1" max="24" step="0.5" value="12">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Resistance (Ω)</span><b id="v-res">4.0</b></div>
+      <input type="range" id="s-res" min="1" max="20" step="0.5" value="4">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Capacitance</span><b id="v-cap">1.00</b></div>
+      <input type="range" id="s-cap" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Electron Count</span><b id="v-num">120</b></div>
+      <input type="range" id="s-num" min="30" max="300" step="10" value="120">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Particle Size</span><b id="v-ps">2.5</b></div>
+      <input type="range" id="s-ps" min="1" max="6" step="0.5" value="2.5">
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div>
+    <div class="lbl">Render Style</div>
+    <div class="seg-btns">
+      <button class="seg-btn active" data-s="glow">Glow</button>
+      <button class="seg-btn" data-s="dot">Dot</button>
+      <button class="seg-btn" data-s="trail">Trail</button>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <button class="ctrl-btn on" id="btn-anim">⏸ PAUSE</button>
+  <button class="ctrl-btn" id="btn-reverse">⇄ REVERSE</button>
+  <button class="ctrl-btn" id="btn-reset">↺ RESET</button>
+
+  <div class="info-box" id="infobox">
+    <span>Current (I)</span><br>
+    I = V / R = <span id="info-i">3.00</span> A<br>
+    Power: <span id="info-p">36.0</span> W<br>
+    τ (RC): <span id="info-tau">4.00</span> s
+  </div>
+</div>
+
+<div id="viewport">
+  <canvas id="cv"></canvas>
+  <div id="hud">Series Circuit · 12V</div>
+  <div id="stats"></div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+// ─── STATE ──────────────────────────────────────────────────────
+let animating = true, reversed = false;
+let voltage = 12, resistance = 4, capacitance = 1, nElec = 120, pSize = 2.5;
+let circuitType = 'series', renderStyle = 'glow';
+let t = 0, fps = 0, fpsCount = 0, fpsTime = 0, lastTs = 0;
+
+// ─── CIRCUIT PATHS ──────────────────────────────────────────────
+// Each path is an array of [x,y] in normalized [0..1] coords
+// Components: { type:'resistor'|'capacitor'|'battery'|'wire'|'node', t:0..1, path:idx }
+
+let W, H, paths, components;
+
+function buildCircuit(type) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const mx = w * 0.5, my = h * 0.5;
+  const pw = w * 0.34, ph = h * 0.32;
+
+  if (type === 'series') {
+    // Single loop rectangle
+    const pts = [
+      [mx - pw, my - ph], [mx + pw, my - ph],
+      [mx + pw, my + ph], [mx - pw, my + ph],
+    ];
+    paths = [buildLoop(pts)];
+    components = [
+      { type:'battery',   path:0, t:0.02,  label:'12V' },
+      { type:'resistor',  path:0, t:0.28,  label:'R₁' },
+      { type:'resistor',  path:0, t:0.70,  label:'R₂' },
+    ];
+  } else if (type === 'parallel') {
+    const L = mx - pw, R = mx + pw, T = my - ph, B = my + ph;
+    const M = my;
+    // outer loop + inner divider
+    const outer = buildLoop([[L,T],[R,T],[R,B],[L,B]]);
+    const inner = buildSegment([[R,T],[R,M],[L,M],[L,T]]); // middle branch
+    paths = [outer, inner];
+    components = [
+      { type:'battery',  path:0, t:0.02,  label:'12V' },
+      { type:'resistor', path:0, t:0.27,  label:'R₁' },
+      { type:'resistor', path:0, t:0.75,  label:'R₃' },
+      { type:'resistor', path:1, t:0.50,  label:'R₂' },
+    ];
+  } else if (type === 'rc') {
+    const pts = [
+      [mx - pw, my - ph], [mx + pw, my - ph],
+      [mx + pw, my + ph], [mx - pw, my + ph],
+    ];
+    paths = [buildLoop(pts)];
+    components = [
+      { type:'battery',    path:0, t:0.02,  label:'V' },
+      { type:'resistor',   path:0, t:0.28,  label:'R' },
+      { type:'capacitor',  path:0, t:0.72,  label:'C' },
+    ];
+  } else if (type === 'bridge') {
+    // Wheatstone bridge
+    const cx = mx, cy = my;
+    const r = Math.min(pw, ph) * 1.0;
+    // 5 nodes: top, right, bottom, left, center-right
+    const T2 = [cx, cy - r];
+    const Ri = [cx + r, cy];
+    const Bo = [cx, cy + r];
+    const Le = [cx - r, cy];
+    // 4 arms + galvanometer middle
+    paths = [
+      buildSegment([Le, T2]),
+      buildSegment([T2, Ri]),
+      buildSegment([Le, Bo]),
+      buildSegment([Bo, Ri]),
+      buildSegment([T2, Bo]), // galvanometer
+    ];
+    // battery on external
+    const bat1 = buildSegment([[Le[0]-40, Le[1]], Le]);
+    const bat2 = buildSegment([Ri, [Ri[0]+40, Ri[1]]]);
+    paths.push(bat1, bat2);
+    components = [
+      { type:'resistor',   path:0, t:.5, label:'R₁' },
+      { type:'resistor',   path:1, t:.5, label:'R₂' },
+      { type:'resistor',   path:2, t:.5, label:'R₃' },
+      { type:'resistor',   path:3, t:.5, label:'R₄' },
+      { type:'galvo',      path:4, t:.5, label:'G' },
+      { type:'battery',    path:5, t:.5, label:'V' },
+    ];
+  }
+}
+
+function buildLoop(corners) {
+  const pts = [];
+  for (let i = 0; i < corners.length; i++) {
+    const a = corners[i], b = corners[(i+1)%corners.length];
+    const steps = 40;
+    for (let s = 0; s < steps; s++) {
+      const k = s/steps;
+      pts.push([a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k]);
+    }
+  }
+  return pts;
+}
+
+function buildSegment(corners) {
+  const pts = [];
+  for (let i = 0; i < corners.length-1; i++) {
+    const a = corners[i], b = corners[i+1];
+    const steps = 40;
+    for (let s = 0; s < steps; s++) {
+      const k = s/steps;
+      pts.push([a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k]);
+    }
+  }
+  pts.push(corners[corners.length-1]);
+  return pts;
+}
+
+function getPathPoint(path, t01) {
+  const pts = paths[path];
+  if (!pts || pts.length < 2) return [0,0];
+  const idx = ((t01 % 1) + 1) % 1;
+  const raw = idx * (pts.length-1);
+  const lo = Math.floor(raw), hi = Math.min(lo+1, pts.length-1);
+  const f = raw - lo;
+  return [
+    pts[lo][0]*(1-f) + pts[hi][0]*f,
+    pts[lo][1]*(1-f) + pts[hi][1]*f
+  ];
+}
+
+// ─── ELECTRONS ──────────────────────────────────────────────────
+let electrons = [];
+
+function initElectrons() {
+  electrons = [];
+  for (let i = 0; i < nElec; i++) {
+    const pIdx = paths ? Math.floor(Math.random() * paths.length) : 0;
+    electrons.push({
+      path: pIdx,
+      t: Math.random(),
+      speed: 0.0008 + Math.random() * 0.0006,
+      phase: Math.random() * Math.PI * 2,
+      wobble: (Math.random() - 0.5) * 3,
+    });
+  }
+}
+
+// ─── DRAW FUNCTIONS ─────────────────────────────────────────────
+function drawWires() {
+  paths.forEach((pts, pi) => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    if (pi === 0 && (circuitType === 'series' || circuitType === 'rc' || circuitType === 'parallel')) ctx.closePath();
+    ctx.strokeStyle = 'rgba(30,50,80,0.9)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,80,120,0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+function drawComponent(comp) {
+  const [x, y] = getPathPoint(comp.path, comp.t);
+  const [x2, y2] = getPathPoint(comp.path, comp.t + 0.001);
+  const angle = Math.atan2(y2-y, x2-x);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  if (comp.type === 'resistor') {
+    ctx.strokeStyle = '#ff8c42';
+    ctx.fillStyle = '#1a0c00';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.rect(-18, -7, 36, 14);
+    ctx.fill(); ctx.stroke();
+    // zigzag
+    ctx.beginPath(); ctx.strokeStyle = '#ff8c42'; ctx.lineWidth = 1.2;
+    for (let i = -3; i <= 3; i++) {
+      const xi = i * 5, yi = (i % 2 === 0 ? -4 : 4);
+      i === -3 ? ctx.moveTo(xi, yi) : ctx.lineTo(xi, yi);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#ff8c42'; ctx.font = '9px monospace';
+    ctx.textAlign = 'center'; ctx.fillText(comp.label, 0, -10);
+
+  } else if (comp.type === 'capacitor') {
+    ctx.strokeStyle = '#c471ed';
+    ctx.fillStyle = '#100018';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.rect(-20, -8, 40, 16); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#c471ed'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-5,-7); ctx.lineTo(-5,7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5,-7);  ctx.lineTo(5,7);  ctx.stroke();
+    // charge glow
+    const charge = Math.abs(Math.sin(t * 0.5 / (resistance * capacitance)));
+    ctx.shadowBlur = 10 * charge; ctx.shadowColor = '#c471ed';
+    ctx.strokeStyle = `rgba(196,113,237,${charge})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-5,-7); ctx.lineTo(-5,7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5,-7);  ctx.lineTo(5,7);  ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#c471ed'; ctx.font = '9px monospace';
+    ctx.textAlign = 'center'; ctx.fillText(comp.label, 0, -12);
+
+  } else if (comp.type === 'battery') {
+    ctx.strokeStyle = '#a8ff78';
+    ctx.fillStyle = '#001a00';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.rect(-22, -9, 44, 18); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#a8ff78'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-8,-8); ctx.lineTo(-8,8); ctx.stroke();
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-3,-5); ctx.lineTo(-3,5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3,-8);  ctx.lineTo(3,8);  ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(8,-5);  ctx.lineTo(8,5);  ctx.stroke();
+    ctx.fillStyle = '#a8ff78'; ctx.font = '9px monospace';
+    ctx.textAlign = 'center'; ctx.fillText(comp.label, 0, -12);
+    ctx.fillStyle = '#a8ff78'; ctx.font = '8px monospace';
+    ctx.fillText('+', 12, 3); ctx.fillText('−', -14, 3);
+
+  } else if (comp.type === 'galvo') {
+    ctx.strokeStyle = '#ffd700';
+    ctx.fillStyle = '#1a1400';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd700'; ctx.font = '10px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('G', 0, 0);
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '8px monospace'; ctx.fillText(comp.label, 0, -17);
+  }
+  ctx.restore();
+}
+
+function drawElectron(e) {
+  const [x, y] = getPathPoint(e.path, e.t);
+  const wobble = e.wobble * 0.3;
+  const ex = x + Math.cos(e.phase + t*3) * wobble;
+  const ey = y + Math.sin(e.phase + t*3) * wobble;
+
+  // current = V/R, drives speed visual
+  const I = voltage / resistance;
+  const brightness = Math.min(1, I / 6);
+
+  if (renderStyle === 'glow') {
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = `rgba(0,200,255,${0.6*brightness})`;
+    ctx.beginPath();
+    ctx.arc(ex, ey, pSize, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${Math.round(100+brightness*155)},${Math.round(200+brightness*55)},255,0.92)`;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else if (renderStyle === 'dot') {
+    ctx.beginPath();
+    ctx.arc(ex, ey, pSize*0.7, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(0,220,255,${0.7+brightness*0.3})`;
+    ctx.fill();
+  } else if (renderStyle === 'trail') {
+    for (let tr = 0; tr < 4; tr++) {
+      const back = tr * 0.003;
+      const bt = ((e.t - back * (reversed?-1:1)) + 1) % 1;
+      const [bx, by] = getPathPoint(e.path, bt);
+      const alpha = (1 - tr/4) * 0.7 * brightness;
+      const r2 = pSize * (1 - tr*0.2);
+      ctx.beginPath();
+      ctx.arc(bx + Math.cos(e.phase+t*3)*wobble, by + Math.sin(e.phase+t*3)*wobble, r2, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,200,255,${alpha})`;
+      ctx.fill();
+    }
+  }
+}
+
+// ─── FIELD LINES (tube effect) ──────────────────────────────────
+function drawFieldAura() {
+  paths.forEach((pts, pi) => {
+    for (let i = 1; i < pts.length; i++) {
+      const [x1,y1] = pts[i-1], [x2,y2] = pts[i];
+      const I = voltage/resistance;
+      const alpha = Math.min(0.06, I/100);
+      const grad = ctx.createLinearGradient(x1,y1,x2,y2);
+      grad.addColorStop(0,`rgba(0,180,255,${alpha})`);
+      grad.addColorStop(1,`rgba(0,100,200,${alpha*0.5})`);
+      ctx.beginPath();
+      ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 14 + (I/24)*10;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+  });
+}
+
+// ─── MAIN DRAW ───────────────────────────────────────────────────
+function draw(ts) {
+  requestAnimationFrame(draw);
+  const dt = Math.min((ts - lastTs)/1000, 0.05); lastTs = ts;
+  if (animating) t += dt;
+
+  fpsCount++;
+  if (ts - fpsTime > 500) { fps = Math.round(fpsCount*1000/(ts-fpsTime)); fpsCount=0; fpsTime=ts; }
+
+  W = cv.width  = cv.clientWidth;
+  H = cv.height = cv.clientHeight;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // subtle background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  const gs = 40;
+  for (let x = 0; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  buildCircuit(circuitType);
+
+  drawFieldAura();
+  drawWires();
+  components.forEach(drawComponent);
+
+  // update + draw electrons
+  const I = voltage / resistance;
+  const baseSpeed = (I / 12) * 0.0025;
+  electrons.forEach(e => {
+    if (animating) {
+      const dir = reversed ? -1 : 1;
+      e.t = ((e.t + dir * (e.speed + baseSpeed) * (voltage/12)) % 1 + 1) % 1;
+      e.phase += dt * 2;
+    }
+    drawElectron(e);
+  });
+
+  // Adjust electron count
+  while (electrons.length < nElec) {
+    const pIdx = Math.floor(Math.random() * paths.length);
+    electrons.push({ path:pIdx, t:Math.random(), speed:0.0008+Math.random()*0.0006, phase:Math.random()*Math.PI*2, wobble:(Math.random()-.5)*3 });
+  }
+  while (electrons.length > nElec) electrons.pop();
+
+  const cur = (voltage/resistance).toFixed(2);
+  const pow = (voltage*voltage/resistance).toFixed(1);
+  const tau = (resistance*capacitance).toFixed(2);
+  document.getElementById('info-i').textContent = cur;
+  document.getElementById('info-p').textContent = pow;
+  document.getElementById('info-tau').textContent = tau;
+  document.getElementById('stats').textContent =
+    `FPS: ${fps}  ·  I = ${cur}A  ·  P = ${pow}W  ·  electrons: ${electrons.length}`;
+  document.getElementById('hud').textContent =
+    `${circuitType.charAt(0).toUpperCase()+circuitType.slice(1)} Circuit · ${voltage}V`;
+}
+
+// ─── PANEL LOGIC ─────────────────────────────────────────────────
+document.querySelectorAll('[data-c]').forEach(b => {
+  b.addEventListener('click', () => {
+    circuitType = b.dataset.c;
+    document.querySelectorAll('[data-c]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    electrons = [];
+    initElectrons();
+  });
+});
+document.querySelectorAll('[data-s]').forEach(b => {
+  b.addEventListener('click', () => {
+    renderStyle = b.dataset.s;
+    document.querySelectorAll('[data-s]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+});
+
+const sliders = [
+  ['s-volt','v-volt', v => voltage=v],
+  ['s-res', 'v-res',  v => resistance=v],
+  ['s-cap', 'v-cap',  v => capacitance=v],
+  ['s-num', 'v-num',  v => nElec=v],
+  ['s-ps',  'v-ps',   v => pSize=v],
+];
+sliders.forEach(([id, vid, cb]) => {
+  document.getElementById(id).addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    document.getElementById(vid).textContent = v.toFixed(1);
+    cb(v);
+  });
+});
+
+const btnAnim = document.getElementById('btn-anim');
+btnAnim.addEventListener('click', () => {
+  animating = !animating;
+  btnAnim.textContent = animating ? '⏸ PAUSE' : '▶ PLAY';
+  btnAnim.classList.toggle('on', animating);
+});
+document.getElementById('btn-reverse').addEventListener('click', () => {
+  reversed = !reversed;
+  document.getElementById('btn-reverse').classList.toggle('on', reversed);
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  voltage=12; resistance=4; capacitance=1; nElec=120; pSize=2.5;
+  [['s-volt',12,'v-volt'],['s-res',4,'v-res'],['s-cap',1,'v-cap'],
+   ['s-num',120,'v-num'],['s-ps',2.5,'v-ps']].forEach(([id,v,vid])=>{
+    document.getElementById(id).value=v;
+    document.getElementById(vid).textContent=v.toFixed(1);
+  });
+  electrons=[]; initElectrons();
+});
+
+initElectrons();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

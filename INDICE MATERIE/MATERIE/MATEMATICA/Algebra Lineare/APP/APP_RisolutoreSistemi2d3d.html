@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sistema Lineare</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;height:100vh;overflow:hidden;background:#06060f;font-family:'Courier New',monospace;color:#fff}
+
+/* ── PANEL ── */
+#panel{width:252px;min-width:252px;background:#09091a;border-right:1px solid rgba(255,255,255,.07);
+  display:flex;flex-direction:column;overflow-y:auto}
+#panel::-webkit-scrollbar{width:3px}
+#panel::-webkit-scrollbar-thumb{background:#1a1a3a;border-radius:2px}
+
+.ph{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:center}
+.ph h1{font-size:11px;letter-spacing:3px;color:#00f5ff}
+.ph p{font-size:8px;color:#333;margin-top:2px}
+
+.sec{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.lbl{font-size:8px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
+
+/* dim toggle */
+.dim-wrap{display:flex;gap:5px}
+.dim-btn{flex:1;padding:8px 0;background:transparent;border:1px solid #1a1a2e;
+  color:#555;border-radius:4px;cursor:pointer;font-size:12px;font-family:monospace;transition:all .15s;text-align:center}
+.dim-btn.on{border-color:#00f5ff;color:#00f5ff;background:rgba(0,245,255,.07)}
+
+/* equation inputs */
+.eq-block{margin-bottom:8px}
+.eq-head{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.eq-dot{width:8px;height:8px;border-radius:50%}
+.eq-label{font-size:9px;font-weight:bold}
+.eq-row{display:flex;align-items:center;gap:3px;flex-wrap:nowrap}
+.coeff{width:36px;background:#0d0d20;border:1px solid #1a1a2e;color:#ddd;
+  padding:3px 2px;font-size:10px;font-family:monospace;border-radius:3px;text-align:center}
+.coeff:focus{outline:none;border-color:#00f5ff}
+.op{font-size:9px;color:#444;white-space:nowrap;padding:0 1px}
+.eq-sep{height:1px;background:rgba(255,255,255,.04);margin:6px 0}
+
+/* solution box */
+#sol-box{background:rgba(0,0,0,.35);border:1px solid #0d0d22;border-radius:5px;padding:9px;font-size:9px;line-height:2}
+.s-val{font-size:11px}
+
+/* preset buttons */
+.pset-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pb{padding:6px 4px;background:transparent;border:1px solid #1a1a2e;color:#555;
+  border-radius:4px;cursor:pointer;font-size:8px;font-family:monospace;transition:all .15s;text-align:center;line-height:1.4}
+.pb:hover{border-color:#333;color:#888}
+.pb.on{border-color:#00f5ff;color:#00f5ff;background:rgba(0,245,255,.05)}
+
+/* sliders */
+.sr{margin-bottom:8px}
+.sm{display:flex;justify-content:space-between;font-size:9px;color:#555;margin-bottom:2px}
+.sm b{font-weight:normal;color:#bbb}
+input[type=range]{width:100%;cursor:pointer;accent-color:#00f5ff}
+
+/* toggles */
+.tr{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#555;margin-bottom:5px}
+.tog{width:28px;height:14px;background:#1a1a2e;border-radius:7px;cursor:pointer;position:relative;flex-shrink:0}
+.tog.on{background:rgba(0,245,255,.3)}
+.tog::after{content:'';position:absolute;width:10px;height:10px;background:#444;border-radius:5px;top:2px;left:2px;transition:left .15s}
+.tog.on::after{left:16px;background:#00f5ff}
+
+.cbtn{width:100%;padding:6px 0;background:transparent;border:1px solid #222;color:#555;
+  border-radius:4px;cursor:pointer;font-size:9px;font-family:monospace;transition:all .15s}
+.cbtn.on{background:rgba(0,245,255,.07);border-color:#00f5ff;color:#00f5ff}
+
+/* ── VIEWPORT ── */
+#vp{flex:1;position:relative;overflow:hidden}
+#cv3d{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cv2d{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+#hud{position:absolute;top:10px;right:12px;background:rgba(0,0,0,.7);
+  padding:5px 12px;border-radius:5px;border:1px solid #0d0d22;font-size:9px;color:#00f5ff;
+  pointer-events:none;line-height:1.9;max-width:220px}
+#notif{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.85);border:1px solid #00f5ff;border-radius:7px;
+  padding:10px 18px;font-size:10px;color:#00f5ff;pointer-events:none;
+  opacity:0;transition:opacity .4s;text-align:center;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="ph"><h1>SISTEMA LINEARE</h1><p>Rette 2D · Piani 3D</p></div>
+
+  <!-- Dimensione -->
+  <div class="sec">
+    <div class="lbl">Variabili</div>
+    <div class="dim-wrap">
+      <button class="dim-btn on" id="btn2d">2 var — Rette</button>
+      <button class="dim-btn" id="btn3d">3 var — Piani</button>
+    </div>
+  </div>
+
+  <!-- Equazioni -->
+  <div class="sec" id="eq-sec">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Soluzione -->
+  <div class="sec">
+    <div class="lbl">Soluzione</div>
+    <div id="sol-box"><div id="sol-text"></div></div>
+  </div>
+
+  <!-- Preset -->
+  <div class="sec" id="preset-sec">
+    <div class="lbl">Preset</div>
+    <div class="pset-grid" id="preset-grid"></div>
+  </div>
+
+  <!-- Display options -->
+  <div class="sec">
+    <div class="lbl">Visualizzazione</div>
+    <div class="sr">
+      <div class="sm"><span id="op-lbl">Opacità piani</span><b id="v-op">0.40</b></div>
+      <input type="range" id="s-op" min="0.1" max="0.9" step="0.05" value="0.4">
+    </div>
+    <div class="sr">
+      <div class="sm"><span>Scala</span><b id="v-sz">4.0</b></div>
+      <input type="range" id="s-sz" min="2" max="10" step="0.5" value="4">
+    </div>
+    <div class="tr" id="norm-row"><span>Normali</span><div class="tog" id="tog-norm"></div></div>
+    <div class="tr"><span id="inter-lbl">Linee intersezione</span><div class="tog on" id="tog-inter"></div></div>
+    <div class="tr"><span>Punto / retta soluzione</span><div class="tog on" id="tog-pt"></div></div>
+    <div class="tr"><span id="grid-lbl">Griglia</span><div class="tog on" id="tog-grid"></div></div>
+    <div class="tr" id="rot-row"><span>Auto-rotazione</span><div class="tog" id="tog-rot"></div></div>
+  </div>
+
+  <div class="sec">
+    <button class="cbtn on" id="btn-anim">⏸ PAUSE</button>
+  </div>
+  <div style="padding:8px 14px;font-size:8px;color:#2a2a4a;line-height:1.7">
+    Drag ruota · Scroll zoom · Click-destro pan
+  </div>
+</div>
+
+<div id="vp">
+  <canvas id="cv3d"></canvas>
+  <canvas id="cv2d" style="display:none"></canvas>
+  <div id="hud"></div>
+  <div id="notif"></div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────────────────────────
+let dim=2, opacity=0.4, sceneSize=4;
+let showNorm=false,showInter=true,showPt=true,showGrid=true,autoRot=false,animating=true;
+let t=0,lastTs=0;
+
+const COLORS2=['#5588ff','#ff6644','#44ddaa'];
+const COLORS3=['#6495ff','#ff7850','#50e68c'];
+const COLS_HEX2=[0x5588ff,0xff6644,0x44ddaa];
+const COLS_HEX3=[0x6495ff,0xff7850,0x50e68c];
+
+// ────────────────────────────────────────────────────────────────
+// EQUATION CONFIG
+// ────────────────────────────────────────────────────────────────
+const DEFS={
+  2:[
+    {coeffs:['a','b','c'],labels:['x','+','y','='],default:[2,1,4],color:'#5588ff',name:'Retta 1'},
+    {coeffs:['a','b','c'],labels:['x','+','y','='],default:[1,-1,0],color:'#ff6644',name:'Retta 2'},
+    {coeffs:['a','b','c'],labels:['x','+','y','='],default:[-1,2,2],color:'#44ddaa',name:'Retta 3'},
+  ],
+  3:[
+    {coeffs:['a','b','c','d'],labels:['x','+','y','+','z','='],default:[1,1,1,6],color:'#6495ff',name:'Piano 1'},
+    {coeffs:['a','b','c','d'],labels:['x','+','y','+','z','='],default:[2,-1,1,3],color:'#ff7850',name:'Piano 2'},
+    {coeffs:['a','b','c','d'],labels:['x','+','y','+','z','='],default:[-1,2,2,4],color:'#50e68c',name:'Piano 3'},
+  ]
+};
+
+const PRESETS={
+  2:{
+    'Unica (2)':{vals:[[2,1,4],[1,-1,0]],n:2},
+    'Parallele':{vals:[[1,2,4],[1,2,8]],n:2},
+    'Coincidenti':{vals:[[1,2,4],[2,4,8]],n:2},
+    '3 rette — punto':{vals:[[2,1,4],[1,-1,0],[-1,2,2]],n:3},
+    '3 rette — triangolo':{vals:[[1,0,3],[0,1,2],[1,1,4]],n:3},
+    'Sistema incompatibile':{vals:[[1,1,2],[1,1,5],[-1,-1,-8]],n:3},
+  },
+  3:{
+    'Soluzione unica':{vals:[[1,1,1,6],[2,-1,1,3],[-1,2,2,4]],n:3},
+    '∞ soluzioni':{vals:[[1,2,3,6],[2,4,6,12],[1,1,2,4]],n:3},
+    'Nessuna sol.':{vals:[[1,1,1,1],[1,1,1,2],[1,1,1,3]],n:3},
+    'Paralleli':{vals:[[0,0,1,1],[0,0,1,3],[0,0,1,5]],n:3},
+    '2 piani // 1 trasverso':{vals:[[0,0,1,2],[0,0,1,4],[1,0,0,0]],n:3},
+    'Helmholtz-like':{vals:[[1,1,0,2],[0,1,1,3],[1,0,1,4]],n:3},
+  }
+};
+
+// number of active equations
+let nEqs=2;
+// coefficients storage [eq][coeff]
+let coeffs={2:[[2,1,4],[1,-1,0],[-1,2,2]],3:[[1,1,1,6],[2,-1,1,3],[-1,2,2,4]]};
+
+// ────────────────────────────────────────────────────────────────
+// BUILD PANEL UI
+// ────────────────────────────────────────────────────────────────
+function buildEqUI(){
+  const sec=document.getElementById('eq-sec');
+  sec.innerHTML=`<div class="lbl">Equazioni</div>`;
+
+  const defs=DEFS[dim];
+  const n=dim===2?nEqs:3;
+
+  defs.slice(0,n).forEach((def,ei)=>{
+    const vals=coeffs[dim][ei];
+    const block=document.createElement('div');
+    block.className='eq-block';
+    block.innerHTML=`
+      <div class="eq-head">
+        <div class="eq-dot" style="background:${def.color}"></div>
+        <span class="eq-label" style="color:${def.color}">${def.name}</span>
+      </div>
+      <div class="eq-row" id="eq-row-${ei}"></div>
+    `;
+    sec.appendChild(block);
+    if(ei<n-1){const sep=document.createElement('div');sep.className='eq-sep';sec.appendChild(sep);}
+
+    const row=block.querySelector(`#eq-row-${ei}`);
+    def.coeffs.forEach((key,ci)=>{
+      const inp=document.createElement('input');
+      inp.type='number';inp.step='0.5';inp.className='coeff';
+      inp.value=vals[ci];inp.id=`c_${ei}_${ci}`;
+      inp.addEventListener('input',()=>{
+        coeffs[dim][ei][ci]=parseFloat(inp.value)||0;
+        rebuild();
+      });
+      row.appendChild(inp);
+      const lbl=def.labels[ci];
+      if(lbl){const sp=document.createElement('span');sp.className='op';sp.textContent=lbl;row.appendChild(sp);}
+    });
+  });
+
+  // add nEqs toggle for 2D
+  if(dim===2){
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;gap:5px;margin-top:8px';
+    [2,3].forEach(n2=>{
+      const b=document.createElement('button');
+      b.className='pb'+(nEqs===n2?' on':'');
+      b.textContent=n2+' equazioni';
+      b.addEventListener('click',()=>{nEqs=n2;buildEqUI();rebuild();});
+      wrap.appendChild(b);
+    });
+    sec.appendChild(wrap);
+  }
+
+  buildPresets();
+}
+
+function buildPresets(){
+  const grid=document.getElementById('preset-grid');
+  grid.innerHTML='';
+  Object.entries(PRESETS[dim]).forEach(([name,preset])=>{
+    const b=document.createElement('button');
+    b.className='pb';b.textContent=name;
+    b.addEventListener('click',()=>{
+      if(dim===2) nEqs=preset.n;
+      preset.vals.forEach((v,ei)=>{coeffs[dim][ei]=v.slice();});
+      buildEqUI();rebuild();
+      grid.querySelectorAll('.pb').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+    });
+    grid.appendChild(b);
+  });
+}
+
+// ────────────────────────────────────────────────────────────────
+// SOLVERS
+// ────────────────────────────────────────────────────────────────
+function solve2(eqs){
+  if(eqs.length===2){
+    const[a1,b1,c1]=eqs[0],[a2,b2,c2]=eqs[1];
+    const det=a1*b2-a2*b1;
+    if(Math.abs(det)<1e-10){
+      const r=a1||b1?1e-10:0;
+      const lhs1=a1*0+b1*(b1?c1/b1:0);
+      // check consistent
+      const cross=a1*c2-a2*c1;
+      if(Math.abs(cross)<1e-8&&Math.abs(b1*c2-b2*c1)<1e-8) return{type:'infinite',rank:1};
+      return{type:'noSol'};
+    }
+    const x=(c1*b2-c2*b1)/det, y=(a1*c2-a2*c1)/det;
+    return{type:'unique',x,y};
+  }
+  // 3 equations 2 unknowns — solve first two, verify third
+  const s2=solve2(eqs.slice(0,2));
+  if(s2.type!=='unique') return s2;
+  const[a3,b3,c3]=eqs[2];
+  const check=a3*s2.x+b3*s2.y;
+  if(Math.abs(check-c3)>1e-6) return{type:'noSol'};
+  return s2;
+}
+
+function gaussElim(M){
+  const n=M.length,m=M[0].length;
+  M=M.map(r=>[...r]);
+  let rank=0;
+  for(let col=0;col<m-1&&rank<n;col++){
+    let piv=rank;
+    for(let r=rank+1;r<n;r++) if(Math.abs(M[r][col])>Math.abs(M[piv][col]))piv=r;
+    [M[rank],M[piv]]=[M[piv],M[rank]];
+    if(Math.abs(M[rank][col])<1e-10) continue;
+    const p=M[rank][col];
+    for(let r=rank+1;r<n;r++){
+      const f=M[r][col]/p;
+      for(let k=col;k<m;k++) M[r][k]-=f*M[rank][k];
+    }
+    rank++;
+  }
+  return{M,rank};
+}
+
+function solve3(eqs){
+  const M=eqs.map(e=>[e[0],e[1],e[2],e[3]]);
+  const{M:R,rank}=gaussElim(M);
+  for(let r=0;r<3;r++){
+    const rowMax=Math.max(...R[r].slice(0,3).map(Math.abs));
+    if(rowMax<1e-10&&Math.abs(R[r][3])>1e-8) return{type:'noSol'};
+  }
+  if(rank<3) return{type:'infinite',rank};
+  // back-sub
+  const x=[0,0,0];
+  for(let r=2;r>=0;r--){
+    let piv=-1;
+    for(let c=0;c<3;c++) if(Math.abs(R[r][c])>1e-10){piv=c;break;}
+    if(piv<0) continue;
+    let s=R[r][3];
+    for(let c=piv+1;c<3;c++) s-=R[r][c]*x[c];
+    x[piv]=s/R[r][piv];
+  }
+  return{type:'unique',x:x[0],y:x[1],z:x[2]};
+}
+
+// ────────────────────────────────────────────────────────────────
+// THREE.JS 3D
+// ────────────────────────────────────────────────────────────────
+const cv3=document.getElementById('cv3d');
+const renderer=new THREE.WebGLRenderer({canvas:cv3,antialias:true});
+renderer.setClearColor(0x06060f,1);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+const scene3=new THREE.Scene();
+const cam3=new THREE.PerspectiveCamera(50,1,0.1,200);
+let sph={th:0.7,ph:0.55,r:18},pan={x:0,y:0};
+function updCam3(){
+  cam3.position.set(pan.x+sph.r*Math.sin(sph.ph)*Math.sin(sph.th),
+    pan.y+sph.r*Math.cos(sph.ph),sph.r*Math.sin(sph.ph)*Math.cos(sph.th));
+  cam3.lookAt(pan.x,pan.y,0);
+}
+updCam3();
+scene3.add(new THREE.AmbientLight(0xffffff,0.7));
+const dl=new THREE.DirectionalLight(0xaaccff,0.7);dl.position.set(5,10,5);scene3.add(dl);
+
+let drag3=false,rDrag3=false,lx3=0,ly3=0;
+cv3.addEventListener('mousedown',e=>{drag3=true;rDrag3=e.button===2;lx3=e.clientX;ly3=e.clientY;});
+cv3.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('mouseup',()=>drag3=false);
+window.addEventListener('mousemove',e=>{
+  if(!drag3)return;
+  const dx=e.clientX-lx3,dy=e.clientY-ly3;lx3=e.clientX;ly3=e.clientY;
+  if(rDrag3){pan.x-=dx*0.015;pan.y+=dy*0.015;}
+  else{sph.th-=dx*.005;sph.ph=Math.max(.05,Math.min(Math.PI-.05,sph.ph-dy*.005));}
+  updCam3();
+});
+cv3.addEventListener('wheel',e=>{sph.r=Math.max(4,Math.min(50,sph.r+e.deltaY*.02));updCam3();},{passive:true});
+
+let grpPlanes=new THREE.Group(),grpLines3=new THREE.Group(),
+    grpNorms=new THREE.Group(),grpPt=new THREE.Group(),grpAx=new THREE.Group();
+scene3.add(grpPlanes,grpLines3,grpNorms,grpPt,grpAx);
+
+function build3DAxes(){
+  grpAx.clear();
+  if(!showGrid)return;
+  const axes=[[1,0,0,0xff3333],[0,1,0,0x33ff88],[0,0,1,0x3388ff]];
+  axes.forEach(([x,y,z,c])=>{
+    const p=[new THREE.Vector3(-5*x,-5*y,-5*z),new THREE.Vector3(5*x,5*y,5*z)];
+    const g=new THREE.BufferGeometry().setFromPoints(p);
+    grpAx.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:c,opacity:0.4,transparent:true})));
+  });
+  const gm=new THREE.LineBasicMaterial({color:0x111133,opacity:1,transparent:true});
+  for(let i=-5;i<=5;i++){
+    [[new THREE.Vector3(i,0,-5),new THREE.Vector3(i,0,5)],
+     [new THREE.Vector3(-5,0,i),new THREE.Vector3(5,0,i)]].forEach(pts=>{
+      grpAx.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gm));
+    });
+  }
+}
+
+function makePlane3D(a,b,c,d,col,sz){
+  const nv=new THREE.Vector3(a,b,c);
+  if(nv.length()<1e-10)return null;
+  nv.normalize();
+  let pt;
+  if(Math.abs(c)>1e-8)pt=new THREE.Vector3(0,0,d/c);
+  else if(Math.abs(b)>1e-8)pt=new THREE.Vector3(0,d/b,0);
+  else if(Math.abs(a)>1e-8)pt=new THREE.Vector3(d/a,0,0);
+  else return null;
+
+  const geo=new THREE.PlaneGeometry(sz*2,sz*2);
+  const mat=new THREE.MeshPhongMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity,shininess:20});
+  const mesh=new THREE.Mesh(geo,mat);
+  const wf=new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:col,opacity:0.55,transparent:true}));
+  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),nv);
+  [mesh,wf].forEach(m=>{m.setRotationFromQuaternion(q);m.position.copy(pt);});
+  return{mesh,wf,nv,pt};
+}
+
+function build3DIntersectionLine(eq1,eq2){
+  const n1=new THREE.Vector3(eq1[0],eq1[1],eq1[2]);
+  const n2=new THREE.Vector3(eq2[0],eq2[1],eq2[2]);
+  const dir=new THREE.Vector3().crossVectors(n1,n2);
+  if(dir.length()<1e-8)return null;
+  const tryPt=(fi,fv)=>{
+    const idx=[0,1,2].filter(k=>k!==fi);
+    const A=[[n1.getComponent(idx[0]),n1.getComponent(idx[1])],
+             [n2.getComponent(idx[0]),n2.getComponent(idx[1])]];
+    const b=[eq1[3]-n1.getComponent(fi)*fv, eq2[3]-n2.getComponent(fi)*fv];
+    const det=A[0][0]*A[1][1]-A[0][1]*A[1][0];
+    if(Math.abs(det)<1e-8)return null;
+    const v0=(b[0]*A[1][1]-b[1]*A[0][1])/det;
+    const v1=(A[0][0]*b[1]-A[1][0]*b[0])/det;
+    const r=new THREE.Vector3();r.setComponent(fi,fv);r.setComponent(idx[0],v0);r.setComponent(idx[1],v1);return r;
+  };
+  const pt=tryPt(2,0)||tryPt(1,0)||tryPt(0,0);
+  if(!pt)return null;
+  dir.normalize();
+  return{pt,dir};
+}
+
+function rebuild3D(){
+  grpPlanes.clear();grpLines3.clear();grpNorms.clear();grpPt.clear();
+  build3DAxes();
+  const eqs=coeffs[3];
+  const hexCols=COLS_HEX3;
+  eqs.forEach((e,i)=>{
+    const p=makePlane3D(e[0],e[1],e[2],e[3],hexCols[i],sceneSize);
+    if(!p)return;
+    grpPlanes.add(p.mesh,p.wf);
+    if(showNorm){
+      grpNorms.add(new THREE.ArrowHelper(p.nv,p.pt,2,hexCols[i],0.25,0.12));
+    }
+  });
+  if(showInter){
+    const pairCols=[0xffffff,0xffff44,0xff88ff];
+    [[0,1],[1,2],[0,2]].forEach(([i,j],pi)=>{
+      const res=build3DIntersectionLine(eqs[i],eqs[j]);
+      if(!res)return;
+      const{pt,dir}=res;
+      const ext=sceneSize+2;
+      const p1=pt.clone().addScaledVector(dir,ext),p2=pt.clone().addScaledVector(dir,-ext);
+      const g=new THREE.BufferGeometry().setFromPoints([p1,p2]);
+      grpLines3.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:pairCols[pi],opacity:0.7,transparent:true})));
+    });
+  }
+  const sol=solve3(eqs);
+  if(showPt&&sol.type==='unique'){
+    const sm=new THREE.Mesh(new THREE.SphereGeometry(0.18,16,16),
+      new THREE.MeshPhongMaterial({color:0xffffff,emissive:0x444444}));
+    sm.position.set(sol.x,sol.y,sol.z);grpPt.add(sm);
+    const rm=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.04,8,32),
+      new THREE.MeshBasicMaterial({color:0x00f5ff,opacity:0.8,transparent:true}));
+    rm.position.set(sol.x,sol.y,sol.z);grpPt.add(rm);
+  }
+  updateSol(sol);
+  updateHUD3(eqs,sol);
+}
+
+function updateHUD3(eqs,sol){
+  const fmt=v=>Number.isFinite(v)?v.toFixed(2):v;
+  const lines=eqs.map(e=>`${e[0]}x${e[1]>=0?'+':''}${e[1]}y${e[2]>=0?'+':''}${e[2]}z=${e[3]}`);
+  const solStr=sol.type==='unique'?`(${fmt(sol.x)}, ${fmt(sol.y)}, ${fmt(sol.z)})`
+    :sol.type==='infinite'?'∞ soluzioni':'∅ nessuna sol.';
+  document.getElementById('hud').innerHTML=lines.join('<br>')+`<br><b style="color:#00f5ff">→ ${solStr}</b>`;
+}
+
+// ────────────────────────────────────────────────────────────────
+// 2D CANVAS
+// ────────────────────────────────────────────────────────────────
+const cv2=document.getElementById('cv2d');
+const ctx2=cv2.getContext('2d');
+
+// Camera 2D
+let cam2={x:0,y:0,zoom:50};
+let drag2=false,lx2=0,ly2=0;
+cv2.addEventListener('mousedown',e=>{drag2=true;lx2=e.clientX;ly2=e.clientY;});
+window.addEventListener('mouseup',()=>drag2=false);
+window.addEventListener('mousemove',e=>{
+  if(!drag2||dim!==2)return;
+  cam2.x-=(e.clientX-lx2)/cam2.zoom;cam2.y+=(e.clientY-ly2)/cam2.zoom;
+  lx2=e.clientX;ly2=e.clientY;
+});
+cv2.addEventListener('wheel',e=>{cam2.zoom=Math.max(20,Math.min(200,cam2.zoom*(e.deltaY<0?1.1:.91)));},{passive:true});
+
+function toScreen(wx,wy,W,H){
+  return{x:W/2+(wx-cam2.x)*cam2.zoom, y:H/2-(wy-cam2.y)*cam2.zoom};
+}
+
+function draw2D(){
+  const W=cv2.width=cv2.clientWidth,H=cv2.height=cv2.clientHeight;
+  ctx2.clearRect(0,0,W,H);
+
+  if(showGrid){
+    // Grid
+    const step=cam2.zoom>=40?1:cam2.zoom>=20?2:5;
+    const xl=cam2.x-W/2/cam2.zoom-step,xr=cam2.x+W/2/cam2.zoom+step;
+    const yb=cam2.y-H/2/cam2.zoom-step,yt=cam2.y+H/2/cam2.zoom+step;
+    ctx2.strokeStyle='rgba(255,255,255,0.05)';ctx2.lineWidth=1;
+    for(let x=Math.ceil(xl/step)*step;x<=xr;x+=step){
+      const{x:px}=toScreen(x,0,W,H);ctx2.beginPath();ctx2.moveTo(px,0);ctx2.lineTo(px,H);ctx2.stroke();
+    }
+    for(let y=Math.ceil(yb/step)*step;y<=yt;y+=step){
+      const{y:py}=toScreen(0,y,W,H);ctx2.beginPath();ctx2.moveTo(0,py);ctx2.lineTo(W,py);ctx2.stroke();
+    }
+    // Axes
+    const o=toScreen(0,0,W,H);
+    ctx2.strokeStyle='rgba(255,255,255,0.2)';ctx2.lineWidth=1.5;
+    ctx2.beginPath();ctx2.moveTo(0,o.y);ctx2.lineTo(W,o.y);ctx2.stroke();
+    ctx2.beginPath();ctx2.moveTo(o.x,0);ctx2.lineTo(o.x,H);ctx2.stroke();
+    // Axis labels
+    ctx2.fillStyle='rgba(255,255,255,0.2)';ctx2.font='10px monospace';
+    ctx2.textAlign='left';ctx2.fillText('x',W-14,o.y-6);
+    ctx2.textAlign='center';ctx2.fillText('y',o.x+8,10);
+    // Tick numbers
+    ctx2.fillStyle='rgba(255,255,255,0.18)';ctx2.font='8px monospace';
+    for(let x=Math.ceil(xl/step)*step;x<=xr;x+=step){
+      if(x===0)continue;
+      const{x:px,y:py}=toScreen(x,0,W,H);
+      ctx2.textAlign='center';ctx2.fillText(x,px,py+12);
+    }
+    for(let y=Math.ceil(yb/step)*step;y<=yt;y+=step){
+      if(y===0)continue;
+      const{x:px,y:py}=toScreen(0,y,W,H);
+      ctx2.textAlign='right';ctx2.fillText(y,px-4,py+3);
+    }
+  }
+
+  const n=nEqs;
+  const eqs=coeffs[2].slice(0,n);
+  const cols=COLORS2;
+
+  // Draw lines
+  eqs.forEach((e,i)=>{
+    const[a,b,c]=e;
+    // ax+by=c  →  y=(c-ax)/b  or  x=c/a
+    ctx2.strokeStyle=cols[i];ctx2.lineWidth=2;
+    ctx2.shadowBlur=8;ctx2.shadowColor=cols[i]+'88';
+    ctx2.beginPath();
+    if(Math.abs(b)>1e-10){
+      const xl2=cam2.x-W/cam2.zoom;const xr2=cam2.x+W/cam2.zoom;
+      const y1=(c-a*xl2)/b,y2=(c-a*xr2)/b;
+      const p1=toScreen(xl2,y1,W,H),p2=toScreen(xr2,y2,W,H);
+      ctx2.moveTo(p1.x,p1.y);ctx2.lineTo(p2.x,p2.y);
+    } else if(Math.abs(a)>1e-10){
+      const x0=c/a;const p1=toScreen(x0,-100,W,H),p2=toScreen(x0,100,W,H);
+      ctx2.moveTo(p1.x,p1.y);ctx2.lineTo(p2.x,p2.y);
+    }
+    ctx2.stroke();ctx2.shadowBlur=0;
+
+    // Label on line
+    ctx2.fillStyle=cols[i];ctx2.font='bold 10px monospace';
+    ctx2.textAlign='left';
+    const lx=cam2.x+W/cam2.zoom*0.3;
+    let ly_=Math.abs(b)>1e-10?(c-a*lx)/b:0;
+    const lp=toScreen(lx,ly_,W,H);
+    ctx2.fillText(`${a}x${b>=0?'+':''}${b}y=${c}`,lp.x+4,lp.y-6);
+
+    // Normal arrow
+    if(showNorm){
+      const cx=cam2.x,cy=cam2.y;
+      const np=toScreen(cx,cy,W,H);
+      const nlen=30;
+      const nl=Math.sqrt(a*a+b*b)||1;
+      ctx2.strokeStyle=cols[i]+'88';ctx2.lineWidth=1.2;
+      ctx2.beginPath();ctx2.moveTo(np.x,np.y);
+      ctx2.lineTo(np.x+a/nl*nlen,np.y-b/nl*nlen);ctx2.stroke();
+    }
+  });
+
+  // Solution
+  const sol=solve2(eqs);
+  if(showPt&&sol.type==='unique'){
+    const{x:px,y:py}=toScreen(sol.x,sol.y,W,H);
+    // Glow
+    ctx2.shadowBlur=18;ctx2.shadowColor='#00f5ff';
+    ctx2.beginPath();ctx2.arc(px,py,7,0,Math.PI*2);
+    ctx2.fillStyle='#ffffff';ctx2.fill();
+    ctx2.shadowBlur=0;
+    // Ring pulse
+    const r=10+3*Math.sin(t*4);
+    ctx2.beginPath();ctx2.arc(px,py,r,0,Math.PI*2);
+    ctx2.strokeStyle=`rgba(0,245,255,${0.5+0.3*Math.sin(t*4)})`;
+    ctx2.lineWidth=1.5;ctx2.stroke();
+    // Coordinates
+    ctx2.fillStyle='rgba(0,245,255,0.9)';ctx2.font='10px monospace';
+    ctx2.textAlign='left';
+    ctx2.fillText(`(${sol.x.toFixed(2)}, ${sol.y.toFixed(2)})`,px+10,py-10);
+  }
+
+  if(showInter&&n===3&&sol.type==='noSol'){
+    // Show triangle of pairwise intersections
+    const pairs=[[0,1],[1,2],[0,2]];
+    pairs.forEach(([i,j])=>{
+      const pSol=solve2([eqs[i],eqs[j]]);
+      if(pSol.type==='unique'){
+        const{x:px,y:py}=toScreen(pSol.x,pSol.y,W,H);
+        ctx2.beginPath();ctx2.arc(px,py,4,0,Math.PI*2);
+        ctx2.fillStyle='rgba(255,255,100,0.6)';ctx2.fill();
+      }
+    });
+  }
+
+  updateSol(sol);
+  // HUD
+  const lines=eqs.map(e=>`${e[0]}x${e[1]>=0?'+':''}${e[1]}y=${e[2]}`);
+  const solStr=sol.type==='unique'?`(${sol.x.toFixed(2)}, ${sol.y.toFixed(2)})`
+    :sol.type==='infinite'?'∞ soluzioni':'∅';
+  document.getElementById('hud').innerHTML=lines.join('<br>')+`<br><b style="color:#00f5ff">→ ${solStr}</b>`;
+}
+
+// ────────────────────────────────────────────────────────────────
+// SOLUTION DISPLAY
+// ────────────────────────────────────────────────────────────────
+function updateSol(sol){
+  const box=document.getElementById('sol-text');
+  const is2=dim===2;
+  if(sol.type==='unique'){
+    box.innerHTML=`<span class="s-val" style="color:#44ffaa">Soluzione unica</span><br>
+      <span style="color:#5588ff">x = ${sol.x.toFixed(4)}</span><br>
+      <span style="color:#ff6644">y = ${sol.y.toFixed(4)}</span>`+
+      (!is2?`<br><span style="color:#44ddaa">z = ${sol.z.toFixed(4)}</span>`:'');
+    notify('Soluzione unica trovata');
+  } else if(sol.type==='infinite'){
+    box.innerHTML=`<span class="s-val" style="color:#ffcc44">Infinite soluzioni</span><br>
+      <span style="color:#555">Rank = ${sol.rank||'<3'} — sistema dipendente</span>`;
+    notify('Infinite soluzioni — sistema dipendente');
+  } else {
+    box.innerHTML=`<span class="s-val" style="color:#ff4444">Nessuna soluzione</span><br>
+      <span style="color:#555">Sistema incompatibile</span>`;
+    notify('Nessuna soluzione — sistema incompatibile');
+  }
+}
+
+let notifTimer;
+function notify(msg){
+  const el=document.getElementById('notif');
+  el.textContent=msg;el.style.opacity=1;
+  clearTimeout(notifTimer);notifTimer=setTimeout(()=>el.style.opacity=0,2200);
+}
+
+// ────────────────────────────────────────────────────────────────
+// REBUILD DISPATCHER
+// ────────────────────────────────────────────────────────────────
+function rebuild(){
+  if(dim===3)rebuild3D();
+  // 2D is drawn live in loop
+}
+
+// ────────────────────────────────────────────────────────────────
+// MAIN LOOP
+// ────────────────────────────────────────────────────────────────
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=Math.min((ts-lastTs)/1000,.05);lastTs=ts;
+  if(animating)t+=dt;
+
+  const W=cv3.clientWidth,H=cv3.clientHeight;
+
+  if(dim===3){
+    renderer.setSize(W,H,false);
+    cam3.aspect=W/H;cam3.updateProjectionMatrix();
+    if(autoRot&&animating){sph.th+=dt*.25;updCam3();}
+    // ring pulse
+    if(grpPt.children.length>1){
+      const r=grpPt.children[1];const s=1+.15*Math.sin(t*3);
+      r.scale.set(s,s,s);r.rotation.y=t*.5;r.rotation.x=t*.3;
+    }
+    renderer.render(scene3,cam3);
+  } else {
+    draw2D();
+  }
+}
+requestAnimationFrame(loop);
+
+// ────────────────────────────────────────────────────────────────
+// CONTROLS
+// ────────────────────────────────────────────────────────────────
+function switchDim(d){
+  dim=d;
+  cv3.style.display=d===3?'block':'none';
+  cv2.style.display=d===2?'block':'none';
+  document.getElementById('btn2d').classList.toggle('on',d===2);
+  document.getElementById('btn3d').classList.toggle('on',d===3);
+  document.getElementById('norm-row').style.display=d===3?'flex':'flex';
+  document.getElementById('rot-row').style.display=d===3?'flex':'none';
+  document.getElementById('op-lbl').textContent=d===3?'Opacità piani':'Spessore rette';
+  document.getElementById('inter-lbl').textContent=d===3?'Linee intersezione':'Intersezioni coppie';
+  buildEqUI();rebuild();
+}
+document.getElementById('btn2d').addEventListener('click',()=>switchDim(2));
+document.getElementById('btn3d').addEventListener('click',()=>switchDim(3));
+
+[['s-op','v-op',v=>{opacity=v;rebuild();}],
+ ['s-sz','v-sz',v=>{sceneSize=v;rebuild();}]].forEach(([id,vid,cb])=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    const v=parseFloat(e.target.value);
+    document.getElementById(vid).textContent=v.toFixed(2);cb(v);
+  });
+});
+
+[['tog-norm',()=>{showNorm=!showNorm;rebuild();}],
+ ['tog-inter',()=>{showInter=!showInter;rebuild();}],
+ ['tog-pt',()=>{showPt=!showPt;rebuild();}],
+ ['tog-grid',()=>{showGrid=!showGrid;rebuild();}],
+ ['tog-rot',()=>autoRot=!autoRot],
+].forEach(([id,cb])=>{
+  document.getElementById(id).addEventListener('click',function(){this.classList.toggle('on');cb();});
+});
+
+document.getElementById('btn-anim').addEventListener('click',function(){
+  animating=!animating;
+  this.textContent=animating?'⏸ PAUSE':'▶ PLAY';
+  this.classList.toggle('on',animating);
+});
+
+// ── INIT ─────────────────────────────────────────────────────────
+switchDim(2);
+</script>
+</body>
+</html>

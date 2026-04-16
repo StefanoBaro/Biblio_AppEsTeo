@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Professional Circuit Analyzer</title>
+    <style>
+        body { margin: 0; background: #02050a; color: #00ff41; font-family: 'Courier New', monospace; display: flex; height: 100vh; }
+        #sidebar { width: 450px; background: #0d1117; border-right: 2px solid #1f6feb; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #canvas-container { flex-grow: 1; display: flex; flex-direction: column; background: #000; }
+        canvas { background: #000; flex-grow: 1; border-bottom: 1px solid #1f6feb; }
+        
+        .comp-card { background: rgba(31, 111, 235, 0.05); border: 1px solid #1f6feb; padding: 12px; margin-bottom: 10px; border-radius: 6px; font-size: 12px; position: relative;}
+        input { background: #000; border: 1px solid #1f6feb; color: #00ff41; padding: 4px; width: 55px; text-align: center; font-weight: bold; }
+        
+        .results-panel { background: #1a1a1a; padding: 15px; border-radius: 6px; border: 1px solid #f1c40f; margin-bottom: 20px; }
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+        
+        button { background: #1f6feb; color: #fff; border: none; padding: 10px; cursor: pointer; font-weight: bold; width: 48%; margin-bottom: 10px; border-radius: 4px; }
+        button.add-r { background: #00ff41; color: #000; }
+        button.solve-btn { background: #f1c40f; color: #000; width: 100%; font-size: 16px; margin-top: 10px; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
+        .del-btn { position: absolute; top: 8px; right: 8px; background: #ff4d4d; color: white; border: none; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        
+        h4 { margin: 0 0 10px 0; color: #f1c40f; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .label-node { color: #8892b0; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h3 style="color:#1f6feb; margin:0 0 20px 0; letter-spacing: 2px;">⚡ KCL/KVL SOLVER</h3>
+    
+    <div class="results-panel">
+        <h4>📊 Analisi Statica</h4>
+        <div class="res-grid" id="nodeResults">
+            <div>Tensioni: --</div>
+            <div>Correnti: --</div>
+        </div>
+    </div>
+    
+    <div id="compList"></div>
+    
+    <div style="display:flex; justify-content: space-between;">
+        <button class="add-r" onclick="addComp('R')">+ RESISTENZA</button>
+        <button onclick="addComp('V')">+ GENERATORE</button>
+    </div>
+    <button class="solve-btn" onclick="solveCircuit()">ESEGUI ANALISI NODALE</button>
+    
+    <div style="margin-top:20px; font-size:10px; color:#8892b0; line-height:1.4;">
+        * <b>Nodo 0</b>: Riferimento Massa (GND).<br>
+        * Ogni ramo deve avere una resistenza (anche piccola, es. 0.1) per evitare corto circuiti nel calcolo.
+    </div>
+</div>
+
+<div id="canvas-container">
+    <canvas id="circuitCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let components = [
+        { type: 'V', n1: 0, n2: 1, val: 12 },
+        { type: 'R', n1: 1, n2: 2, val: 100 },
+        { type: 'R', n1: 2, n2: 0, val: 50 }
+    ];
+
+    function addComp(type) {
+        components.push({ type, n1: 1, n2: 2, val: (type === 'R' ? 100 : 12) });
+        renderUI();
+    }
+
+    function removeComp(i) {
+        components.splice(i, 1);
+        renderUI();
+    }
+
+    function renderUI() {
+        const list = document.getElementById('compList');
+        list.innerHTML = '';
+        components.forEach((c, i) => {
+            list.innerHTML += `
+                <div class="comp-card">
+                    <button class="del-btn" onclick="removeComp(${i})">×</button>
+                    <strong>${c.type}${i}</strong> | 
+                    <span class="label-node">DA</span> <input type="number" value="${c.n1}" onchange="components[${i}].n1=parseInt(this.value); draw()">
+                    <span class="label-node">A</span> <input type="number" value="${c.n2}" onchange="components[${i}].n2=parseInt(this.value); draw()">
+                    <br><div style="margin-top:8px;">
+                    VALORE: <input type="number" step="any" value="${c.val}" onchange="components[${i}].val=parseFloat(this.value); solveCircuit()"> 
+                    ${c.type==='R'?'Ω':'V'}</div>
+                </div>`;
+        });
+        draw();
+    }
+
+    function solveCircuit() {
+        const nodes = [...new Set(components.flatMap(c => [c.n1, c.n2]))].filter(n => n !== 0).sort((a,b)=>a-b);
+        const n = nodes.length;
+        if(n === 0) return;
+
+        const voltComps = components.filter(c => c.type === 'V');
+        const m = voltComps.length;
+        const size = n + m;
+        let matrix = Array.from({length: size}, () => Array(size + 1).fill(0));
+
+        // Riempi Conduttanze
+        components.filter(c => c.type === 'R').forEach(c => {
+            const i1 = nodes.indexOf(c.n1);
+            const i2 = nodes.indexOf(c.n2);
+            const g = 1 / (c.val || 0.0001); // Evita divisione per zero
+            if(i1 !== -1) matrix[i1][i1] += g;
+            if(i2 !== -1) matrix[i2][i2] += g;
+            if(i1 !== -1 && i2 !== -1) { matrix[i1][i2] -= g; matrix[i2][i1] -= g; }
+        });
+
+        // Vincoli Generatori
+        voltComps.forEach((c, idx) => {
+            const i1 = nodes.indexOf(c.n1);
+            const i2 = nodes.indexOf(c.n2);
+            const vIdx = n + idx;
+            if(i1 !== -1) { matrix[i1][vIdx] = -1; matrix[vIdx][i1] = -1; }
+            if(i2 !== -1) { matrix[i2][vIdx] = 1; matrix[vIdx][i2] = 1; }
+            matrix[vIdx][size] = c.val;
+        });
+
+        const sol = gauss(matrix);
+        
+        // Calcolo Tensioni Nodi
+        const vNodes = { 0: 0 };
+        nodes.forEach((node, i) => vNodes[node] = sol[i]);
+
+        // Rendering Risultati
+        let htmlT = "<b>TENSIONI:</b><br>";
+        for(let node in vNodes) htmlT += `Nodo ${node}: ${vNodes[node].toFixed(2)}V<br>`;
+
+        let htmlI = "<b>CORRENTI RAMI:</b><br>";
+        components.forEach((c, i) => {
+            if(c.type === 'R') {
+                const iRamo = (vNodes[c.n1] - vNodes[c.n2]) / c.val;
+                htmlI += `${c.type}${i}: ${Math.abs(iRamo).toFixed(3)}A<br>`;
+            } else {
+                // La corrente nei generatori è nelle ultime m posizioni del vettore soluzione
+                const vIdx = n + voltComps.indexOf(c);
+                htmlI += `${c.type}${i}: ${Math.abs(sol[vIdx]).toFixed(3)}A<br>`;
+            }
+        });
+
+        document.getElementById('nodeResults').innerHTML = `<div style="grid-column: 1/3; display:flex; gap:20px;"><div>${htmlT}</div><div>${htmlI}</div></div>`;
+        draw(vNodes);
+    }
+
+    function gauss(A) {
+        const n = A.length;
+        for (let i = 0; i < n; i++) {
+            let max = i;
+            for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[max][i])) max = k;
+            [A[i], A[max]] = [A[max], A[i]];
+            const pivot = A[i][i];
+            if(Math.abs(pivot) < 1e-10) continue;
+            for (let k = i + 1; k < n; k++) {
+                const c = -A[k][i] / pivot;
+                for (let j = i; j <= n; j++) A[k][j] += (i === j) ? 0 : c * A[i][j];
+            }
+        }
+        const x = Array(n).fill(0);
+        for (let i = n - 1; i >= 0; i--) {
+            let sum = 0;
+            for (let j = i + 1; j < n; j++) sum += A[i][j] * x[j];
+            x[i] = (A[i][n] - sum) / A[i][i];
+        }
+        return x;
+    }
+
+    function draw(vNodes = {}) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const nodes = [...new Set(components.flatMap(c => [c.n1, c.n2]))].sort();
+        const pos = {};
+        nodes.forEach((n, i) => {
+            const angle = (i / nodes.length) * Math.PI * 2;
+            pos[n] = { x: canvas.width/2 + Math.cos(angle)*180, y: canvas.height/2 + Math.sin(angle)*150 };
+        });
+
+        components.forEach((c, i) => {
+            const p1 = pos[c.n1], p2 = pos[c.n2];
+            ctx.strokeStyle = c.type === 'V' ? '#1f6feb' : '#00ff41';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            
+            // Label Componente
+            ctx.fillStyle = "#fff"; ctx.font = "bold 10px Arial";
+            ctx.fillText(`${c.type}${i}(${c.val}${c.type==='R'?'Ω':'V'})`, (p1.x+p2.x)/2, (p1.y+p2.y)/2 - 10);
+        });
+
+        nodes.forEach(n => {
+            const volt = vNodes[n] !== undefined ? vNodes[n].toFixed(1) + "V" : "";
+            ctx.fillStyle = n === 0 ? "#ff4d4d" : "#1f6feb";
+            ctx.beginPath(); ctx.arc(pos[n].x, pos[n].y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.fillText("N"+n, pos[n].x-8, pos[n].y+4);
+            ctx.fillStyle = "#f1c40f"; ctx.fillText(volt, pos[n].x-15, pos[n].y-15);
+        });
+    }
+
+    window.onresize = draw;
+    renderUI();
+</script>
+</body>
+</html>

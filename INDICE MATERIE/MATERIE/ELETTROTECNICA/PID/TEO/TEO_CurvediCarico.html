@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Analisi Motore Elettrico - Gauss Design</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap');
+
+        :root {
+            --bg: #06030e;
+            --emerald: #00ff88;
+            --violet: #bc13fe;
+            --glass: rgba(20, 10, 35, 0.9);
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; 
+            font-family: 'Montserrat', sans-serif; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        canvas#bg-curves { position: absolute; top: 0; left: 0; z-index: -1; opacity: 0.3; }
+
+        .main-container {
+            width: 1000px; display: grid; grid-template-columns: 350px 1fr; gap: 25px;
+            background: var(--glass); backdrop-filter: blur(20px);
+            padding: 30px; border-radius: 20px; border: 1px solid rgba(188, 19, 254, 0.3);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        h1 { grid-column: 1/3; text-align: center; margin: 0 0 10px; color: var(--emerald); font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+
+        .controls { display: flex; flex-direction: column; gap: 15px; }
+        .group-title { color: var(--violet); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid rgba(188, 19, 254, 0.3); padding-bottom: 5px; }
+
+        label { font-size: 0.75rem; opacity: 0.7; margin-bottom: 5px; display: block; }
+        input { 
+            width: 100%; padding: 10px; background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(188, 19, 254, 0.3); border-radius: 6px; 
+            color: white; font-family: 'Montserrat'; outline: none; box-sizing: border-box;
+        }
+
+        .chart-area { background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px; border: 1px solid #222; }
+        
+        button {
+            padding: 14px; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, var(--violet), #6e0dd0);
+            color: white; font-weight: 600; cursor: pointer; transition: 0.3s;
+            font-family: 'Montserrat'; text-transform: uppercase; font-size: 0.8rem;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--violet); }
+
+        .theory-link { background: transparent; border: 1px solid var(--emerald); color: var(--emerald); margin-top: 10px; }
+
+        /* Overlay Teoria Sintetizzata */
+        #theory-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); border-radius: 20px; display: none;
+            padding: 40px; box-sizing: border-box; z-index: 100; overflow-y: auto;
+            border: 2px solid var(--emerald);
+        }
+        .wiki-box { border-left: 3px solid var(--violet); padding-left: 20px; margin: 20px 0; }
+        .math-box { background: rgba(0,255,136,0.05); padding: 15px; border-radius: 8px; font-family: 'Courier New'; color: var(--emerald); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<canvas id="bg-curves"></canvas>
+
+<div class="main-container">
+    <h1>Analisi Motore Elettrico</h1>
+
+    <div class="controls">
+        <span class="group-title">Dati di Targa</span>
+        <div>
+            <label>Coppia Nominale (Nm)</label>
+            <input type="number" id="maxTorque" value="250">
+        </div>
+        <div>
+            <label>Velocità Nominale (RPM)</label>
+            <input type="number" id="baseRPM" value="4000">
+        </div>
+        <div>
+            <label>Limite Meccanico (RPM)</label>
+            <input type="number" id="maxRPM" value="12000">
+        </div>
+
+        <button onclick="updateChart()">Aggiorna Curve</button>
+        <button class="theory-link" onclick="toggleTheory(true)">📖 Teoria (Sintesi Wiki)</button>
+    </div>
+
+    <div class="chart-area">
+        <canvas id="motorChart"></canvas>
+    </div>
+
+    <div id="theory-overlay">
+        <h2 style="color:var(--emerald)">Teoria dei Motori Elettrici (Sintesi)</h2>
+        
+        <div class="wiki-box">
+            <h3>1. Caratteristica Meccanica</h3>
+            <p>A differenza dei motori termici, il motore elettrico eroga la <b>coppia massima a zero giri</b>. La coppia rimane costante fino alla velocità nominale (regione a coppia costante).</p>
+        </div>
+
+        <div class="wiki-box">
+            <h3>2. Potenza e Deflussaggio</h3>
+            <p>Oltre la velocità nominale, il motore entra in "deflussaggio". La tensione raggiunge il limite dell'inverter, la coppia cala e la potenza rimane costante (regione a potenza costante).</p>
+            <div class="math-box">
+                P [kW] = (Coppia [Nm] × RPM) / 9550
+            </div>
+        </div>
+
+        <div class="wiki-box">
+            <h3>3. Efficienza (η)</h3>
+            <p>Definita come rapporto tra lavoro meccanico prodotto ed energia elettrica assorbita. Le perdite principali sono dovute all'effetto Joule (calore nei conduttori) e isteresi magnetica.</p>
+        </div>
+
+        <button onclick="toggleTheory(false)" style="background:var(--emerald); color:#000; width:100%;">Chiudi e Torna al Grafico</button>
+    </div>
+</div>
+
+<script>
+    // Sfondo animato Curve di Gauss
+    const bgCanvas = document.getElementById('bg-curves');
+    const bgCtx = bgCanvas.getContext('2d');
+    let w, h;
+    function resize() { w = bgCanvas.width = window.innerWidth; h = bgCanvas.height = window.innerHeight; }
+    function drawBg() {
+        bgCtx.clearRect(0, 0, w, h);
+        bgCtx.strokeStyle = '#bc13fe';
+        bgCtx.lineWidth = 1;
+        const t = Date.now() * 0.0007;
+        for(let i=0; i<5; i++){
+            bgCtx.beginPath();
+            for(let x=0; x<w; x+=10){
+                let y = h/2 + Math.sin(x*0.004 + t + i) * 70 * Math.exp(-Math.pow(x-w/2, 2)/(2*Math.pow(350, 2)));
+                if(x===0) bgCtx.moveTo(x, y); else bgCtx.lineTo(x, y);
+            }
+            bgCtx.stroke();
+        }
+        requestAnimationFrame(drawBg);
+    }
+    window.addEventListener('resize', resize);
+    resize(); drawBg();
+
+    // Logica Grafico
+    let motorChart;
+    function updateChart() {
+        const nomT = parseFloat(document.getElementById('maxTorque').value);
+        const baseRPM = parseFloat(document.getElementById('baseRPM').value);
+        const maxRPM = parseFloat(document.getElementById('maxRPM').value);
+
+        const labels = [];
+        const torqueData = [];
+        const powerData = [];
+
+        for (let rpm = 0; rpm <= maxRPM; rpm += 200) {
+            labels.push(rpm);
+            let torque;
+            
+            if (rpm <= baseRPM) {
+                torque = nomT; // Coppia costante
+            } else {
+                torque = nomT * (baseRPM / rpm); // Calo iperbolico (Potenza costante)
+            }
+
+            torqueData.push(torque.toFixed(1));
+            let power = (torque * rpm) / 9550;
+            powerData.push(power.toFixed(1));
+        }
+
+        if (motorChart) motorChart.destroy();
+        const ctx = document.getElementById('motorChart').getContext('2d');
+        motorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Coppia (Nm)', data: torqueData, borderColor: '#00ff88', tension: 0.1, yAxisID: 'y', pointRadius: 0 },
+                    { label: 'Potenza (kW)', data: powerData, borderColor: '#bc13fe', tension: 0.1, yAxisID: 'y1', pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#222' } },
+                    y: { type: 'linear', position: 'left', title: { display: true, text: 'Coppia (Nm)', color: '#00ff88' } },
+                    y1: { type: 'linear', position: 'right', title: { display: true, text: 'Potenza (kW)', color: '#bc13fe' }, grid: { drawOnChartArea: false } }
+                },
+                plugins: { legend: { labels: { color: '#fff', font: { family: 'Montserrat' } } } }
+            }
+        });
+    }
+
+    function toggleTheory(show) { document.getElementById('theory-overlay').style.display = show ? 'block' : 'none'; }
+    updateChart();
+</script>
+</body>
+</html>

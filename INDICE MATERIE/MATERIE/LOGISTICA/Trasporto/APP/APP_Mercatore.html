@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rotta Navale</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;height:100vh;overflow:hidden;background:#06080f;font-family:'Courier New',monospace;color:#fff}
+
+#panel{width:256px;min-width:256px;background:#08091a;border-right:1px solid rgba(0,200,255,.12);
+  display:flex;flex-direction:column;overflow-y:auto;gap:0}
+#panel::-webkit-scrollbar{width:3px}
+#panel::-webkit-scrollbar-thumb{background:#1a2a3a;border-radius:2px}
+
+.ph{padding:12px 14px 9px;border-bottom:1px solid rgba(0,200,255,.1);text-align:center}
+.ph h1{font-size:11px;letter-spacing:3px;color:#00c8ff}
+.ph p{font-size:8px;color:#334;margin-top:3px}
+
+.sec{padding:10px 14px;border-bottom:1px solid rgba(0,200,255,.06)}
+.lbl{font-size:8px;color:#445;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:5px}
+.fi label{font-size:8px;color:#556;margin-bottom:2px;display:block}
+.fi input{width:100%;background:#05060e;border:1px solid rgba(0,200,255,.2);color:#cce;
+  padding:4px 6px;font-size:10px;font-family:monospace;border-radius:3px}
+.fi input:focus{outline:none;border-color:#00c8ff}
+
+.btn{width:100%;padding:7px;background:rgba(0,200,255,.07);border:1px solid rgba(0,200,255,.35);
+  color:#00c8ff;border-radius:4px;cursor:pointer;font-size:9px;font-family:monospace;
+  letter-spacing:1px;margin-top:5px;transition:all .15s}
+.btn:hover{background:rgba(0,200,255,.15)}
+
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}
+.rc{background:rgba(0,0,0,.4);border:1px solid rgba(0,200,255,.1);border-radius:4px;padding:7px 8px}
+.rl{font-size:7px;color:#445;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.rv{font-size:12px;font-weight:bold}
+.ru{font-size:7px;color:#445}
+
+.fbox{background:rgba(0,0,0,.3);border:1px solid rgba(0,200,255,.1);border-radius:4px;
+  padding:8px 10px;font-size:8px;line-height:2.1;color:#445}
+.fk{color:#7ac4e8}.fv{color:#99b}
+
+.tog-r{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#556;margin-bottom:5px}
+.tog{width:26px;height:13px;background:#111a2a;border-radius:7px;cursor:pointer;position:relative}
+.tog.on{background:rgba(0,200,255,.3)}
+.tog::after{content:'';position:absolute;width:9px;height:9px;background:#333;border-radius:50%;top:2px;left:2px;transition:left .15s}
+.tog.on::after{left:15px;background:#00c8ff}
+
+#leg-sec{display:none}
+#leg-table{width:100%;border-collapse:collapse;font-size:8px}
+#leg-table th{color:#445;padding:2px 4px;border-bottom:1px solid rgba(0,200,255,.08);font-weight:normal}
+#leg-table td{padding:2px 4px;border-bottom:1px solid rgba(255,255,255,.03);color:#667}
+
+.preset-g{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pb{padding:5px 4px;background:transparent;border:1px solid rgba(0,200,255,.15);color:#556;
+  border-radius:3px;cursor:pointer;font-size:8px;font-family:monospace;transition:all .15s;text-align:center;line-height:1.5}
+.pb:hover{border-color:#00c8ff;color:#00c8ff}
+
+#vp{flex:1;position:relative;overflow:hidden;background:#070d18}
+#cv{width:100%;height:100%;display:block;cursor:crosshair}
+#leg-overlay{position:absolute;top:10px;right:12px;background:rgba(6,8,15,.8);
+  border:1px solid rgba(0,200,255,.18);border-radius:5px;padding:7px 11px;font-size:8px;
+  line-height:2;pointer-events:none}
+#cursor-ll{position:absolute;bottom:10px;left:10px;background:rgba(6,8,15,.75);
+  border:1px solid rgba(0,200,255,.12);border-radius:4px;padding:4px 10px;font-size:8px;color:#445;pointer-events:none}
+#compass-cv{position:absolute;bottom:12px;right:14px;width:66px;height:66px}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="ph"><h1>ROTTA NAVALE</h1><p>Mercatore · Lossodromia · Ortodromia</p></div>
+
+  <div class="sec">
+    <div class="lbl" style="color:#44ff88">● Partenza A</div>
+    <div class="row2">
+      <div class="fi"><label>Lat °N(+) S(-)</label><input id="aLat" type="number" step="0.5" value="41.9"></div>
+      <div class="fi"><label>Lon °E(+) W(-)</label><input id="aLon" type="number" step="0.5" value="12.5"></div>
+    </div>
+    <div class="lbl" style="color:#ff5555;margin-top:4px">● Arrivo B</div>
+    <div class="row2">
+      <div class="fi"><label>Lat °N(+) S(-)</label><input id="bLat" type="number" step="0.5" value="51.5"></div>
+      <div class="fi"><label>Lon °E(+) W(-)</label><input id="bLon" type="number" step="0.5" value="-0.1"></div>
+    </div>
+    <button class="btn" id="calcBtn">⊕ CALCOLA ROTTA</button>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Risultati</div>
+    <div class="rg">
+      <div class="rc"><div class="rl">Lossodromia</div><div class="rv" style="color:#ffcc00" id="v-rh">—</div><div class="ru">mn</div></div>
+      <div class="rc"><div class="rl">Ortodromia</div><div class="rv" style="color:#ff5555" id="v-gc">—</div><div class="ru">mn</div></div>
+      <div class="rc"><div class="rl">Rotta Z</div><div class="rv" style="color:#00c8ff" id="v-z">—</div><div class="ru">gradi veri</div></div>
+      <div class="rc"><div class="rl">Risparmio</div><div class="rv" style="color:#44ff88" id="v-sav">—</div><div class="ru">mn</div></div>
+    </div>
+    <div class="rg">
+      <div class="rc"><div class="rl">ΔLat (l)</div><div class="rv" style="color:#aac" id="v-dl">—</div><div class="ru">minuti</div></div>
+      <div class="rc"><div class="rl">ΔLon (D)</div><div class="rv" style="color:#aac" id="v-dD">—</div><div class="ru">minuti</div></div>
+      <div class="rc"><div class="rl">M(A) merid.</div><div class="rv" style="color:#ffaacc" id="v-mA">—</div><div class="ru">min mer.</div></div>
+      <div class="rc"><div class="rl">M(B) merid.</div><div class="rv" style="color:#ffaacc" id="v-mB">—</div><div class="ru">min mer.</div></div>
+    </div>
+    <div class="rc" style="margin-top:2px">
+      <div class="rl">ΔM = M(B)−M(A)</div>
+      <div class="rv" style="color:#ffaacc;font-size:13px" id="v-dM">—</div>
+      <div class="ru">min meridionali</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Formule Mercatore</div>
+    <div class="fbox">
+      <div><span class="fk">M(φ)</span> = <span class="fv">ln|tan(π/4+φ/2)| · (180/π·60)</span></div>
+      <div><span class="fk">tan(Z)</span> = <span class="fv">D / ΔM</span></div>
+      <div><span class="fk">dist</span> = <span class="fv">l / cos(Z)</span></div>
+      <div><span class="fk">GC dist</span> = <span class="fv">R · acos(sinA·sinB + cosA·cosB·cosD)</span></div>
+    </div>
+  </div>
+
+  <div class="sec" id="leg-sec">
+    <div class="lbl">Tappe Ortodromia</div>
+    <table id="leg-table">
+      <thead><tr><th>#</th><th>Lat</th><th>Lon</th><th>Rotta</th><th>Dist</th></tr></thead>
+      <tbody id="leg-body"></tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Vista</div>
+    <div class="tog-r"><span>Lossodromia</span><div class="tog on" id="t-rh"></div></div>
+    <div class="tog-r"><span>Ortodromia</span><div class="tog on" id="t-gc"></div></div>
+    <div class="tog-r"><span>Griglia</span><div class="tog on" id="t-gr"></div></div>
+    <div class="tog-r"><span>Proiezione Mercatore</span><div class="tog on" id="t-mp"></div></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Rotte Storiche</div>
+    <div class="preset-g">
+      <button class="pb" data-r="columb">Colombo<br>Palos→Bahamas</button>
+      <button class="pb" data-r="clipper">London→NY<br>Clipper</button>
+      <button class="pb" data-r="magel">Magellano<br>Cadice→Chile</button>
+      <button class="pb" data-r="silk">Via Seta<br>Venezia→Pechino</button>
+      <button class="pb" data-r="cape">Capo Horn<br>NY→SF</button>
+      <button class="pb" data-r="tokyo">Pacifico<br>LA→Tokyo</button>
+    </div>
+  </div>
+</div>
+
+<div id="vp">
+  <canvas id="cv"></canvas>
+  <div id="leg-overlay"></div>
+  <div id="cursor-ll">Lat: —  Lon: —</div>
+  <canvas id="compass-cv" width="66" height="66"></canvas>
+</div>
+
+<script>
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const cmp = document.getElementById('compass-cv');
+const cctx= cmp.getContext('2d');
+
+// ── MATH ─────────────────────────────────────────────────────
+const R2D = 180/Math.PI, D2R = Math.PI/180;
+const nm  = 60; // 1° = 60 nm
+
+function merParts(lat){
+  const phi = Math.abs(lat) * D2R;
+  if(phi > Math.PI/2 - 1e-9) return 0;
+  return Math.log(Math.tan(Math.PI/4 + phi/2)) * R2D * 60 * Math.sign(lat||1);
+}
+
+function rhumbCalc(aLat,aLon,bLat,bLon){
+  const l  = (bLat - aLat) * 60;
+  const D  = (bLon - aLon) * 60;
+  const mA = merParts(aLat);
+  const mB = merParts(bLat);
+  const dM = mB - mA;
+  let Z;
+  if(Math.abs(l) < 0.01)      Z = D > 0 ? 90 : 270;
+  else if(Math.abs(dM) < 0.01) Z = toDeg(Math.atan2(D, l));
+  else                          Z = toDeg(Math.atan2(D, dM));
+  if(Z < 0) Z += 360;
+  let dist;
+  if(Math.abs(l) < 0.01) dist = Math.abs(D) * Math.cos(aLat*D2R);
+  else                    dist = Math.abs(l / Math.cos(Z*D2R));
+  return { dist, Z, l, D, mA, mB, dM };
+}
+
+function gcDist(aLat,aLon,bLat,bLon){
+  const f1=aLat*D2R, l1=aLon*D2R, f2=bLat*D2R, l2=bLon*D2R;
+  const c = Math.sin(f1)*Math.sin(f2) + Math.cos(f1)*Math.cos(f2)*Math.cos(l2-l1);
+  return Math.acos(Math.max(-1,Math.min(1,c))) * R2D * 60;
+}
+
+function gcBearing(aLat,aLon,bLat,bLon){
+  const f1=aLat*D2R,l1=aLon*D2R,f2=bLat*D2R,l2=bLon*D2R;
+  const y=Math.sin(l2-l1)*Math.cos(f2);
+  const x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(l2-l1);
+  let b = toDeg(Math.atan2(y,x)); if(b<0) b+=360; return b;
+}
+
+function gcMid(aLat,aLon,bLat,bLon,f){
+  const f1=aLat*D2R,l1=aLon*D2R,f2=bLat*D2R,l2=bLon*D2R;
+  const d = gcDist(aLat,aLon,bLat,bLon) * D2R / R2D * R2D; // in radians
+  const dr= gcDist(aLat,aLon,bLat,bLon)/R2D * D2R;
+  if(dr < 1e-10) return {lat:aLat,lon:aLon};
+  const A=Math.sin((1-f)*dr)/Math.sin(dr), B=Math.sin(f*dr)/Math.sin(dr);
+  const x=A*Math.cos(f1)*Math.cos(l1)+B*Math.cos(f2)*Math.cos(l2);
+  const y=A*Math.cos(f1)*Math.sin(l1)+B*Math.cos(f2)*Math.sin(l2);
+  const z=A*Math.sin(f1)+B*Math.sin(f2);
+  return {lat:Math.atan2(z,Math.sqrt(x*x+y*y))*R2D, lon:Math.atan2(y,x)*R2D};
+}
+
+function toDeg(r){ return r*R2D; }
+function fmt(n,d=1){ return isFinite(n)?n.toFixed(d):'—'; }
+
+// ── STATE ────────────────────────────────────────────────────
+let ptA={lat:41.9,lon:12.5}, ptB={lat:51.5,lon:-0.1};
+let result=null;
+let showRh=true, showGC=true, showGrid=true, showMerc=true;
+let W=0,H=0;
+let clickState=0; // 0=idle,1=set A,2=set B
+
+// Viewport: lon in [-180,180], lat in [-70,82]
+const LON0=-180,LON1=180,LAT0=-70,LAT1=82;
+
+function sx(lon){ return W*(lon-LON0)/(LON1-LON0); }
+function sy(lat){
+  if(!showMerc) return H*(1-(lat-LAT0)/(LAT1-LAT0));
+  const y  = Math.log(Math.tan(Math.PI/4 + lat*D2R/2));
+  const y0 = Math.log(Math.tan(Math.PI/4 + LAT0*D2R/2));
+  const y1 = Math.log(Math.tan(Math.PI/4 + LAT1*D2R/2));
+  return H*(1-(y-y0)/(y1-y0));
+}
+function invXY(px,py){
+  const lon = LON0+(px/W)*(LON1-LON0);
+  let lat;
+  if(!showMerc){
+    lat = LAT0+(1-py/H)*(LAT1-LAT0);
+  } else {
+    const y0=Math.log(Math.tan(Math.PI/4+LAT0*D2R/2));
+    const y1=Math.log(Math.tan(Math.PI/4+LAT1*D2R/2));
+    const y=y0+(1-py/H)*(y1-y0);
+    lat=(2*Math.atan(Math.exp(y))-Math.PI/2)*R2D;
+  }
+  return {lat,lon};
+}
+
+// ── LAND OUTLINES (simplified) ────────────────────────────────
+// Format: [lon,lat] arrays
+const LANDS=[
+  // Europe mainland
+  [[-9,36],[3,36],[3,38],[2,41],[9,44],[8,48],[15,48],[15,51],[10,54],[9,57],[5,58],
+   [5,60],[15,60],[28,60],[28,58],[25,55],[21,54],[15,54],[14,52],[15,48],[8,48],
+   [3,44],[-1,44],[-3,44],[-2,44],[-5,44],[-9,44],[-9,36]],
+  // UK
+  [[-5,50],[-3,50],[1,51],[1,54],[-3,56],[-6,58],[-7,56],[-5,54],[-5,50]],
+  // Scandinavia
+  [[8,57],[10,58],[5,59],[7,62],[14,65],[17,68],[25,70],[28,69],[25,65],[20,60],[18,57],[10,57],[8,57]],
+  // Italy
+  [[7,44],[13,44],[16,42],[16,38],[16,38],[12,36],[10,38],[9,41],[7,44]],
+  // Iberia
+  [[-9,36],[-5,36],[-2,37],[3,40],[3,43],[0,44],[-2,44],[-9,44],[-9,36]],
+  // North Africa
+  [[-5,36],[5,37],[12,37],[15,37],[25,35],[32,31],[35,28],[37,22],[42,11],[44,12],
+   [42,14],[36,14],[28,15],[18,16],[12,15],[0,15],[-5,16],[-8,14],[-16,12],[-17,16],
+   [-16,20],[-17,24],[-16,28],[-14,32],[-8,34],[-5,36]],
+  // Arabia / Middle East
+  [[36,30],[38,28],[44,26],[56,24],[58,22],[52,16],[44,12],[42,11],[40,14],
+   [38,18],[36,22],[34,26],[36,30]],
+  // South Asia
+  [[62,24],[68,24],[72,22],[76,8],[80,8],[84,14],[88,22],[92,22],[94,18],[98,18],
+   [100,6],[94,4],[88,8],[80,14],[74,14],[68,18],[62,24]],
+  // East Asia
+  [[100,18],[104,22],[110,22],[116,24],[122,24],[124,34],[122,38],[122,40],[132,44],
+   [136,52],[140,48],[136,34],[130,28],[118,22],[110,18],[100,18]],
+  // SE Asia
+  [[100,4],[104,2],[104,2],[108,2],[114,4],[118,4],[120,10],[112,6],[108,6],[104,4],[100,4]],
+  // Japan
+  [[130,32],[131,33],[134,34],[138,36],[140,40],[142,44],[142,46],[138,42],
+   [136,36],[130,32]],
+  // North America East
+  [[-78,24],[-82,26],[-82,30],[-80,32],[-76,34],[-74,40],[-70,42],[-66,44],
+   [-70,48],[-60,46],[-56,48],[-54,52],[-60,58],[-66,60],[-78,60],[-82,56],
+   [-86,52],[-84,48],[-80,44],[-76,40],[-76,38],[-78,24]],
+  // Florida
+  [[-82,24],[-80,26],[-80,28],[-84,30],[-82,24]],
+  // North America West
+  [[-118,32],[-122,34],[-122,38],[-124,40],[-126,48],[-130,52],[-136,58],
+   [-148,60],[-152,60],[-148,58],[-136,56],[-130,50],[-124,46],[-122,38],
+   [-120,34],[-118,32]],
+  // South America
+  [[-72,12],[-62,10],[-52,4],[-50,0],[-36,-4],[-36,-10],[-38,-18],[-42,-22],
+   [-48,-28],[-52,-34],[-58,-38],[-62,-44],[-66,-52],[-68,-56],[-66,-54],
+   [-70,-46],[-74,-40],[-72,-32],[-70,-22],[-76,-12],[-80,-4],[-78,0],
+   [-76,4],[-72,8],[-72,12]],
+  // Australia
+  [[114,-22],[120,-22],[128,-14],[136,-14],[138,-16],[138,-22],[142,-28],[148,-26],
+   [152,-26],[152,-28],[148,-38],[144,-38],[140,-36],[134,-34],[128,-34],[122,-34],
+   [114,-28],[114,-22]],
+  // Greenland
+  [[-46,60],[-52,64],[-54,68],[-56,72],[-40,76],[-22,82],[-18,76],[-20,70],
+   [-26,66],[-34,62],[-46,60]],
+];
+
+// ── DRAW ─────────────────────────────────────────────────────
+function drawOcean(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#06101e'); g.addColorStop(1,'#091422');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+function drawGrid(){
+  if(!showGrid) return;
+  ctx.save();
+  ctx.strokeStyle='rgba(0,150,200,.15)'; ctx.lineWidth=.7; ctx.setLineDash([3,7]);
+  for(let lon=-180;lon<=180;lon+=30){
+    ctx.beginPath(); ctx.moveTo(sx(lon),0); ctx.lineTo(sx(lon),H); ctx.stroke();
+    ctx.fillStyle='rgba(0,180,230,.35)'; ctx.font='8px monospace'; ctx.textAlign='center';
+    ctx.fillText(`${lon}°`,sx(lon),H-3);
+  }
+  for(let lat=-60;lat<=80;lat+=30){
+    ctx.beginPath(); ctx.moveTo(0,sy(lat)); ctx.lineTo(W,sy(lat)); ctx.stroke();
+    ctx.fillStyle='rgba(0,180,230,.35)'; ctx.font='8px monospace'; ctx.textAlign='left';
+    ctx.fillText(`${lat}°`,3,sy(lat)-3);
+  }
+  // Equator + prime meridian brighter
+  ctx.strokeStyle='rgba(0,200,255,.28)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(0,sy(0)); ctx.lineTo(W,sy(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx(0),0); ctx.lineTo(sx(0),H); ctx.stroke();
+  ctx.restore();
+}
+
+function drawLand(){
+  ctx.save();
+  ctx.fillStyle='#1e2e14'; ctx.strokeStyle='#2a3e1a'; ctx.lineWidth=.8;
+  LANDS.forEach(poly=>{
+    ctx.beginPath();
+    poly.forEach(([lon,lat],i)=>{ i===0?ctx.moveTo(sx(lon),sy(lat)):ctx.lineTo(sx(lon),sy(lat)); });
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawRhumb(a,b){
+  if(!showRh) return;
+  ctx.save();
+  ctx.strokeStyle='rgba(255,210,0,.9)'; ctx.lineWidth=2.2; ctx.setLineDash([8,5]);
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(255,200,0,.4)';
+  ctx.beginPath(); ctx.moveTo(sx(a.lon),sy(a.lat)); ctx.lineTo(sx(b.lon),sy(b.lat));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawGC(a,b){
+  if(!showGC) return;
+  ctx.save();
+  ctx.strokeStyle='rgba(255,70,70,.9)'; ctx.lineWidth=2.2; ctx.setLineDash([]);
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(255,50,50,.4)';
+  ctx.beginPath();
+  let prev=null;
+  for(let i=0;i<=120;i++){
+    const p=gcMid(a.lat,a.lon,b.lat,b.lon,i/120);
+    const px=sx(p.lon), py=sy(p.lat);
+    if(!prev||Math.abs(p.lon-prev.lon)>90){ ctx.moveTo(px,py); }
+    else ctx.lineTo(px,py);
+    prev=p;
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPoint(lat,lon,col,lbl){
+  const x=sx(lon), y=sy(lat);
+  ctx.save();
+  ctx.shadowBlur=16; ctx.shadowColor=col;
+  ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2);
+  ctx.fillStyle=col+'33'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=col; ctx.font='bold 11px monospace'; ctx.textAlign='left';
+  ctx.fillText(lbl,x+10,y+4);
+  ctx.font='8px monospace'; ctx.fillStyle='rgba(255,255,255,.45)';
+  const cLat=lat>=0?`${lat.toFixed(2)}°N`:`${Math.abs(lat).toFixed(2)}°S`;
+  const cLon=lon>=0?`${lon.toFixed(2)}°E`:`${Math.abs(lon).toFixed(2)}°W`;
+  ctx.fillText(`${cLat} ${cLon}`,x+10,y+14);
+  ctx.restore();
+}
+
+function drawCompass(Z){
+  cctx.clearRect(0,0,66,66);
+  const cx=33,cy=33,r=28;
+  cctx.beginPath(); cctx.arc(cx,cy,r,0,Math.PI*2);
+  cctx.fillStyle='rgba(5,8,15,.85)'; cctx.fill();
+  cctx.strokeStyle='rgba(0,200,255,.3)'; cctx.lineWidth=1; cctx.stroke();
+  ['N','E','S','W'].forEach((d,i)=>{
+    const a=i*Math.PI/2-Math.PI/2;
+    cctx.fillStyle=d==='N'?'#ff5555':'rgba(0,200,255,.6)';
+    cctx.font='bold 9px monospace'; cctx.textAlign='center'; cctx.textBaseline='middle';
+    cctx.fillText(d,cx+Math.cos(a)*19,cy+Math.sin(a)*19);
+  });
+  const nb=(Z-90)*D2R;
+  cctx.save(); cctx.translate(cx,cy);
+  cctx.strokeStyle='#ffcc00'; cctx.lineWidth=2.2;
+  cctx.shadowBlur=6; cctx.shadowColor='#ffcc00';
+  cctx.beginPath(); cctx.moveTo(-Math.cos(nb)*6,-Math.sin(nb)*6);
+  cctx.lineTo(Math.cos(nb)*22,Math.sin(nb)*22); cctx.stroke();
+  cctx.shadowBlur=0;
+  cctx.fillStyle='rgba(0,200,255,.6)'; cctx.font='7px monospace';
+  cctx.textAlign='center'; cctx.textBaseline='middle';
+  cctx.fillText(`${Math.round(Z)}°`,0,0);
+  cctx.restore();
+}
+
+function render(){
+  W=cv.width=cv.clientWidth; H=cv.height=cv.clientHeight;
+  drawOcean(); drawGrid(); drawLand();
+  if(result){
+    drawRhumb(ptA,ptB); drawGC(ptA,ptB);
+    drawCompass(result.Z);
+  } else {
+    drawCompass(0);
+  }
+  drawPoint(ptA.lat,ptA.lon,'#44ff88','A');
+  drawPoint(ptB.lat,ptB.lon,'#ff5555','B');
+}
+
+// ── CALCULATE ────────────────────────────────────────────────
+function calculate(){
+  const aLat=parseFloat(document.getElementById('aLat').value);
+  const aLon=parseFloat(document.getElementById('aLon').value);
+  const bLat=parseFloat(document.getElementById('bLat').value);
+  const bLon=parseFloat(document.getElementById('bLon').value);
+  if(!isFinite(aLat+aLon+bLat+bLon)) return;
+
+  ptA={lat:aLat,lon:aLon}; ptB={lat:bLat,lon:bLon};
+  const rh=rhumbCalc(aLat,aLon,bLat,bLon);
+  const gcd=gcDist(aLat,aLon,bLat,bLon);
+  const gcb=gcBearing(aLat,aLon,bLat,bLon);
+  const sav=rh.dist-gcd;
+  result={...rh, gcd, gcb, sav};
+
+  document.getElementById('v-rh').textContent =fmt(rh.dist,1);
+  document.getElementById('v-gc').textContent =fmt(gcd,1);
+  document.getElementById('v-z').textContent  =fmt(rh.Z,1)+'°';
+  document.getElementById('v-sav').textContent=(sav>0?'+':'')+fmt(sav,1);
+  document.getElementById('v-dl').textContent =fmt(rh.l,1);
+  document.getElementById('v-dD').textContent =fmt(rh.D,1);
+  document.getElementById('v-mA').textContent =fmt(rh.mA,1);
+  document.getElementById('v-mB').textContent =fmt(rh.mB,1);
+  document.getElementById('v-dM').textContent =fmt(rh.dM,1);
+
+  // overlay
+  document.getElementById('leg-overlay').innerHTML=
+    `<span style="color:#ffcc00">Lossod: ${fmt(rh.dist,0)} mn · Z=${fmt(rh.Z,1)}°</span><br>`+
+    `<span style="color:#ff5555">Ortodr: ${fmt(gcd,0)} mn · Z₀=${fmt(gcb,1)}°</span><br>`+
+    `<span style="color:#44ff88">Risparmio: ${fmt(sav,1)} mn</span>`;
+
+  // GC legs
+  const tbody=document.getElementById('leg-body');
+  tbody.innerHTML='';
+  const N=8;
+  for(let i=0;i<=N;i++){
+    const p=gcMid(aLat,aLon,bLat,bLon,i/N);
+    const q=gcMid(aLat,aLon,bLat,bLon,Math.min((i+1)/N,1));
+    const seg=i<N?gcDist(p.lat,p.lon,q.lat,q.lon):0;
+    const brg=i<N?gcBearing(p.lat,p.lon,q.lat,q.lon):0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:#556">${i}</td>
+      <td style="color:#7aaccc">${fmt(p.lat,1)}°</td>
+      <td style="color:#7aaccc">${fmt(p.lon,1)}°</td>
+      <td style="color:#ffcc44">${i<N?fmt(brg,1)+'°':'—'}</td>
+      <td style="color:#aaa">${i<N?fmt(seg,0):'—'}</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('leg-sec').style.display='block';
+  render();
+}
+
+// ── EVENTS ───────────────────────────────────────────────────
+document.getElementById('calcBtn').addEventListener('click',calculate);
+['aLat','aLon','bLat','bLon'].forEach(id=>
+  document.getElementById(id).addEventListener('change',calculate));
+
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  const {lat,lon}=invXY(e.clientX-r.left,e.clientY-r.top);
+  const cLat=lat>=0?`${lat.toFixed(2)}°N`:`${Math.abs(lat).toFixed(2)}°S`;
+  const cLon=lon>=0?`${lon.toFixed(2)}°E`:`${Math.abs(lon).toFixed(2)}°W`;
+  document.getElementById('cursor-ll').textContent=`Lat: ${cLat}  Lon: ${cLon}`;
+});
+
+cv.addEventListener('click',e=>{
+  const r=cv.getBoundingClientRect();
+  const {lat,lon}=invXY(e.clientX-r.left,e.clientY-r.top);
+  if(clickState===0){
+    clickState=1;
+    document.getElementById('cursor-ll').textContent='Click per impostare B';
+    document.getElementById('aLat').value=lat.toFixed(2);
+    document.getElementById('aLon').value=lon.toFixed(2);
+    ptA={lat,lon}; render();
+  } else {
+    clickState=0;
+    document.getElementById('bLat').value=lat.toFixed(2);
+    document.getElementById('bLon').value=lon.toFixed(2);
+    ptB={lat,lon}; calculate();
+  }
+});
+
+// Toggles
+[['t-rh',v=>showRh=v],['t-gc',v=>showGC=v],['t-gr',v=>showGrid=v],['t-mp',v=>showMerc=v]].forEach(([id,fn])=>{
+  document.getElementById(id).addEventListener('click',function(){
+    this.classList.toggle('on'); fn(this.classList.contains('on')); render();
+  });
+});
+
+// Presets
+const PRESETS={
+  columb:{aLat:37.3,aLon:-6.9,bLat:24.5,bLon:-77.1},
+  clipper:{aLat:51.5,aLon:-0.1,bLat:40.7,bLon:-74.0},
+  magel:{aLat:36.5,aLon:-6.2,bLat:-52.5,bLon:-68.5},
+  silk:{aLat:45.4,aLon:12.3,bLat:39.9,bLon:116.4},
+  cape:{aLat:40.7,aLon:-74.0,bLat:37.7,bLon:-122.4},
+  tokyo:{aLat:34.1,aLon:-118.2,bLat:35.7,bLon:139.7},
+};
+document.querySelectorAll('[data-r]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const p=PRESETS[b.dataset.r];
+    document.getElementById('aLat').value=p.aLat;
+    document.getElementById('aLon').value=p.aLon;
+    document.getElementById('bLat').value=p.bLat;
+    document.getElementById('bLon').value=p.bLon;
+    calculate();
+  });
+});
+
+window.addEventListener('resize',render);
+calculate();
+</script>
+</body>
+</html>
