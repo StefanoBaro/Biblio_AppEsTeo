@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Math Particles</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#00f5ff;--bg:#060612;--panel:#0a0a1a;--border:rgba(255,255,255,0.07)}
+  body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:'Courier New',monospace;color:#fff}
+
+  /* PANEL */
+  #panel{width:220px;min-width:220px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:14px;padding:14px;overflow-y:auto}
+  #panel::-webkit-scrollbar{width:4px}
+  #panel::-webkit-scrollbar-track{background:transparent}
+  #panel::-webkit-scrollbar-thumb{background:#1a1a3a;border-radius:2px}
+
+  .logo{text-align:center;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .logo h1{font-size:13px;letter-spacing:3px;color:var(--accent)}
+  .logo p{font-size:9px;color:#444;margin-top:2px;letter-spacing:1px}
+
+  .section-label{font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+
+  /* MODE TOGGLE */
+  #mode-btns{display:flex;gap:6px}
+  .mode-btn{flex:1;padding:6px 0;background:transparent;border:1px solid #222;
+    color:#555;border-radius:4px;cursor:pointer;font-size:11px;font-family:monospace;
+    transition:all .15s}
+  .mode-btn.active{background:rgba(0,245,255,.12);border-color:var(--accent);color:var(--accent)}
+
+  /* FUNCTION BUTTONS */
+  #fn-list{display:flex;flex-direction:column;gap:4px}
+  .fn-btn{padding:7px 10px;text-align:left;background:transparent;border:1px solid #1a1a2e;
+    color:#555;border-radius:4px;cursor:pointer;font-size:11px;font-family:monospace;
+    transition:all .15s}
+  .fn-btn:hover{border-color:#333;color:#888}
+  .fn-btn.active{font-weight:bold}
+
+  /* FORMULA BOX */
+  #formula-box{background:rgba(255,255,255,.03);border:1px solid #111122;border-radius:6px;padding:10px}
+  #formula-box .lbl{font-size:9px;color:#444;margin-bottom:4px}
+  #formula-txt{font-size:10px}
+
+  /* SLIDERS */
+  .slider-row{margin-bottom:10px}
+  .slider-meta{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-bottom:3px}
+  .slider-meta span:last-child{color:#ccc}
+  input[type=range]{width:100%;cursor:pointer;accent-color:var(--accent);height:3px}
+
+  /* BUTTONS */
+  .ctrl-btn{width:100%;padding:8px 0;background:transparent;border:1px solid #222;
+    color:#555;border-radius:4px;cursor:pointer;font-size:11px;font-family:monospace;
+    transition:all .15s}
+  .ctrl-btn:hover{border-color:#444;color:#aaa}
+  .ctrl-btn.on{background:rgba(0,245,255,.1);border-color:var(--accent);color:var(--accent)}
+
+  .hint{font-size:9px;color:#333;text-align:center;line-height:1.7}
+
+  /* VIEWPORT */
+  #viewport{flex:1;position:relative;overflow:hidden}
+  #canvas2d,#canvas3d{position:absolute;inset:0;width:100%;height:100%}
+  #canvas2d{display:none}
+
+  /* HUD */
+  #hud{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.55);
+    padding:6px 14px;border-radius:6px;border:1px solid #111133;
+    font-size:11px;pointer-events:none}
+
+  /* STATS */
+  #stats{position:absolute;bottom:12px;left:14px;background:rgba(0,0,0,.4);
+    padding:5px 10px;border-radius:5px;font-size:9px;color:#333;pointer-events:none;line-height:1.8}
+</style>
+</head>
+<body>
+
+<!-- PANEL -->
+<div id="panel">
+  <div class="logo"><h1>MATH PARTICLES</h1><p>Function Visualizer</p></div>
+
+  <div>
+    <div class="section-label">View Mode</div>
+    <div id="mode-btns">
+      <button class="mode-btn" data-m="2d">2D</button>
+      <button class="mode-btn active" data-m="3d">3D</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Function</div>
+    <div id="fn-list"></div>
+  </div>
+
+  <div id="formula-box">
+    <div class="lbl">FORMULA</div>
+    <div id="formula-txt"></div>
+  </div>
+
+  <div>
+    <div class="section-label">Parameters</div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Amplitude A</span><span id="v-amp">2.50</span></div>
+      <input type="range" id="s-amp" min="0.5" max="5" step="0.1" value="2.5">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Frequency f</span><span id="v-freq">0.80</span></div>
+      <input type="range" id="s-freq" min="0.1" max="3" step="0.05" value="0.8">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Phase φ</span><span id="v-phase">0.00</span></div>
+      <input type="range" id="s-phase" min="-3.14" max="3.14" step="0.05" value="0">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Speed</span><span id="v-speed">1.00</span></div>
+      <input type="range" id="s-speed" min="0" max="3" step="0.05" value="1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Particle Size</span><span id="v-size">1.50</span></div>
+      <input type="range" id="s-size" min="0.5" max="4" step="0.1" value="1.5">
+    </div>
+  </div>
+
+  <button class="ctrl-btn on" id="btn-anim">⏸ PAUSE</button>
+  <button class="ctrl-btn" id="btn-reset">↺ RESET PARAMS</button>
+
+  <div class="hint" id="hint3d">🖱 Drag to orbit · Scroll to zoom</div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="viewport">
+  <canvas id="canvas3d"></canvas>
+  <canvas id="canvas2d"></canvas>
+  <div id="hud"></div>
+  <div id="stats"></div>
+</div>
+
+<script>
+// ─── FUNCTIONS ────────────────────────────────────────────────────
+const FUNCS = {
+  sine:        { label:"Sine",         color:"#00f5ff", formula:"A·sin(f·x + φ + t)",
+    f2:(x,t,a,f,p)=>a*Math.sin(f*x+p+t),
+    f3:(x,z,t,a,f,p)=>a*Math.sin(f*x+p+t)*Math.cos(f*z*.5+t*.3) },
+  cosine:      { label:"Cosine",       color:"#ff6b6b", formula:"A·cos(f·x + φ + t)",
+    f2:(x,t,a,f,p)=>a*Math.cos(f*x+p+t),
+    f3:(x,z,t,a,f,p)=>a*Math.cos(f*x+p+t)*Math.cos(f*z*.5+t*.3) },
+  gaussian:    { label:"Gaussian",     color:"#a8ff78", formula:"A·e^(−f·r²/4)",
+    f2:(x,t,a,f,p)=>a*Math.exp(-f*x*x/2),
+    f3:(x,z,t,a,f,p)=>a*Math.exp(-f*(x*x+z*z)/4) },
+  parabola:    { label:"Parabola",     color:"#f7971e", formula:"A·f·r²/20 − A·1.5",
+    f2:(x,t,a,f,p)=>a*f*x*x*.1-a*1.5,
+    f3:(x,z,t,a,f,p)=>a*f*(x*x+z*z)*.05-a*1.5 },
+  sinc:        { label:"Sinc",         color:"#c471ed", formula:"A·sin(f·r)/r",
+    f2:(x,t,a,f,p)=>{const v=f*x+.001;return a*Math.sin(v+t)/v},
+    f3:(x,z,t,a,f,p)=>{const r=Math.sqrt(x*x+z*z)*f+.001;return a*Math.sin(r)/r} },
+  ripple:      { label:"Ripple",       color:"#f64f59", formula:"A·sin(f·r − 2t)",
+    f2:(x,t,a,f,p)=>a*Math.sin(f*x*x*.2+t),
+    f3:(x,z,t,a,f,p)=>a*Math.sin(f*Math.sqrt(x*x+z*z)-t*2) },
+  lissajous:   { label:"Lissajous",    color:"#43e97b", formula:"A·sin(f·x+t)·sin(f·z)",
+    f2:(x,t,a,f,p)=>a*Math.sin(f*2*x+t)*Math.cos(f*x),
+    f3:(x,z,t,a,f,p)=>a*Math.sin(f*x+t)*Math.sin(f*z*1.5+t*.7) },
+  mexican_hat: { label:"Mexican Hat",  color:"#ee9ca7", formula:"A·(1−r²)·e^(−r²/2)",
+    f2:(x,t,a,f,p)=>{const v=f*x*x;return a*(1-v)*Math.exp(-v/2)*Math.cos(t*.5)},
+    f3:(x,z,t,a,f,p)=>{const r2=f*(x*x+z*z);return a*(1-r2)*Math.exp(-r2/2)} },
+  hyperbolic:  { label:"Tanh",         color:"#ffd700", formula:"A·tanh(f·x)",
+    f2:(x,t,a,f,p)=>a*Math.tanh(f*x)*Math.cos(t*.3+p),
+    f3:(x,z,t,a,f,p)=>a*Math.tanh(f*x)*Math.tanh(f*z) },
+};
+
+// ─── STATE ────────────────────────────────────────────────────────
+let mode='3d', fnKey='gaussian', animating=true, t=0;
+let amp=2.5, freq=0.8, phase=0, speed=1, psize=1.5;
+
+// ─── BUILD PANEL ─────────────────────────────────────────────────
+const fnList = document.getElementById('fn-list');
+Object.entries(FUNCS).forEach(([k,f])=>{
+  const b = document.createElement('button');
+  b.className='fn-btn'+(k===fnKey?' active':'');
+  b.dataset.k=k; b.textContent=f.label;
+  b.style.borderColor = k===fnKey ? f.color : '';
+  b.style.color = k===fnKey ? f.color : '';
+  fnList.appendChild(b);
+});
+
+function setFn(k){
+  fnKey=k;
+  document.querySelectorAll('.fn-btn').forEach(b=>{
+    const active=b.dataset.k===k, f=FUNCS[b.dataset.k];
+    b.classList.toggle('active',active);
+    b.style.color=active?f.color:'';
+    b.style.borderColor=active?f.color:'';
+    b.style.background=active?`${f.color}18`:'';
+  });
+  document.getElementById('formula-txt').textContent=FUNCS[k].formula;
+  document.getElementById('formula-txt').style.color=FUNCS[k].color;
+  document.getElementById('hud').style.color=FUNCS[k].color;
+  updateHUD();
+}
+fnList.addEventListener('click',e=>{if(e.target.dataset.k)setFn(e.target.dataset.k)});
+setFn(fnKey);
+
+// ─── MODE TOGGLE ─────────────────────────────────────────────────
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    mode=b.dataset.m;
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('canvas2d').style.display = mode==='2d'?'block':'none';
+    document.getElementById('canvas3d').style.display = mode==='3d'?'block':'none';
+    document.getElementById('hint3d').style.display   = mode==='3d'?'block':'none';
+    updateHUD();
+  });
+});
+
+// ─── SLIDERS ─────────────────────────────────────────────────────
+const sliders=[
+  ['s-amp','v-amp',v=>amp=v],
+  ['s-freq','v-freq',v=>freq=v],
+  ['s-phase','v-phase',v=>phase=v],
+  ['s-speed','v-speed',v=>speed=v],
+  ['s-size','v-size',v=>{psize=v;if(ptMat)ptMat.size=psize*.15}],
+];
+sliders.forEach(([id,vid,cb])=>{
+  const el=document.getElementById(id);
+  el.addEventListener('input',()=>{
+    document.getElementById(vid).textContent=parseFloat(el.value).toFixed(2);
+    cb(parseFloat(el.value));
+  });
+});
+
+// ─── CONTROLS ────────────────────────────────────────────────────
+const btnAnim=document.getElementById('btn-anim');
+btnAnim.addEventListener('click',()=>{
+  animating=!animating;
+  btnAnim.textContent=animating?'⏸ PAUSE':'▶ PLAY';
+  btnAnim.classList.toggle('on',animating);
+});
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  amp=2.5;freq=0.8;phase=0;speed=1;psize=1.5;
+  [['s-amp',2.5,'v-amp'],['s-freq',0.8,'v-freq'],['s-phase',0,'v-phase'],
+   ['s-speed',1,'v-speed'],['s-size',1.5,'v-size']].forEach(([id,v,vid])=>{
+    document.getElementById(id).value=v;
+    document.getElementById(vid).textContent=v.toFixed(2);
+  });
+  if(ptMat) ptMat.size=psize*.15;
+});
+
+function updateHUD(){
+  document.getElementById('hud').textContent=`${FUNCS[fnKey].label} · ${mode.toUpperCase()}`;
+}
+updateHUD();
+
+// ─── 3D SCENE ────────────────────────────────────────────────────
+const c3 = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({canvas:c3,antialias:true,alpha:true});
+renderer.setClearColor(0x000000,0);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60,1,.1,200);
+let camTheta=0.4, camPhi=0.55, camR=36;
+function setCam(){
+  camera.position.set(
+    camR*Math.sin(camPhi)*Math.sin(camTheta),
+    camR*Math.cos(camPhi),
+    camR*Math.sin(camPhi)*Math.cos(camTheta));
+  camera.lookAt(0,0,0);
+}
+setCam();
+
+scene.add(new THREE.GridHelper(30,20,0x111133,0x0a0a22));
+
+const N3=64, total3=N3*N3;
+const pos3=new Float32Array(total3*3), col3=new Float32Array(total3*3);
+const geo3=new THREE.BufferGeometry();
+geo3.setAttribute('position',new THREE.BufferAttribute(pos3,3));
+geo3.setAttribute('color',   new THREE.BufferAttribute(col3,3));
+let ptMat=new THREE.PointsMaterial({size:psize*.15,vertexColors:true,transparent:true,opacity:.92});
+scene.add(new THREE.Points(geo3,ptMat));
+
+// orbit
+let drag=false, lx=0, ly=0;
+c3.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY});
+window.addEventListener('mouseup',()=>drag=false);
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  camTheta-=(e.clientX-lx)*.005; lx=e.clientX;
+  camPhi=Math.max(.1,Math.min(Math.PI/2,camPhi-(e.clientY-ly)*.005)); ly=e.clientY;
+  setCam();
+});
+c3.addEventListener('wheel',e=>{
+  camR=Math.max(10,Math.min(60,camR+e.deltaY*.05));
+  setCam();
+},{passive:true});
+
+function resize3d(){
+  const w=c3.clientWidth, h=c3.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+
+// ─── 2D CANVAS ───────────────────────────────────────────────────
+const c2=document.getElementById('canvas2d');
+const ctx=c2.getContext('2d');
+const N2=400;
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return{r,g,b};
+}
+
+function draw2d(){
+  const w=c2.width=c2.clientWidth, h=c2.height=c2.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+  const s=h/8;
+  for(let y=0;y<h;y+=s){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  for(let x=0;x<w;x+=s){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  // axes
+  ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke();
+  // tick labels
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='9px monospace';
+  ctx.fillText('x',w-10,h/2-6);ctx.fillText('y',w/2+6,10);
+
+  const fn=FUNCS[fnKey], rgb=hexToRgb(fn.color);
+  const range=12;
+  for(let i=0;i<N2;i++){
+    const xn=i/(N2-1);
+    const x=(xn-.5)*2*range;
+    const y=fn.f2(x,t,amp,freq,phase);
+    const px=xn*w;
+    const py=h/2-(y/(amp+.01))*(h*.38);
+    const inten=Math.max(0,Math.min(1,(y/(amp+.01)+1)/2));
+    const r=Math.round(rgb.r*inten);
+    const g=Math.round(rgb.g*inten);
+    const b=Math.round(rgb.b*(.4+inten*.6));
+    ctx.beginPath();
+    ctx.arc(px,py,psize*.7,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${r},${g},${b},0.9)`;
+    ctx.fill();
+  }
+}
+
+function update3d(){
+  const fn=FUNCS[fnKey];
+  const rgb=hexToRgb(fn.color);
+  const range=14;
+  let idx=0;
+  for(let i=0;i<N3;i++){
+    for(let j=0;j<N3;j++){
+      const x=(i/(N3-1)-.5)*2*range;
+      const z=(j/(N3-1)-.5)*2*range;
+      const y=fn.f3(x,z,t,amp,freq,phase);
+      pos3[idx*3]=x; pos3[idx*3+1]=y; pos3[idx*3+2]=z;
+      const inten=Math.max(0,Math.min(1,(y/(amp+.01)+1)/2));
+      col3[idx*3]  =rgb.r/255*inten;
+      col3[idx*3+1]=rgb.g/255*inten;
+      col3[idx*3+2]=rgb.b/255*(.4+inten*.6);
+      idx++;
+    }
+  }
+  geo3.attributes.position.needsUpdate=true;
+  geo3.attributes.color.needsUpdate=true;
+}
+
+// ─── LOOP ─────────────────────────────────────────────────────────
+let last=0, fps=0, fpsCounter=0, fpsTime=0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=(ts-last)/1000; last=ts;
+  if(animating) t+=dt*speed;
+
+  fpsCounter++;
+  if(ts-fpsTime>500){fps=Math.round(fpsCounter*1000/(ts-fpsTime));fpsCounter=0;fpsTime=ts}
+
+  if(mode==='3d'){
+    resize3d();
+    update3d();
+    renderer.render(scene,camera);
+  } else {
+    draw2d();
+  }
+
+  document.getElementById('stats').textContent=
+    `FPS: ${fps}  ·  t: ${t.toFixed(2)}  ·  A: ${amp.toFixed(2)}  ·  f: ${freq.toFixed(2)}`;
+}
+requestAnimationFrame(loop);
+
+window.addEventListener('resize',resize3d);
+resize3d();
+</script>
+</body>
+</html>

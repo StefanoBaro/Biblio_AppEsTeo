@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calcolatore EOQ monoarticolo</title>
+  <style>
+    :root{
+      --bg:#0f1020;
+      --card:#17192e;
+      --card-2:#1d2040;
+      --text:#f3f4f6;
+      --muted:#b5b8d6;
+      --line:#32365f;
+      --violet:#8b5cf6;
+      --aqua:#2dd4bf;
+      --total:#c4b5fd;
+      --input:#111429;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:linear-gradient(180deg,#0d0f1d 0%, #12152a 100%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1100px;
+      margin:28px auto;
+      padding:0 16px 24px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:20px;
+      box-shadow:0 12px 28px rgba(0,0,0,.28);
+      margin-bottom:18px;
+    }
+    h1{
+      margin:0 0 8px 0;
+      font-size:28px;
+    }
+    h2{
+      margin:0 0 12px 0;
+      font-size:20px;
+    }
+    p{
+      margin:6px 0;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:14px 16px;
+    }
+    @media (max-width:760px){
+      .grid{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    input{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:15px;
+      background:var(--input);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus{
+      border-color:var(--violet);
+      box-shadow:0 0 0 3px rgba(139,92,246,.18);
+    }
+    .results{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:14px;
+    }
+    @media (max-width:900px){
+      .results{grid-template-columns:1fr}
+    }
+    .result{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:16px;
+      background:var(--card-2);
+    }
+    .result h3{
+      margin:0 0 8px 0;
+      font-size:16px;
+    }
+    .value{
+      font-size:30px;
+      font-weight:700;
+      margin:8px 0 4px 0;
+    }
+    .violet{color:var(--violet)}
+    .aqua{color:var(--aqua)}
+    .total{color:var(--total)}
+    .small{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .note{
+      border-left:4px solid var(--aqua);
+      padding-left:12px;
+    }
+    .formula{
+      background:#13162a;
+      border:1px dashed var(--line);
+      border-radius:10px;
+      padding:12px;
+      margin-top:16px;
+      color:#d7daf4;
+      font-size:14px;
+    }
+    .chart-wrap{
+      position:relative;
+      height:420px;
+      background:#121528;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+    .legend{
+      display:flex;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .sw{
+      width:12px;height:12px;border-radius:999px;display:inline-block;
+    }
+    .footer{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:8px;
+    }
+    .two{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:18px;
+    }
+    @media (max-width:980px){
+      .two{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Calcolatore EOQ monoarticolo</h1>
+      <p>Inserisci i dati del singolo articolo. I risultati si aggiornano automaticamente.</p>
+      <p class="note">Il grafico mostra come si muovono <strong>costi di ordinazione</strong>, <strong>costi di mantenimento</strong> e <strong>costo totale</strong> al variare della quantità ordinata.</p>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="sku">Codice articolo</label>
+          <input id="sku" type="text" value="ART-001" />
+        </div>
+        <div>
+          <label for="periodDays">Giorni del periodo selezionato</label>
+          <input id="periodDays" type="number" min="1" step="1" value="30" />
+        </div>
+
+        <div>
+          <label for="annualDemand">Domanda annua (unità)</label>
+          <input id="annualDemand" type="number" min="0" step="any" value="12000" />
+        </div>
+        <div>
+          <label for="orderCost">Costo per ordine (€)</label>
+          <input id="orderCost" type="number" min="0" step="any" value="45" />
+        </div>
+
+        <div>
+          <label for="unitCost">Costo unitario (€)</label>
+          <input id="unitCost" type="number" min="0" step="any" value="8" />
+        </div>
+        <div>
+          <label for="holdingRate">Tasso annuo di mantenimento (%)</label>
+          <input id="holdingRate" type="number" min="0" step="any" value="18" />
+        </div>
+
+        <div>
+          <label for="openingStock">Giacenza iniziale periodo (unità)</label>
+          <input id="openingStock" type="number" min="0" step="any" value="500" />
+        </div>
+        <div>
+          <label for="closingStock">Giacenza finale periodo (unità)</label>
+          <input id="closingStock" type="number" min="0" step="any" value="350" />
+        </div>
+
+        <div>
+          <label for="periodUsage">Consumo / vendite nel periodo (unità)</label>
+          <input id="periodUsage" type="number" min="0" step="any" value="900" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="results">
+        <div class="result">
+          <h3>EOQ</h3>
+          <div class="value violet" id="eoq">0</div>
+          <div class="small">quantità economica d’ordine (unità)</div>
+        </div>
+
+        <div class="result">
+          <h3>Costo di mantenimento nel periodo</h3>
+          <div class="value aqua" id="holdingCost">€ 0,00</div>
+          <div class="small">basato su giacenza media e giorni del periodo</div>
+        </div>
+
+        <div class="result">
+          <h3>Indice di rotazione nel periodo</h3>
+          <div class="value total" id="turnover">0</div>
+          <div class="small">consumo del periodo / giacenza media</div>
+        </div>
+      </div>
+
+      <div class="formula">
+        <div><strong>Formule usate</strong></div>
+        <div id="formulaH">H = costo unitario × tasso di mantenimento</div>
+        <div id="formulaEOQ">EOQ = √(2 × D × S / H)</div>
+        <div id="formulaAvg">Giacenza media = (giacenza iniziale + giacenza finale) / 2</div>
+        <div id="formulaHC">Costo mantenimento periodo = giacenza media × H × giorni periodo / 365</div>
+        <div id="formulaTO">Rotazione periodo = consumo periodo / giacenza media</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="two">
+        <div>
+          <h2>Plot dei costi</h2>
+          <p>Asse X: quantità ordinata. Asse Y: costo annuo. Il minimo del totale corrisponde all’EOQ.</p>
+          <div class="chart-wrap">
+            <canvas id="costChart" width="900" height="420"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--violet)"></i> Costo di ordinazione</span>
+            <span><i class="sw" style="background:var(--aqua)"></i> Costo di mantenimento</span>
+            <span><i class="sw" style="background:var(--total)"></i> Costo totale</span>
+          </div>
+        </div>
+        <div>
+          <h2>Valori al punto EOQ</h2>
+          <div class="result" style="margin-bottom:12px;">
+            <h3>Costo annuo di ordinazione a EOQ</h3>
+            <div class="value violet" id="ordAtEOQ">€ 0,00</div>
+            <div class="small">D / EOQ × costo ordine</div>
+          </div>
+          <div class="result" style="margin-bottom:12px;">
+            <h3>Costo annuo di mantenimento a EOQ</h3>
+            <div class="value aqua" id="holdAtEOQ">€ 0,00</div>
+            <div class="small">EOQ / 2 × H</div>
+          </div>
+          <div class="result">
+            <h3>Costo annuo totale a EOQ</h3>
+            <div class="value total" id="totalAtEOQ">€ 0,00</div>
+            <div class="small">ordinazione + mantenimento</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Nota: il grafico usa il modello EOQ classico. Il costo totale qui include solo costi di ordinazione e mantenimento, non il costo d’acquisto.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ids = [
+      "annualDemand","orderCost","unitCost","holdingRate",
+      "openingStock","closingStock","periodUsage","periodDays","sku"
+    ];
+    ids.forEach(id => document.getElementById(id).addEventListener("input", calc));
+
+    function num(id){
+      const v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? 0 : v;
+    }
+
+    function fmtNum(v){
+      return new Intl.NumberFormat("it-IT", {maximumFractionDigits: 2}).format(v);
+    }
+
+    function fmtCur(v){
+      return new Intl.NumberFormat("it-IT", {
+        style:"currency",
+        currency:"EUR"
+      }).format(v);
+    }
+
+    function costOrdering(D, S, Q){
+      if (Q <= 0) return 0;
+      return (D / Q) * S;
+    }
+
+    function costHolding(H, Q){
+      return (Q / 2) * H;
+    }
+
+    function drawChart(points){
+      const canvas = document.getElementById("costChart");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      const pad = {top: 20, right: 20, bottom: 46, left: 70};
+      const iw = w - pad.left - pad.right;
+      const ih = h - pad.top - pad.bottom;
+
+      ctx.clearRect(0,0,w,h);
+
+      ctx.fillStyle = "#121528";
+      ctx.fillRect(0,0,w,h);
+
+      const maxY = Math.max(...points.flatMap(p => [p.ordering, p.holding, p.total]), 1) * 1.08;
+      const minX = points[0].q;
+      const maxX = points[points.length - 1].q;
+
+      function xScale(x){
+        return pad.left + ((x - minX) / (maxX - minX || 1)) * iw;
+      }
+      function yScale(y){
+        return pad.top + ih - (y / maxY) * ih;
+      }
+
+      ctx.strokeStyle = "#2d3158";
+      ctx.lineWidth = 1;
+      ctx.font = "12px Arial";
+      ctx.fillStyle = "#b5b8d6";
+
+      for (let i = 0; i <= 5; i++){
+        const yVal = (maxY / 5) * i;
+        const y = yScale(yVal);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(w - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(fmtNum(yVal), 10, y + 4);
+      }
+
+      for (let i = 0; i <= 5; i++){
+        const xVal = minX + ((maxX - minX) / 5) * i;
+        const x = xScale(xVal);
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, h - pad.bottom);
+        ctx.stroke();
+        ctx.fillText(fmtNum(xVal), x - 12, h - 18);
+      }
+
+      ctx.strokeStyle = "#566";
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, h - pad.bottom);
+      ctx.lineTo(w - pad.right, h - pad.bottom);
+      ctx.stroke();
+
+      function plotLine(key, color){
+        ctx.beginPath();
+        points.forEach((p, i) => {
+          const x = xScale(p.q);
+          const y = yScale(p[key]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      plotLine("ordering", "#8b5cf6");
+      plotLine("holding", "#2dd4bf");
+      plotLine("total", "#c4b5fd");
+
+      const best = points.reduce((a,b) => a.total < b.total ? a : b);
+      const bx = xScale(best.q);
+      const by = yScale(best.total);
+
+      ctx.strokeStyle = "#ffffff88";
+      ctx.setLineDash([5,5]);
+      ctx.beginPath();
+      ctx.moveTo(bx, pad.top);
+      ctx.lineTo(bx, h - pad.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d7daf4";
+      ctx.fillText("EOQ ≈ " + fmtNum(best.q), Math.min(bx + 10, w - 120), Math.max(by - 10, 18));
+      ctx.fillText("Quantità ordinata", w/2 - 45, h - 6);
+
+      ctx.save();
+      ctx.translate(18, h/2 + 32);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText("Costo annuo (€)", 0, 0);
+      ctx.restore();
+    }
+
+    function calc(){
+      const D = num("annualDemand");
+      const S = num("orderCost");
+      const C = num("unitCost");
+      const rate = num("holdingRate") / 100;
+      const opening = num("openingStock");
+      const closing = num("closingStock");
+      const usage = num("periodUsage");
+      const days = Math.max(1, num("periodDays"));
+
+      const H = C * rate;
+      const avgStock = (opening + closing) / 2;
+      const EOQ = H > 0 ? Math.sqrt((2 * D * S) / H) : 0;
+      const holdingCost = avgStock * H * (days / 365);
+      const turnover = avgStock > 0 ? usage / avgStock : 0;
+
+      const ordAtEOQ = EOQ > 0 ? costOrdering(D, S, EOQ) : 0;
+      const holdAtEOQ = EOQ > 0 ? costHolding(H, EOQ) : 0;
+      const totalAtEOQ = ordAtEOQ + holdAtEOQ;
+
+      document.getElementById("eoq").textContent = fmtNum(EOQ);
+      document.getElementById("holdingCost").textContent = fmtCur(holdingCost);
+      document.getElementById("turnover").textContent = fmtNum(turnover);
+      document.getElementById("ordAtEOQ").textContent = fmtCur(ordAtEOQ);
+      document.getElementById("holdAtEOQ").textContent = fmtCur(holdAtEOQ);
+      document.getElementById("totalAtEOQ").textContent = fmtCur(totalAtEOQ);
+
+      document.getElementById("formulaH").textContent =
+        `H = ${fmtCur(C)} × ${fmtNum(rate * 100)}% = ${fmtCur(H)} per unità/anno`;
+
+      document.getElementById("formulaEOQ").textContent =
+        `EOQ = √(2 × ${fmtNum(D)} × ${fmtCur(S)} / ${fmtCur(H)}) = ${fmtNum(EOQ)} unità`;
+
+      document.getElementById("formulaAvg").textContent =
+        `Giacenza media = (${fmtNum(opening)} + ${fmtNum(closing)}) / 2 = ${fmtNum(avgStock)} unità`;
+
+      document.getElementById("formulaHC").textContent =
+        `Costo mantenimento periodo = ${fmtNum(avgStock)} × ${fmtCur(H)} × ${fmtNum(days)}/365 = ${fmtCur(holdingCost)}`;
+
+      document.getElementById("formulaTO").textContent =
+        `Rotazione periodo = ${fmtNum(usage)} / ${fmtNum(avgStock)} = ${fmtNum(turnover)}`;
+
+      let qStart = Math.max(1, EOQ * 0.2 || 1);
+      let qEnd = Math.max(qStart + 10, EOQ * 2.2 || Math.max(50, D / 5 || 50));
+      const n = 60;
+      const points = [];
+
+      for (let i = 0; i < n; i++){
+        const q = qStart + (i * (qEnd - qStart) / (n - 1));
+        const ordering = costOrdering(D, S, q);
+        const holding = costHolding(H, q);
+        points.push({
+          q,
+          ordering,
+          holding,
+          total: ordering + holding
+        });
+      }
+      drawChart(points);
+    }
+
+    calc();
+  </script>
+</body>
+</html>
