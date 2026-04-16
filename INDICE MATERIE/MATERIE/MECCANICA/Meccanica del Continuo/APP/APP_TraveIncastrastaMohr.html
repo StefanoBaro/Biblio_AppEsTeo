@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Stress + Mohr</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060f;--panel:#09091a;--border:rgba(255,255,255,0.06);
+  --tens:#ff4444;--comp:#4488ff;--shear:#ffcc00;--tors:#cc44ff;--bend:#44ffaa;
+  --accent:#00f5ff;
+}
+body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:'Courier New',monospace;color:#fff}
+
+#panel{width:218px;min-width:218px;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:11px;padding:12px;overflow-y:auto}
+#panel::-webkit-scrollbar{width:3px}
+#panel::-webkit-scrollbar-thumb{background:#1a1a3a;border-radius:2px}
+
+.logo{text-align:center;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.logo h1{font-size:11px;letter-spacing:3px;color:var(--accent)}
+.logo p{font-size:8px;color:#333;margin-top:3px;letter-spacing:1px}
+
+.lbl{font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.divider{border:none;border-top:1px solid var(--border)}
+
+#load-btns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.load-btn{padding:7px 3px;background:transparent;border:1px solid #1a1a2e;
+  color:#555;border-radius:4px;cursor:pointer;font-size:9px;font-family:monospace;
+  transition:all .15s;text-align:center}
+.load-btn.active{font-weight:bold}
+
+.slider-row{margin-bottom:8px}
+.slider-meta{display:flex;justify-content:space-between;font-size:9px;color:#555;margin-bottom:2px}
+.slider-meta b{font-weight:normal;color:#bbb}
+input[type=range]{width:100%;cursor:pointer;accent-color:var(--accent)}
+
+#stress-box{background:rgba(255,255,255,.02);border:1px solid #0d0d22;border-radius:5px;padding:8px}
+.srow{display:flex;align-items:center;gap:5px;margin-bottom:5px;font-size:9px}
+.srow:last-child{margin-bottom:0}
+.slabel{width:42px;text-align:right;font-size:8px}
+.strack{flex:1;height:6px;background:#09091a;border-radius:3px;overflow:hidden;border:1px solid #111133}
+.sfill{height:100%;border-radius:3px;transition:width .12s}
+.sval{width:52px;text-align:right;font-size:8px}
+
+.ctrl-btn{width:100%;padding:6px 0;background:transparent;border:1px solid #222;
+  color:#555;border-radius:4px;cursor:pointer;font-size:10px;font-family:monospace;transition:all .15s}
+.ctrl-btn.on{background:rgba(0,245,255,.07);border-color:var(--accent);color:var(--accent)}
+
+#main{flex:1;display:grid;grid-template-rows:1fr 1fr;grid-template-columns:1fr 1fr;position:relative;gap:0}
+.pane{position:relative;overflow:hidden;border:1px solid var(--border)}
+.pane-label{position:absolute;top:8px;left:12px;font-size:9px;color:#333;letter-spacing:2px;pointer-events:none;z-index:2}
+canvas{width:100%;height:100%;display:block}
+
+#stats{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);
+  padding:4px 14px;font-size:8px;color:#333;pointer-events:none;line-height:1.8;z-index:10;
+  border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<!-- PANEL -->
+<div id="panel">
+  <div class="logo"><h1>STRESS ANALYSIS</h1><p>Fibre · Mohr · Sezione · Traiettorie</p></div>
+
+  <div>
+    <div class="lbl">Carico</div>
+    <div id="load-btns">
+      <button class="load-btn active" data-l="trazione">Trazione</button>
+      <button class="load-btn" data-l="compressione">Compressione</button>
+      <button class="load-btn" data-l="taglio">Taglio</button>
+      <button class="load-btn" data-l="torsione">Torsione</button>
+      <button class="load-btn" data-l="flessione">Flessione</button>
+      <button class="load-btn" data-l="combo">Combo</button>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div>
+    <div class="lbl">Parametri</div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>F (kN)</span><b id="v-f">50</b></div>
+      <input type="range" id="s-f" min="5" max="200" step="5" value="50">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>b (mm)</span><b id="v-b">60</b></div>
+      <input type="range" id="s-b" min="20" max="120" step="5" value="60">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>h (mm)</span><b id="v-h">80</b></div>
+      <input type="range" id="s-h" min="20" max="160" step="5" value="80">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Densità fibre</span><b id="v-fd">16</b></div>
+      <input type="range" id="s-fd" min="6" max="36" step="2" value="16">
+    </div>
+    <div class="slider-row">
+      <div class="slider-meta"><span>Velocità</span><b id="v-sp">1.0</b></div>
+      <input type="range" id="s-sp" min="0.1" max="3" step="0.1" value="1">
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div id="stress-box">
+    <div class="lbl" style="margin-bottom:7px">Tensioni</div>
+    <div class="srow">
+      <div class="slabel" style="color:var(--tens)">σ norm.</div>
+      <div class="strack"><div class="sfill" id="sf-n" style="background:var(--tens)"></div></div>
+      <div class="sval" id="sv-n" style="color:var(--tens)">–</div>
+    </div>
+    <div class="srow">
+      <div class="slabel" style="color:var(--shear)">τ taglio</div>
+      <div class="strack"><div class="sfill" id="sf-t" style="background:var(--shear)"></div></div>
+      <div class="sval" id="sv-t" style="color:var(--shear)">–</div>
+    </div>
+    <div class="srow">
+      <div class="slabel" style="color:var(--tors)">τ tors.</div>
+      <div class="strack"><div class="sfill" id="sf-tor" style="background:var(--tors)"></div></div>
+      <div class="sval" id="sv-tor" style="color:var(--tors)">–</div>
+    </div>
+    <div class="srow">
+      <div class="slabel" style="color:var(--bend)">σ fless.</div>
+      <div class="strack"><div class="sfill" id="sf-b" style="background:var(--bend)"></div></div>
+      <div class="sval" id="sv-b" style="color:var(--bend)">–</div>
+    </div>
+    <div class="srow" style="border-top:1px solid #111133;padding-top:5px;margin-top:3px">
+      <div class="slabel" style="color:#fff;font-size:8px">σ₁ princ.</div>
+      <div class="strack"><div class="sfill" id="sf-p1" style="background:#fff"></div></div>
+      <div class="sval" id="sv-p1" style="color:#fff">–</div>
+    </div>
+    <div class="srow">
+      <div class="slabel" style="color:#888;font-size:8px">σ₂ princ.</div>
+      <div class="strack"><div class="sfill" id="sf-p2" style="background:#888"></div></div>
+      <div class="sval" id="sv-p2" style="color:#888">–</div>
+    </div>
+  </div>
+
+  <button class="ctrl-btn on" id="btn-anim">⏸ PAUSE</button>
+</div>
+
+<!-- 4-PANE VIEW -->
+<div id="main">
+  <div class="pane" id="pane-bar">
+    <div class="pane-label">BARRA INCASTRATA</div>
+    <canvas id="cv-bar"></canvas>
+  </div>
+  <div class="pane" id="pane-sec">
+    <div class="pane-label">SEZIONE TRASVERSALE</div>
+    <canvas id="cv-sec"></canvas>
+  </div>
+  <div class="pane" id="pane-mohr">
+    <div class="pane-label">CERCHIO DI MOHR</div>
+    <canvas id="cv-mohr"></canvas>
+  </div>
+  <div class="pane" id="pane-traj">
+    <div class="pane-label">TRAIETTORIE σ PRINCIPALI</div>
+    <canvas id="cv-traj"></canvas>
+  </div>
+  <div id="stats"></div>
+</div>
+
+<script>
+// ── CANVASES ──────────────────────────────────────────────────────
+const cvBar  = document.getElementById('cv-bar');
+const cvSec  = document.getElementById('cv-sec');
+const cvMohr = document.getElementById('cv-mohr');
+const cvTraj = document.getElementById('cv-traj');
+const ctxB   = cvBar.getContext('2d');
+const ctxS   = cvSec.getContext('2d');
+const ctxM   = cvMohr.getContext('2d');
+const ctxT   = cvTraj.getContext('2d');
+
+// ── STATE ─────────────────────────────────────────────────────────
+let load='trazione', F=50, bW=60, bH=80, fDens=16, animSpd=1.0;
+let animating=true, t=0, lastTs=0, fps=0, fpsC=0, fpsT=0;
+const COLORS={trazione:'#ff4444',compressione:'#4488ff',taglio:'#ffcc00',
+              torsione:'#cc44ff',flessione:'#44ffaa',combo:'#ff8844'};
+
+// ── CONTROLS ──────────────────────────────────────────────────────
+document.querySelectorAll('.load-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    load=b.dataset.l;
+    document.querySelectorAll('.load-btn').forEach(x=>{
+      x.classList.remove('active');x.style.borderColor='';x.style.color='';x.style.background='';
+    });
+    b.classList.add('active');
+    const c=COLORS[load];
+    b.style.borderColor=c;b.style.color=c;b.style.background=c+'1a';
+  });
+});
+(()=>{const b=document.querySelector('.load-btn.active');
+  const c=COLORS[b.dataset.l];b.style.borderColor=c;b.style.color=c;b.style.background=c+'1a';})();
+
+[['s-f','v-f',v=>F=v,0],['s-b','v-b',v=>bW=v,0],['s-h','v-h',v=>bH=v,0],
+ ['s-fd','v-fd',v=>fDens=v,0],['s-sp','v-sp',v=>animSpd=v,1]].forEach(([id,vid,cb,dec])=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    const v=parseFloat(e.target.value);
+    document.getElementById(vid).textContent=v.toFixed(dec); cb(v);
+  });
+});
+const btnA=document.getElementById('btn-anim');
+btnA.addEventListener('click',()=>{
+  animating=!animating;
+  btnA.textContent=animating?'⏸ PAUSE':'▶ PLAY';
+  btnA.classList.toggle('on',animating);
+});
+
+// ── PHYSICS ───────────────────────────────────────────────────────
+function calcStress(yNorm=0.5){
+  // yNorm 0=top 1=bottom, 0.5=NA
+  const A=(bW/1000)*(bH/1000);
+  const I=(bW/1000)*Math.pow(bH/1000,3)/12;
+  const J=2*I;
+  const L=0.5; const FN=F*1000;
+  const y=(yNorm-0.5)*(bH/1000); // distance from NA
+
+  let sx=0,sy=0,txy=0;
+  switch(load){
+    case 'trazione':
+      sx=FN/A; txy=0; break;
+    case 'compressione':
+      sx=-FN/A; txy=0; break;
+    case 'taglio':
+      sx=0; txy=1.5*FN/A*(1-4*y*y/Math.pow(bH/1000,2)); break;
+    case 'torsione':
+      sx=0; txy=FN*L*(bH/2000)/J; break;
+    case 'flessione':
+      sx=FN*L*y/I; txy=0; break;
+    case 'combo':
+      sx=FN/A + FN*L*y/I;
+      txy=1.5*FN/A*(1-4*y*y/Math.pow(bH/1000,2))*0.5 + FN*L*(bH/2000)/J*0.5;
+      break;
+  }
+  // principal stresses
+  const avg=(sx+sy)/2;
+  const R=Math.sqrt(Math.pow((sx-sy)/2,2)+txy*txy);
+  const s1=avg+R, s2=avg-R;
+  const theta_p=0.5*Math.atan2(2*txy,sx-sy);
+  return{sx,sy,txy,s1,s2,R,avg,theta_p,A,I,J};
+}
+
+// ── BAR PANE ──────────────────────────────────────────────────────
+function sizeCanvas(cv){
+  cv.width=cv.clientWidth; cv.height=cv.clientHeight;
+}
+
+function barRect(W,H){
+  const bx0=W*0.20,bx1=W*0.88;
+  const aspect=bH/bW;
+  const barH=Math.min(H*0.32,(bx1-bx0)*0.18*aspect);
+  const by0=H*0.5-barH/2,by1=H*0.5+barH/2;
+  return{bx0,bx1,by0,by1,barH,barW:bx1-bx0};
+}
+
+function drawBar3D(ctx,W,H){
+  const g=barRect(W,H);const{bx0,bx1,by0,by1,barH}=g;
+  const dep=barH*0.22;
+  // body
+  const grad=ctx.createLinearGradient(bx0,by0,bx0,by1);
+  grad.addColorStop(0,'#1a2a3a');grad.addColorStop(.5,'#243040');grad.addColorStop(1,'#1a2a3a');
+  ctx.fillStyle=grad;ctx.fillRect(bx0,by0,bx1-bx0,by1-by0);
+  // top face
+  ctx.beginPath();ctx.moveTo(bx0,by0);ctx.lineTo(bx0+dep,by0-dep);
+  ctx.lineTo(bx1+dep,by0-dep);ctx.lineTo(bx1,by0);ctx.closePath();
+  ctx.fillStyle='#2a3a4a';ctx.fill();
+  // right face
+  ctx.beginPath();ctx.moveTo(bx1,by0);ctx.lineTo(bx1+dep,by0-dep);
+  ctx.lineTo(bx1+dep,by1-dep);ctx.lineTo(bx1,by1);ctx.closePath();
+  ctx.fillStyle='#121e2a';ctx.fill();
+  // outlines
+  ctx.strokeStyle='rgba(0,180,255,0.45)';ctx.lineWidth=1.5;
+  ctx.strokeRect(bx0,by0,bx1-bx0,by1-by0);
+  [[bx0,by0,bx0+dep,by0-dep],[bx0+dep,by0-dep,bx1+dep,by0-dep],
+   [bx1+dep,by0-dep,bx1,by0],[bx1+dep,by0-dep,bx1+dep,by1-dep],
+   [bx1+dep,by1-dep,bx1,by1]].forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  });
+  return g;
+}
+
+function drawFibers(ctx,g,W,H){
+  const{bx0,bx1,by0,by1,barH}=g;
+  const cy=(by0+by1)/2,L=bx1-bx0,dep=barH*0.22;
+  const n=fDens;
+  ctx.save();ctx.beginPath();ctx.rect(bx0,by0,L,by1-by0);ctx.clip();
+
+  if(load==='trazione'){
+    for(let i=0;i<=n;i++){
+      const y=by0+barH*i/n,ph=i*.7+t*2*animSpd,amp=2+F/50;
+      ctx.beginPath();
+      for(let s=0;s<=60;s++){const x=bx0+L*s/60;const wy=y+Math.sin(ph+s*.18)*amp;s===0?ctx.moveTo(x,wy):ctx.lineTo(x,wy);}
+      ctx.strokeStyle=`rgba(255,68,68,${.45+.4*Math.abs(Math.sin(ph*.3))})`;ctx.lineWidth=.9;ctx.stroke();
+    }
+  } else if(load==='compressione'){
+    for(let i=0;i<=n;i++){
+      const y=by0+barH*i/n,ph=i*.6+t*2*animSpd,amp=3+F/35;
+      ctx.beginPath();
+      for(let s=0;s<=60;s++){const x=bx0+L*s/60;const wy=y+Math.sin(ph+s*.28)*amp;s===0?ctx.moveTo(x,wy):ctx.lineTo(x,wy);}
+      ctx.strokeStyle=`rgba(68,136,255,${.4+.45*Math.abs(Math.sin(ph*.25))})`;ctx.lineWidth=.9;ctx.stroke();
+    }
+  } else if(load==='taglio'){
+    const diag=barH,nx=Math.floor(L/diag*2);
+    for(let i=-2;i<=nx+2;i++){
+      const xOff=bx0+i*diag/2+(t*animSpd*40)%diag;
+      const a=.5+.4*Math.abs(Math.sin(i*.8+t));
+      ctx.beginPath();ctx.moveTo(xOff,by0);ctx.lineTo(xOff+barH,by1);
+      ctx.strokeStyle=`rgba(255,204,0,${a})`;ctx.lineWidth=1;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(xOff,by1);ctx.lineTo(xOff+barH,by0);
+      ctx.strokeStyle=`rgba(255,180,0,${a*.5})`;ctx.lineWidth=.7;ctx.stroke();
+    }
+  } else if(load==='torsione'){
+    for(let k=0;k<n;k++){
+      const ph0=(k/n)*Math.PI*2+t*animSpd*1.8;
+      ctx.beginPath();let first=true;
+      for(let s=0;s<=120;s++){
+        const u=s/120,x=bx0+u*L+Math.cos(ph0+u*Math.PI*2)*dep*.35;
+        const theta=ph0+u*Math.PI*4,depth=Math.cos(theta);
+        if(depth<-.3){first=true;continue;}
+        const yy=cy+Math.sin(theta)*barH*.78;
+        first?ctx.moveTo(x,yy):ctx.lineTo(x,yy);first=false;
+      }
+      ctx.strokeStyle=`rgba(204,68,255,${.4+.5*(k%3===0?1:.5)})`;ctx.lineWidth=1;ctx.stroke();
+    }
+  } else if(load==='flessione'){
+    for(let i=0;i<=n;i++){
+      const yN=i/n,y=by0+barH*yN,dist=yN-.5;
+      ctx.beginPath();
+      for(let s=0;s<=60;s++){
+        const u=s/60,x=bx0+u*L;
+        const defl=(F/80)*barH*.22*(u*u*(3-u));
+        const wave=Math.abs(dist)*2.5*Math.sin(u*Math.PI*1.5+t*animSpd*2);
+        s===0?ctx.moveTo(x,y+defl*dist*.6+wave):ctx.lineTo(x,y+defl*dist*.6+wave);
+      }
+      const a=Math.min(.9,.3+Math.abs(dist)*1.3);
+      ctx.strokeStyle=dist>0?`rgba(255,68,68,${a})`:`rgba(68,136,255,${a})`;
+      ctx.lineWidth=.7+Math.abs(dist)*1.1;ctx.stroke();
+    }
+    ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(bx0,cy);ctx.lineTo(bx1,cy);ctx.stroke();ctx.setLineDash([]);
+  } else if(load==='combo'){
+    const nc=Math.ceil(n*.65);
+    for(let i=0;i<=nc;i++){
+      const y=by0+barH*i/nc,ph=i*.7+t*1.5;
+      ctx.beginPath();
+      for(let s=0;s<=50;s++){const x=bx0+L*s/50;s===0?ctx.moveTo(x,y+Math.sin(ph+s*.2)*1.5):ctx.lineTo(x,y+Math.sin(ph+s*.2)*1.5);}
+      ctx.strokeStyle='rgba(255,68,68,0.3)';ctx.lineWidth=.7;ctx.stroke();
+    }
+    for(let k=0;k<Math.ceil(nc/2);k++){
+      const ph0=(k/nc)*Math.PI*2+t*1.8;
+      ctx.beginPath();let first=true;
+      for(let s=0;s<=100;s++){
+        const u=s/100,x=bx0+u*L+Math.cos(ph0+u*Math.PI*2)*dep*.28;
+        const theta=ph0+u*Math.PI*3,depth=Math.cos(theta);
+        if(depth<-.2){first=true;continue;}
+        const yy=cy+Math.sin(theta)*barH*.36;
+        first?ctx.moveTo(x,yy):ctx.lineTo(x,yy);first=false;
+      }
+      ctx.strokeStyle='rgba(204,68,255,0.5)';ctx.lineWidth=.9;ctx.stroke();
+    }
+    for(let i=0;i<=3;i++){
+      const yN=i/3,y=by0+barH*yN,dist=yN-.5;
+      ctx.beginPath();
+      for(let s=0;s<=50;s++){const u=s/50,x=bx0+u*L;const defl=(F/80)*barH*.15*(u*u*(3-u));
+        s===0?ctx.moveTo(x,y+defl*dist*.4+Math.abs(dist)*1.5*Math.sin(u*Math.PI+t*2)):ctx.lineTo(x,y+defl*dist*.4+Math.abs(dist)*1.5*Math.sin(u*Math.PI+t*2));}
+      ctx.strokeStyle='rgba(68,255,170,0.4)';ctx.lineWidth=.8;ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawWallAndArrows(ctx,g,W,H){
+  const{bx0,bx1,by0,by1,barH}=g;const dep=barH*.22;
+  const cy=(by0+by1)/2;
+  // wall
+  ctx.fillStyle='#0d0d1f';ctx.strokeStyle='rgba(0,200,255,0.3)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.rect(bx0-20,by0-dep-16,20,by1-by0+dep+32);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='rgba(0,200,255,0.12)';ctx.lineWidth=1;
+  for(let y=by0-dep-26;y<by1+26;y+=13){ctx.beginPath();ctx.moveTo(bx0-20,y);ctx.lineTo(bx0,y+20);ctx.stroke();}
+  // labels
+  ctx.fillStyle='rgba(0,180,255,0.35)';ctx.font='9px monospace';ctx.textAlign='left';
+  ctx.fillText(`b=${bW}mm × h=${bH}mm`,bx0+2,by1+dep+18);
+  // force arrows
+  const c=COLORS[load]||'#fff';
+  if(load==='trazione'){arrow(ctx,bx1+5,cy,bx1+45+Math.sin(t*2)*5,cy,c,2);}
+  else if(load==='compressione'){arrow(ctx,bx1+50+Math.sin(t*2)*5,cy,bx1+8,cy,c,2);}
+  else if(load==='taglio'){
+    arrow(ctx,(bx0+bx1)/2,by1+6,(bx0+bx1)/2,by1+40+Math.sin(t*2)*6,c,2);
+    arrow(ctx,(bx0+bx1)/2,by0-6,(bx0+bx1)/2,by0-40-Math.sin(t*2)*6,c,2);
+  } else if(load==='torsione'){
+    twistArrow(ctx,bx1+14,cy,barH*.36,t*animSpd,c);
+  } else if(load==='flessione'){
+    arrow(ctx,bx1+10,by0-30+Math.sin(t*2)*4,bx1+10,by1+8+Math.sin(t*2)*4,c,2);
+    ctx.fillStyle=c;ctx.font='10px monospace';ctx.textAlign='left';
+    ctx.fillText('F',bx1+18,by0-20+Math.sin(t*2)*4);
+  } else if(load==='combo'){
+    arrow(ctx,bx1+5,cy,bx1+35,cy,c,1.5);
+    arrow(ctx,bx1+10,by0-20+Math.sin(t*2)*3,bx1+10,by1+6+Math.sin(t*2)*3,'#44ffaa',1.5);
+    twistArrow(ctx,bx1+48,(by0+by1)/2,barH*.28,t*animSpd,'#cc44ff');
+  }
+}
+
+// ── SECTION PANE ─────────────────────────────────────────────────
+function drawSection(ctx,W,H){
+  const cx=W*.5,cy=H*.5;
+  const sx=Math.min(W*.32,H*.42),sy=sx*(bH/bW);
+  const st=calcStress(0.5);
+
+  // stress heatmap on section grid
+  const nx=30,ny=Math.round(nx*bH/bW);
+  const cw=sx*2/nx,ch=sy*2/ny;
+  for(let i=0;i<nx;i++){
+    for(let j=0;j<ny;j++){
+      const yN=j/ny; // 0=top
+      const s=calcStress(yN);
+      const vm=Math.sqrt(s.sx*s.sx-s.sx*s.sy+s.sy*s.sy+3*s.txy*s.txy); // von Mises
+      const refVM=calcStress(0).sx||calcStress(1).sx||calcStress(0.5).txy||1;
+      const ref=Math.abs(calcStress(0).s1)||Math.abs(calcStress(1).s1)||1;
+      const norm=Math.min(1,Math.abs(s.s1)/(ref+1e-9));
+      const px=cx-sx+i*cw, py=cy-sy+j*ch;
+      // color: traction=red, comp=blue, shear=yellow, mix=purple
+      let r=0,g=0,b=0;
+      if(s.s1>0){r=255;g=Math.round(100*(1-norm));b=0;}
+      else{r=0;g=Math.round(80*(1-norm));b=255;}
+      if(Math.abs(s.txy)>Math.abs(s.sx)*.3){r=220;g=180;b=0;}
+      ctx.fillStyle=`rgba(${r},${g},${b},${.15+norm*.65})`;
+      ctx.fillRect(px,py,cw+.5,ch+.5);
+    }
+  }
+
+  // outline
+  ctx.strokeStyle='rgba(0,200,255,0.5)';ctx.lineWidth=2;
+  ctx.strokeRect(cx-sx,cy-sy,sx*2,sy*2);
+
+  // centroid cross
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(cx-sx,cy);ctx.lineTo(cx+sx,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-sy);ctx.lineTo(cx,cy+sy);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // neutral axis label
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='8px monospace';ctx.textAlign='left';
+  if(load==='flessione'||load==='combo')ctx.fillText('A.N.',cx+sx+4,cy+3);
+
+  // dimension arrows
+  dimArrow(ctx,cx-sx,cx+sx,cy+sy+14,'b='+bW+'mm','rgba(0,200,255,0.5)');
+  dimArrowV(ctx,cx+sx+14,cy-sy,cy+sy,'h='+bH+'mm','rgba(0,200,255,0.5)');
+
+  // principal stress cross on centroid
+  const s0=calcStress(0.5);
+  const ang=s0.theta_p;
+  const scl=Math.min(sx,sy)*.55;
+  const draw1=()=>{
+    const dx=Math.cos(ang)*scl,dy=Math.sin(ang)*scl;
+    ctx.shadowBlur=8;ctx.shadowColor='#fff';
+    arrow(ctx,cx,cy,cx+dx*(s0.s1>0?1:-1),cy+dy*(s0.s1>0?1:-1),'rgba(255,255,255,0.7)',1.5);
+    arrow(ctx,cx,cy,cx-dx*(s0.s1>0?1:-1),cy-dy*(s0.s1>0?1:-1),'rgba(255,255,255,0.7)',1.5);
+    const dx2=Math.cos(ang+Math.PI/2)*scl*.7,dy2=Math.sin(ang+Math.PI/2)*scl*.7;
+    arrow(ctx,cx,cy,cx+dx2*(s0.s2>0?1:-1),cy+dy2*(s0.s2>0?1:-1),'rgba(150,150,255,0.6)',1.2);
+    arrow(ctx,cx,cy,cx-dx2*(s0.s2>0?1:-1),cy-dy2*(s0.s2>0?1:-1),'rgba(150,150,255,0.6)',1.2);
+    ctx.shadowBlur=0;
+  };draw1();
+
+  ctx.fillStyle='rgba(0,200,255,0.5)';ctx.font='8px monospace';ctx.textAlign='center';
+  ctx.fillText('Mappa tensioni + σ principali',cx,cy-sy-10);
+}
+
+function dimArrow(ctx,x1,x2,y,lbl,col){
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x1+5,y-3);ctx.moveTo(x1,y);ctx.lineTo(x1+5,y+3);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2-5,y-3);ctx.moveTo(x2,y);ctx.lineTo(x2-5,y+3);ctx.stroke();
+  ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(lbl,(x1+x2)/2,y+11);
+}
+function dimArrowV(ctx,x,y1,y2,lbl,col){
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x-3,y1+5);ctx.moveTo(x,y1);ctx.lineTo(x+3,y1+5);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,y2);ctx.lineTo(x-3,y2-5);ctx.moveTo(x,y2);ctx.lineTo(x+3,y2-5);ctx.stroke();
+  ctx.save();ctx.translate(x+11,(y1+y2)/2);ctx.rotate(Math.PI/2);
+  ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(lbl,0,0);ctx.restore();
+}
+
+// ── MOHR CIRCLE ──────────────────────────────────────────────────
+function drawMohr(ctx,W,H){
+  const cx=W*.5,cy=H*.52;
+  const sc=calcStress(0.5);
+  const{sx,sy,txy,s1,s2,R,avg}=sc;
+
+  // scale
+  const maxS=Math.max(Math.abs(s1),Math.abs(s2),Math.abs(txy),1e4);
+  const k=Math.min(W,H)*.35/maxS;
+
+  // axes
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx-W*.42,cy);ctx.lineTo(cx+W*.42,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-H*.44);ctx.lineTo(cx,cy+H*.44);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='9px monospace';
+  ctx.textAlign='left';ctx.fillText('σ',cx+W*.4,cy-6);
+  ctx.textAlign='center';ctx.fillText('τ',cx+4,cy-H*.41);
+
+  // grid circles
+  [.25,.5,.75,1].forEach(f=>{
+    ctx.beginPath();ctx.arc(cx,cy,Math.min(W,H)*.42*f,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;ctx.stroke();
+  });
+
+  // Mohr circle
+  const Rpx=Math.abs(R*k);
+  const cgx=cx+avg*k;
+
+  // fill
+  const grd=ctx.createRadialGradient(cgx,cy,0,cgx,cy,Rpx);
+  grd.addColorStop(0,'rgba(0,200,255,0.08)');grd.addColorStop(1,'rgba(0,100,200,0.02)');
+  ctx.beginPath();ctx.arc(cgx,cy,Rpx,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+  ctx.strokeStyle='rgba(0,245,255,0.7)';ctx.lineWidth=1.8;ctx.stroke();
+
+  // sigma1, sigma2 on axis
+  ctx.shadowBlur=8;ctx.shadowColor='#ff4444';
+  ctx.beginPath();ctx.arc(cx+s1*k,cy,5,0,Math.PI*2);ctx.fillStyle='#ff4444';ctx.fill();
+  ctx.shadowBlur=8;ctx.shadowColor='#4488ff';
+  ctx.beginPath();ctx.arc(cx+s2*k,cy,5,0,Math.PI*2);ctx.fillStyle='#4488ff';ctx.fill();
+  ctx.shadowBlur=0;
+
+  // current stress point A (sx, txy) and B (sy, -txy)
+  ctx.beginPath();ctx.arc(cx+sx*k,cy-txy*k,4,0,Math.PI*2);ctx.fillStyle='#ffcc00';ctx.fill();
+  ctx.beginPath();ctx.arc(cx+sy*k,cy+txy*k,4,0,Math.PI*2);ctx.fillStyle='rgba(255,204,0,0.5)';ctx.fill();
+
+  // diameter line A-B
+  ctx.strokeStyle='rgba(255,204,0,0.35)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(cx+sx*k,cy-txy*k);ctx.lineTo(cx+sy*k,cy+txy*k);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // max shear point
+  ctx.beginPath();ctx.arc(cgx,cy-Rpx,4,0,Math.PI*2);ctx.fillStyle='#cc44ff';ctx.fill();
+  ctx.beginPath();ctx.arc(cgx,cy+Rpx,4,0,Math.PI*2);ctx.fillStyle='rgba(204,68,255,0.5)';ctx.fill();
+
+  // labels
+  ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillStyle='#ff4444';ctx.fillText('σ₁='+(s1/1e6).toFixed(1),cx+s1*k,cy+14);
+  ctx.fillStyle='#4488ff';ctx.fillText('σ₂='+(s2/1e6).toFixed(1),cx+s2*k,cy+14);
+  ctx.fillStyle='#cc44ff';ctx.fillText('τmax='+(R/1e6).toFixed(1),cgx+Rpx*.15,cy-Rpx-7);
+  ctx.fillStyle='rgba(255,204,0,0.8)';ctx.fillText('A(σx,τxy)',cx+sx*k,cy-txy*k-8);
+
+  // angle arc
+  if(Math.abs(sc.theta_p)>0.01){
+    const angDeg=(sc.theta_p*180/Math.PI).toFixed(1);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(cgx,cy,Rpx*.4,0,-2*sc.theta_p,sc.theta_p<0);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='8px monospace';
+    ctx.fillText('2θ='+( 2*sc.theta_p*180/Math.PI).toFixed(1)+'°',cgx+Rpx*.5,cy-10);
+  }
+
+  ctx.fillStyle='rgba(0,200,255,0.4)';ctx.font='8px monospace';ctx.textAlign='center';
+  ctx.fillText('Cerchio di Mohr — piano σ-τ',cx,cy+H*.42);
+}
+
+// ── TRAJECTORY PANE ──────────────────────────────────────────────
+function drawTrajectories(ctx,W,H){
+  const cx=W*.5,cy=H*.5;
+  const sx=Math.min(W*.38,H*.38),sy=sx*(bH/bW);
+
+  // background rect (section shape)
+  ctx.fillStyle='rgba(10,15,30,0.8)';ctx.strokeStyle='rgba(0,180,255,0.3)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.rect(cx-sx,cy-sy,sx*2,sy*2);ctx.fill();ctx.stroke();
+
+  // grid of principal stress trajectories
+  const nx=20,ny=Math.round(nx*bH/bW);
+  for(let i=0;i<=nx;i++){
+    for(let j=0;j<=ny;j++){
+      const yN=j/ny;
+      const xN=i/nx;
+      const px=cx-sx+xN*sx*2;
+      const py=cy-sy+yN*sy*2;
+      const s=calcStress(yN);
+      const ang=s.theta_p;
+      const mag=Math.min(sx/nx,sy/ny)*.8;
+
+      // σ1 direction — tensile (red)
+      if(Math.abs(s.s1)>1e3){
+        const len=mag*Math.min(1,Math.abs(s.s1)/( Math.abs(calcStress(0).s1)||1e5));
+        ctx.strokeStyle=s.s1>0?'rgba(255,80,80,0.7)':'rgba(80,120,255,0.7)';
+        ctx.lineWidth=.9;
+        ctx.beginPath();
+        ctx.moveTo(px-Math.cos(ang)*len,py-Math.sin(ang)*len);
+        ctx.lineTo(px+Math.cos(ang)*len,py+Math.sin(ang)*len);
+        ctx.stroke();
+      }
+      // σ2 direction — perpendicular
+      if(Math.abs(s.s2)>1e3){
+        const ang2=ang+Math.PI/2;
+        const len=mag*Math.min(1,Math.abs(s.s2)/(Math.abs(calcStress(0).s2)||1e5));
+        ctx.strokeStyle=s.s2>0?'rgba(255,80,80,0.4)':'rgba(80,120,255,0.4)';
+        ctx.lineWidth=.6;
+        ctx.beginPath();
+        ctx.moveTo(px-Math.cos(ang2)*len,py-Math.sin(ang2)*len);
+        ctx.lineTo(px+Math.cos(ang2)*len,py+Math.sin(ang2)*len);
+        ctx.stroke();
+      }
+      // τ max — 45° (yellow dash)
+      if(Math.abs(s.txy)>1e3){
+        const len=mag*Math.min(1,Math.abs(s.txy)/(Math.abs(calcStress(0.5).txy)||1e5));
+        const at=ang+Math.PI/4;
+        ctx.strokeStyle='rgba(255,200,0,0.35)';ctx.lineWidth=.55;ctx.setLineDash([2,2]);
+        ctx.beginPath();
+        ctx.moveTo(px-Math.cos(at)*len,py-Math.sin(at)*len);
+        ctx.lineTo(px+Math.cos(at)*len,py+Math.sin(at)*len);
+        ctx.stroke();ctx.setLineDash([]);
+      }
+    }
+  }
+
+  // NA line for flessione
+  if(load==='flessione'||load==='combo'){
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-sx,cy);ctx.lineTo(cx+sx,cy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='8px monospace';ctx.textAlign='left';
+    ctx.fillText('A.N.',cx+sx+4,cy+3);
+  }
+
+  // legend
+  ctx.font='8px monospace';ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,80,80,0.8)';ctx.fillText('─ σ₁ trazione',cx-sx,cy+sy+16);
+  ctx.fillStyle='rgba(80,120,255,0.8)';ctx.fillText('─ σ₂ compressione',cx-sx,cy+sy+26);
+  ctx.fillStyle='rgba(255,200,0,0.7)';ctx.fillText('- τmax±45°',cx-sx,cy+sy+36);
+
+  ctx.fillStyle='rgba(0,200,255,0.35)';ctx.font='8px monospace';ctx.textAlign='center';
+  ctx.fillText('Traiettorie tensioni principali',cx,cy-sy-10);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function arrow(ctx,x1,y1,x2,y2,col,lw){
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);if(len<2)return;
+  const ux=dx/len,uy=dy/len,hs=7,hw=4;
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-ux*hs,y2-uy*hs);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*hs-uy*hw,y2-uy*hs+ux*hw);
+  ctx.lineTo(x2-ux*hs+uy*hw,y2-uy*hs-ux*hw);ctx.closePath();ctx.fill();
+}
+function twistArrow(ctx,cx,cy,r,phase,col){
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.8;
+  ctx.shadowBlur=8;ctx.shadowColor=col;
+  ctx.beginPath();
+  for(let a=phase;a<phase+Math.PI*1.5;a+=.05){ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}
+  ctx.stroke();ctx.shadowBlur=0;
+  const ae=phase+Math.PI*1.5;
+  arrow(ctx,cx+Math.cos(ae-.15)*r,cy+Math.sin(ae-.15)*r,cx+Math.cos(ae)*r,cy+Math.sin(ae)*r,col,1.5);
+  ctx.restore();
+  ctx.fillStyle=col;ctx.font='9px monospace';ctx.textAlign='left';ctx.fillText('Mₜ',cx+r+4,cy-3);
+}
+
+// ── PANEL UPDATE ──────────────────────────────────────────────────
+function updatePanel(){
+  const s=calcStress(0.5);const max=300e6;
+  function set(bid,vid,val){
+    document.getElementById(bid).style.width=Math.min(100,Math.abs(val)/max*100)+'%';
+    document.getElementById(vid).textContent=(val/1e6).toFixed(1)+' MPa';
+  }
+  const sN=load==='trazione'?s.sx:load==='compressione'?-s.sx:0;
+  const sB=load==='flessione'||load==='combo'?calcStress(1).sx:0;
+  set('sf-n','sv-n',Math.abs(sN));
+  set('sf-t','sv-t',Math.abs(s.txy));
+  set('sf-tor','sv-tor',load==='torsione'||load==='combo'?Math.abs(s.txy):0);
+  set('sf-b','sv-b',Math.abs(sB));
+  set('sf-p1','sv-p1',s.s1);
+  set('sf-p2','sv-p2',Math.abs(s.s2));
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=Math.min((ts-lastTs)/1000,.05);lastTs=ts;
+  if(animating)t+=dt;
+  fpsC++;if(ts-fpsT>600){fps=Math.round(fpsC*1000/(ts-fpsT));fpsC=0;fpsT=ts;}
+
+  // resize all
+  [cvBar,cvSec,cvMohr,cvTraj].forEach(cv=>{cv.width=cv.clientWidth;cv.height=cv.clientHeight;});
+  const[W1,H1]=[cvBar.width,cvBar.height];
+  const[W2,H2]=[cvSec.width,cvSec.height];
+  const[W3,H3]=[cvMohr.width,cvMohr.height];
+  const[W4,H4]=[cvTraj.width,cvTraj.height];
+
+  // bg grids
+  [ctxB,ctxS,ctxM,ctxT].forEach((c,i)=>{
+    const[W,H]=[[W1,H1],[W2,H2],[W3,H3],[W4,H4]][i];
+    c.clearRect(0,0,W,H);
+    c.strokeStyle='rgba(255,255,255,0.02)';c.lineWidth=1;
+    for(let x=0;x<W;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke();}
+    for(let y=0;y<H;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
+  });
+
+  // pane 1 — bar
+  const g=barRect(W1,H1);
+  drawBar3D(ctxB,W1,H1);
+  drawFibers(ctxB,g,W1,H1);
+  drawWallAndArrows(ctxB,g,W1,H1);
+
+  // pane 2 — section
+  drawSection(ctxS,W2,H2);
+
+  // pane 3 — Mohr
+  drawMohr(ctxM,W3,H3);
+
+  // pane 4 — trajectories
+  drawTrajectories(ctxT,W4,H4);
+
+  updatePanel();
+
+  const s=calcStress(0.5);
+  document.getElementById('stats').textContent=
+    `FPS:${fps}  ·  σ₁=${(s.s1/1e6).toFixed(1)}MPa  σ₂=${(s.s2/1e6).toFixed(1)}MPa  τmax=${(s.R/1e6).toFixed(1)}MPa  θp=${(s.theta_p*180/Math.PI).toFixed(1)}°  |  R=${R_val().toFixed(0)}mm`;
+}
+function R_val(){return Math.sqrt(bW*bW+bH*bH)/2;}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

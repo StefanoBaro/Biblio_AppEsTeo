@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Analisi Circuitale Moderna</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --bg: #0a0518;
+            --emerald: #00ff88;
+            --violet: #bc13fe;
+            --text: #e0e0e0;
+        }
+
+        body { 
+            margin: 0; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Sfondo con curve animate */
+        #bg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            width: 900px;
+            background: rgba(15, 7, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(188, 19, 254, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        h1 { grid-column: 1 / 3; text-align: center; margin-top: 0; font-weight: 600; letter-spacing: -1px; color: var(--emerald); }
+
+        .card { background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        h3 { color: var(--violet); margin-top: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        .matrix-box {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            line-height: 2;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--emerald);
+            color: var(--emerald);
+        }
+
+        .highlight { color: #fff; text-shadow: 0 0 10px var(--emerald); font-weight: bold; }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--violet), #7a10ff);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(188, 19, 254, 0.4); }
+
+        .circuit-svg { filter: drop-shadow(0 0 5px var(--emerald)); }
+        
+        #result-text { margin-top: 15px; font-weight: 600; text-align: center; color: var(--emerald); }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="container">
+    <h1>Analisi di Gauss & Kirchhoff</h1>
+
+    <div class="card">
+        <h3>1. Metodo di Gauss-Jordan</h3>
+        <p style="font-size: 0.9rem; opacity: 0.8;">Trasformiamo il sistema lineare del circuito in una soluzione diretta tramite riduzione riga.</p>
+        
+        <div class="matrix-box" id="matrix">
+            [ 10 &nbsp; -8 &nbsp; | &nbsp; 12 ]<br>
+            [ -8 &nbsp; 12 &nbsp; | &nbsp; 0  ]
+        </div>
+
+        <button onclick="nextStep()">Prossimo Passaggio</button>
+        <p id="step-info" style="font-size: 0.85rem; margin-top: 10px; color: var(--violet);"></p>
+    </div>
+
+    <div class="card">
+        <h3>2. Esercizio Pratico</h3>
+        <div style="text-align: center; margin: 20px 0;">
+            <svg class="circuit-svg" width="200" height="100" viewBox="0 0 200 100">
+                <rect x="10" y="10" width="180" height="80" fill="none" stroke="#00ff88" stroke-width="2"/>
+                <line x1="100" y1="10" x2="100" y2="90" stroke="#00ff88" stroke-width="2"/>
+                <circle cx="10" cy="50" r="8" fill="none" stroke="#bc13fe" stroke-width="2"/>
+                <path d="M40,10 L50,0 L60,20 L70,10" fill="none" stroke="#00ff88" stroke-width="2"/>
+                <path d="M100,35 L90,45 L110,55 L100,65" fill="none" stroke="#00ff88" stroke-width="2"/>
+            </svg>
+        </div>
+        <p style="font-size: 0.9rem;">Risolviamo per le correnti $I_1$ e $I_2$ usando le maglie. Le equazioni generate sono quelle della matrice a sinistra.</p>
+        
+        <button onclick="solve()" style="background: transparent; border: 1px solid var(--emerald); color: var(--emerald);">Calcola Risultati</button>
+        <div id="result-text"></div>
+    </div>
+</div>
+
+<script>
+    // Animazione Sfondo (Curve di Gauss)
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h;
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+
+    function gaussCurve(x, amplitude, mean, sigma) {
+        return amplitude * Math.exp(-Math.pow(x - mean, 2) / (2 * Math.pow(sigma, 2)));
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = '#bc13fe';
+        ctx.lineWidth = 1;
+
+        for (let j = 0; j < 5; j++) {
+            ctx.beginPath();
+            let time = Date.now() * 0.001;
+            for (let x = 0; x < w; x += 5) {
+                let y = h/2 + gaussCurve(x, 150, w/2 + Math.sin(time + j) * 200, 100 + j * 50);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+
+    // Logica Gauss
+    let step = 0;
+    function nextStep() {
+        const m = document.getElementById('matrix');
+        const info = document.getElementById('step-info');
+        step++;
+        if(step === 1) {
+            m.innerHTML = "[ <span class='highlight'>1</span> &nbsp; -0.8 &nbsp; | &nbsp; 1.2 ]<br>[ -8 &nbsp; 12 &nbsp; | &nbsp; 0 ]";
+            info.innerText = "Dividiamo la prima riga per 10 (normalizzazione).";
+        } else if(step === 2) {
+            m.innerHTML = "[ 1 &nbsp; -0.8 &nbsp; | &nbsp; 1.2 ]<br>[ <span class='highlight'>0</span> &nbsp; 5.6 &nbsp; | &nbsp; 9.6 ]";
+            info.innerText = "Azzera l'elemento sotto il primo pivot.";
+        } else if(step === 3) {
+            m.innerHTML = "[ 1 &nbsp; 0 &nbsp; | &nbsp; <span class='highlight'>2.57</span> ]<br>[ 0 &nbsp; 1 &nbsp; | &nbsp; <span class='highlight'>1.71</span> ]";
+            info.innerText = "Identità completata: ecco le correnti I1 e I2.";
+            step = -1;
+        } else {
+            m.innerHTML = "[ 10 &nbsp; -8 &nbsp; | &nbsp; 12 ]<br>[ -8 &nbsp; 12 &nbsp; | &nbsp; 0 ]";
+            info.innerText = "Reset della matrice.";
+        }
+    }
+
+    function solve() {
+        document.getElementById('result-text').innerHTML = "I₁ = 2.57 Ampere<br>I₂ = 1.71 Ampere";
+    }
+</script>
+</body>
+</html>

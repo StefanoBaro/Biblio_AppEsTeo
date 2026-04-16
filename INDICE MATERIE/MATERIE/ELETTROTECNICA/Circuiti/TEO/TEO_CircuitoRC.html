@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>RC Circuit Master - Fixed Layout</title>
+    <style>
+        :root { --neon-blue: #1f6feb; --neon-green: #00ff41; --neon-yellow: #f1c40f; }
+        body { margin: 0; background: #020408; color: var(--neon-green); font-family: 'Courier New', monospace; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar stretta e fissa */
+        #sidebar { width: 350px; min-width: 350px; background: #0d1117; border-right: 1px solid var(--neon-blue); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        
+        /* Area Grafico Flessibile */
+        #main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; background: #000; position: relative; }
+        #canvas-container { flex-grow: 1; position: relative; border: 1px solid #222; border-radius: 8px; background: #050505; display: flex; align-items: center; justify-content: center; }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* Stilizzazione Elementi */
+        .panel { background: rgba(31, 111, 235, 0.05); padding: 12px; border-radius: 6px; border: 1px solid var(--neon-blue); }
+        h2 { font-size: 1.2rem; margin: 0 0 10px 0; color: #fff; text-align: center; border-bottom: 1px solid var(--neon-blue); padding-bottom: 5px; }
+        label { display: block; font-size: 10px; color: #8892b0; margin-bottom: 4px; text-transform: uppercase; }
+        input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: var(--neon-green); }
+        
+        .formula-art { font-size: 14px; color: var(--neon-yellow); text-align: center; padding: 10px; border: 1px solid #333; background: #000; border-radius: 4px; line-height: 1.4; box-shadow: inset 0 0 10px rgba(241, 196, 15, 0.1); }
+        
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 12px; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; transition: 0.2s; }
+        .btn-c { background: var(--neon-green); color: #000; }
+        .btn-d { background: #ff4d4d; color: #fff; }
+        button:hover { filter: brightness(1.2); transform: scale(1.02); }
+
+        .legend { position: absolute; top: 30px; right: 40px; background: rgba(0,0,0,0.7); padding: 10px; border: 1px solid #333; font-size: 11px; z-index: 10; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>⚡ RC TRANSIENT</h2>
+    
+    <div class="panel">
+        <label>Resistenza (R): <span id="valR">10</span> kΩ</label>
+        <input type="range" id="sliderR" min="1" max="100" value="10">
+        
+        <label>Capacità (C): <span id="valC">220</span> µF</label>
+        <input type="range" id="sliderC" min="10" max="1000" step="10" value="220">
+        
+        <label>Tensione (V₀): <span id="valV">10</span> V</label>
+        <input type="range" id="sliderV" min="1" max="24" step="1" value="10">
+    </div>
+
+    <div class="panel">
+        <label>Costante di Tempo (τ)</label>
+        <div style="font-size: 20px; font-weight: bold; color:#fff;" id="outTau">0.000 s</div>
+        <div class="formula-art" style="margin-top:8px;">τ = R ⋅ C</div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-c" onclick="runSim('charge')">CARICA</button>
+        <button class="btn-d" onclick="runSim('discharge')">SCARICA</button>
+    </div>
+
+    <div class="panel">
+        <label>Dinamica del Transitorio</label>
+        <div id="formulaDynamic" class="formula-art" style="color:var(--neon-green)">
+            Pronto...
+        </div>
+    </div>
+</div>
+
+<div id="main-content">
+    <div class="legend">
+        <div style="color:var(--neon-green)">── Tensione Vc (V)</div>
+        <div style="color:var(--neon-yellow)">┈ Corrente I (mA)</div>
+    </div>
+    <div id="canvas-container">
+        <canvas id="plotCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('plotCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let time = 0;
+    let dataPoints = [];
+    let isRunning = false;
+    let mode = 'charge';
+    let vStart = 0;
+
+    function getParams() {
+        return {
+            v0: parseFloat(document.getElementById('sliderV').value),
+            r: parseFloat(document.getElementById('sliderR').value) * 1000,
+            c: parseFloat(document.getElementById('sliderC').value) * 1e-6
+        };
+    }
+
+    function runSim(m) {
+        mode = m;
+        time = 0;
+        dataPoints = [];
+        isRunning = true;
+        const p = getParams();
+        vStart = (mode === 'charge') ? 0 : p.v0;
+        
+        const fDisp = document.getElementById('formulaDynamic');
+        fDisp.innerHTML = (mode === 'charge') ? 
+            "Vc = V₀(1 - e<sup>-t/τ</sup>)" : 
+            "Vc = V₀ ⋅ e<sup>-t/τ</sup>";
+    }
+
+    function resize() {
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+
+    function draw() {
+        resize();
+        const w = canvas.width;
+        const h = canvas.height;
+        const padX = 60;
+        const padY = 50;
+        const p = getParams();
+        const tau = p.r * p.c;
+
+        ctx.clearRect(0, 0, w, h);
+        
+        // Disegno Griglia e Assi
+        ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+        for(let i=0; i<=10; i++) {
+            let x = padX + i*(w-padX*2)/10;
+            ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, h-padY); ctx.stroke();
+        }
+
+        ctx.strokeStyle = varProp('--neon-blue'); ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(padX, padY); ctx.lineTo(padX, h-padY); // Asse Y
+        ctx.lineTo(w-padX, h-padY); // Asse X
+        ctx.stroke();
+
+        // Label Assi
+        ctx.fillStyle = "#8892b0"; ctx.font = "10px monospace";
+        ctx.fillText("TEMPO (s)", w/2, h - 15);
+        ctx.save(); ctx.translate(15, h/2); ctx.rotate(-Math.PI/2);
+        ctx.fillText("AMPIEZZA (V / mA)", 0, 0); ctx.restore();
+
+        if (dataPoints.length > 1) {
+            const xScale = (w - padX * 2) / (tau * 6);
+            const yScaleV = (h - padY * 2) / p.v0;
+            const yScaleI = (h - padY * 2) / ( (p.v0/p.r)*1000 * 2.5 ); // Scala mA
+            const midY = h - padY - (h - padY * 2) / 2;
+
+            // Plot Vc (Verde)
+            ctx.strokeStyle = varProp('--neon-green'); ctx.lineWidth = 3; ctx.beginPath();
+            dataPoints.forEach((pt, i) => {
+                const x = padX + pt.t * xScale;
+                const y = h - padY - pt.v * yScaleV;
+                if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Plot I (Giallo)
+            ctx.strokeStyle = varProp('--neon-yellow'); ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.beginPath();
+            dataPoints.forEach((pt, i) => {
+                const x = padX + pt.t * xScale;
+                const y = midY - pt.i * yScaleI;
+                if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+    }
+
+    function varProp(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+    function animate() {
+        const p = getParams();
+        const tau = p.r * p.c;
+        document.getElementById('valR').innerText = (p.r/1000).toFixed(0);
+        document.getElementById('valC').innerText = (p.c*1e6).toFixed(0);
+        document.getElementById('valV').innerText = p.v0;
+        document.getElementById('outTau').innerText = tau.toFixed(3) + " s";
+
+        if (isRunning) {
+            let vc, cur;
+            if (mode === 'charge') {
+                vc = p.v0 * (1 - Math.exp(-time / tau));
+                cur = ((p.v0 - vc) / p.r) * 1000;
+            } else {
+                vc = p.v0 * Math.exp(-time / tau);
+                cur = (-vc / p.r) * 1000;
+            }
+            dataPoints.push({ t: time, v: vc, i: cur });
+            time += 0.016;
+            if (time > tau * 6) isRunning = false;
+        }
+        draw();
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', draw);
+    animate();
+</script>
+</body>
+</html>

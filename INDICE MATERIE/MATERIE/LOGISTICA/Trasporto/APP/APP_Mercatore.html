@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rotta Mercatore</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05080f;--panel:#08091a;--b:rgba(0,200,255,.1);--a:#00c8ff;
+  --ocean:#0a1628;--land:#1a2e1a;--grid:rgba(0,150,200,.15);
+  --rhumb:#ffcc00;--gc:#ff5555;--acc:#44ff88;
+}
+body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:'Courier New',monospace;color:#fff}
+
+/* PANEL */
+#panel{width:268px;min-width:268px;background:var(--panel);border-right:1px solid var(--b);
+  display:flex;flex-direction:column;overflow-y:auto;gap:0}
+#panel::-webkit-scrollbar{width:3px}
+#panel::-webkit-scrollbar-thumb{background:#1a2a3a;border-radius:2px}
+
+.ph{padding:13px 14px 10px;border-bottom:1px solid var(--b);text-align:center}
+.ph h1{font-size:11px;letter-spacing:3px;color:var(--a)}
+.ph p{font-size:8px;color:#334;margin-top:3px}
+
+.sec{padding:10px 14px;border-bottom:1px solid rgba(0,200,255,.06)}
+.lbl{font-size:8px;color:#445;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
+
+/* coord inputs */
+.coord-pair{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.ci label{font-size:8px;color:#557;margin-bottom:3px;display:block}
+.ci input{width:100%;background:#050810;border:1px solid rgba(0,200,255,.18);color:#ccd;
+  padding:5px 7px;font-size:10px;font-family:monospace;border-radius:3px}
+.ci input:focus{outline:none;border-color:var(--a)}
+.pt-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* results */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}
+.rcard{background:rgba(0,0,0,.4);border:1px solid rgba(0,200,255,.1);border-radius:5px;padding:7px 9px}
+.rc-lbl{font-size:7px;color:#445;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.rc-val{font-size:13px;font-weight:bold}
+.rc-unit{font-size:8px;color:#556;margin-left:2px}
+
+/* formula box */
+.fbox{background:rgba(0,0,0,.35);border:1px solid rgba(0,200,255,.1);border-radius:5px;
+  padding:9px 11px;font-size:9px;line-height:2;color:#445}
+.fbox .fx{color:#88ccff;font-size:9px}
+.fbox .fv{color:#aaa}
+
+/* leg table */
+#leg-table{width:100%;border-collapse:collapse;font-size:8px;color:#556}
+#leg-table th{color:#445;text-align:left;padding:3px 5px;border-bottom:1px solid rgba(0,200,255,.08);font-weight:normal;letter-spacing:1px}
+#leg-table td{padding:3px 5px;border-bottom:1px solid rgba(255,255,255,.04)}
+#leg-table tr:hover td{background:rgba(0,200,255,.05)}
+
+/* toggle row */
+.tr{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#556;margin-bottom:5px}
+.tog{width:28px;height:14px;background:#111a2a;border-radius:7px;cursor:pointer;position:relative;flex-shrink:0}
+.tog.on{background:rgba(0,200,255,.3)}
+.tog::after{content:'';position:absolute;width:10px;height:10px;background:#333;border-radius:5px;top:2px;left:2px;transition:left .15s}
+.tog.on::after{left:16px;background:var(--a)}
+
+.btn{width:100%;padding:7px 0;background:transparent;border:1px solid rgba(0,200,255,.3);
+  color:var(--a);border-radius:4px;cursor:pointer;font-size:9px;font-family:monospace;
+  letter-spacing:1px;transition:all .15s}
+.btn:hover{background:rgba(0,200,255,.08)}
+
+/* VIEWPORT */
+#vp{flex:1;position:relative;overflow:hidden;background:var(--ocean)}
+#map-cv{width:100%;height:100%;display:block;cursor:crosshair}
+
+/* HUD overlays */
+#compass{position:absolute;bottom:18px;right:18px;width:70px;height:70px;pointer-events:none}
+#info-bar{position:absolute;top:10px;right:12px;background:rgba(5,8,15,.8);
+  border:1px solid var(--b);border-radius:5px;padding:6px 12px;font-size:8px;
+  color:#445;pointer-events:none;line-height:2;text-align:right}
+#cursor-info{position:absolute;bottom:10px;left:10px;background:rgba(5,8,15,.8);
+  border:1px solid var(--b);border-radius:5px;padding:5px 10px;font-size:8px;color:#445;pointer-events:none}
+#legend{position:absolute;top:10px;left:10px;background:rgba(5,8,15,.75);
+  border:1px solid var(--b);border-radius:5px;padding:7px 11px;font-size:8px;line-height:2;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="ph"><h1>ROTTA NAVALE</h1><p>Proiezione di Mercatore · Lossodromia · Ortodromia</p></div>
+
+  <!-- PUNTI -->
+  <div class="sec">
+    <div class="lbl"><span class="pt-dot" style="background:#44ff88"></span>Punto di Partenza A</div>
+    <div class="coord-pair">
+      <div class="ci"><label>Latitudine (°N/S)</label><input id="aLat" value="41.9" step="0.1" type="number"></div>
+      <div class="ci"><label>Longitudine (°E/W)</label><input id="aLon" value="12.5" step="0.1" type="number"></div>
+    </div>
+    <div class="lbl" style="margin-top:6px"><span class="pt-dot" style="background:#ff5555"></span>Punto di Arrivo B</div>
+    <div class="coord-pair">
+      <div class="ci"><label>Latitudine (°N/S)</label><input id="bLat" value="51.5" step="0.1" type="number"></div>
+      <div class="ci"><label>Longitudine (°E/W)</label><input id="bLon" value="-0.1" step="0.1" type="number"></div>
+    </div>
+    <button class="btn" id="calcBtn" style="margin-top:6px">⊕ CALCOLA ROTTA</button>
+  </div>
+
+  <!-- RISULTATI -->
+  <div class="sec">
+    <div class="lbl">Risultati Rotta</div>
+    <div class="res-grid">
+      <div class="rcard">
+        <div class="rc-lbl">Rotta Lossod.</div>
+        <div class="rc-val" style="color:var(--rhumb)" id="r-rhumb-dist">—</div>
+        <div class="rc-unit">miglia nautiche</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">Rotta Ortodr.</div>
+        <div class="rc-val" style="color:var(--gc)" id="r-gc-dist">—</div>
+        <div class="rc-unit">miglia nautiche</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">Risp. Ortodr.</div>
+        <div class="rc-val" style="color:var(--acc)" id="r-saving">—</div>
+        <div class="rc-unit">mn risparmiate</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">Rotta (°V)</div>
+        <div class="rc-val" style="color:var(--a)" id="r-bearing">—</div>
+        <div class="rc-unit">gradi veri</div>
+      </div>
+    </div>
+    <div class="res-grid">
+      <div class="rcard">
+        <div class="rc-lbl">ΔLat (l)</div>
+        <div class="rc-val" style="color:#aac0ff" id="r-dlat">—</div>
+        <div class="rc-unit">minuti</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">ΔLon (D)</div>
+        <div class="rc-val" style="color:#aac0ff" id="r-dlon">—</div>
+        <div class="rc-unit">minuti</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">Merid. Aum. A</div>
+        <div class="rc-val" style="color:#ffaacc" id="r-maA">—</div>
+        <div class="rc-unit">min merid.</div>
+      </div>
+      <div class="rcard">
+        <div class="rc-lbl">Merid. Aum. B</div>
+        <div class="rc-val" style="color:#ffaacc" id="r-maB">—</div>
+        <div class="rc-unit">min merid.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULE -->
+  <div class="sec">
+    <div class="lbl">Formule Mercatore</div>
+    <div class="fbox">
+      <div><span class="fx">tan(Z)</span> = <span class="fv">D / ΔM</span></div>
+      <div><span class="fx">dist</span> = <span class="fv">l / cos(Z)</span>  [se lat≠lat₂]</div>
+      <div><span class="fx">ΔM</span> = <span class="fv">M(B) − M(A)</span></div>
+      <div><span class="fx">M(φ)</span> = <span class="fv">ln|tan(π/4+φ/2)| · (180/π · 60)</span></div>
+      <div><span class="fx">GC dist</span> = <span class="fv">acos(sinA·sinB+cosA·cosB·cosD)</span></div>
+    </div>
+  </div>
+
+  <!-- TAPPE ORTODROMIA -->
+  <div class="sec" id="leg-sec" style="display:none">
+    <div class="lbl">Tappe Intermedie (Ortodromia)</div>
+    <table id="leg-table">
+      <thead><tr><th>#</th><th>Lat</th><th>Lon</th><th>Rotta</th><th>Dist (mn)</th></tr></thead>
+      <tbody id="leg-body"></tbody>
+    </table>
+  </div>
+
+  <!-- OPZIONI -->
+  <div class="sec">
+    <div class="lbl">Visualizzazione</div>
+    <div class="tr"><span>Lossodromia (rotta costante)</span><div class="tog on" id="tog-rh"></div></div>
+    <div class="tr"><span>Ortodromia (cerchio massimo)</span><div class="tog on" id="tog-gc"></div></div>
+    <div class="tr"><span>Meridiani crescenti</span><div class="tog on" id="tog-mer"></div></div>
+    <div class="tr"><span>Paralleli di latitudine</span><div class="tog on" id="tog-par"></div></div>
+    <div class="tr"><span>Proiezione Mercatore live</span><div class="tog on" id="tog-merc"></div></div>
+  </div>
+
+  <!-- PRESET ROTTE -->
+  <div class="sec">
+    <div class="lbl">Rotte Storiche</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+      <button class="btn" data-r="columb" style="font-size:8px;padding:6px 4px">Colombo<br><span style="color:#556">Palos→Bahamas</span></button>
+      <button class="btn" data-r="clipper" style="font-size:8px;padding:6px 4px">Clipper Route<br><span style="color:#556">London→NY</span></button>
+      <button class="btn" data-r="magellan" style="font-size:8px;padding:6px 4px">Magellano<br><span style="color:#556">Cadice→Pacifico</span></button>
+      <button class="btn" data-r="silk" style="font-size:8px;padding:6px 4px">Via della Seta<br><span style="color:#556">Venezia→Cina</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="vp">
+  <canvas id="map-cv"></canvas>
+
+  <!-- Legend -->
+  <div id="legend">
+    <div style="color:var(--rhumb)">── Lossodromia (rotta costante)</div>
+    <div style="color:var(--gc)">── Ortodromia (cerchio massimo)</div>
+    <div style="color:#44ff88">● Partenza A &nbsp; <span style="color:#ff5555">● Arrivo B</span></div>
+    <div style="color:#556">Click mappa = imposta punto</div>
+  </div>
+
+  <!-- Info bar -->
+  <div id="info-bar">
+    <div id="ib-rh"></div>
+    <div id="ib-gc"></div>
+  </div>
+
+  <!-- Compass -->
+  <canvas id="compass" width="70" height="70"></canvas>
+
+  <!-- Cursor -->
+  <div id="cursor-info">Lat: — &nbsp; Lon: —</div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+// CONSTANTS & HELPERS
+// ──────────────────────────────────────────────────────────────
+const R_nm = 3440.065; // Earth radius in nautical miles
+const toRad = d => d * Math.PI / 180;
+const toDeg = r => r * 180 / Math.PI;
+const fmt = (n, d=1) => isFinite(n) ? n.toFixed(d) : '—';
+const fmtCoord = (v, pos, neg) => `${Math.abs(v).toFixed(2)}°${v>=0?pos:neg}`;
+
+// Mercator meridional parts (minutes)
+function meridionalParts(lat_deg) {
+  const lat = toRad(Math.abs(lat_deg));
+  if (lat >= Math.PI/2 - 1e-9) return 0;
+  return toDeg(Math.log(Math.tan(Math.PI/4 + lat/2))) * 60;
+}
+
+// ── RHUMB LINE ────────────────────────────────────────────────
+function rhumb(aLat,aLon,bLat,bLon){
+  const dLat = (bLat - aLat) * 60; // minutes
+  const dLon = (bLon - aLon) * 60; // minutes
+  const mA = meridionalParts(aLat) * Math.sign(aLat||1);
+  const mB = meridionalParts(bLat) * Math.sign(bLat||1);
+  const dM  = mB - mA; // delta meridional parts
+
+  let bearing;
+  if (Math.abs(dLat) < 0.001) {
+    bearing = dLon > 0 ? 90 : 270;
+  } else {
+    bearing = toDeg(Math.atan2(dLon, dM));
+    if (bearing < 0) bearing += 360;
+  }
+
+  let dist;
+  if (Math.abs(dLat) < 0.001) {
+    dist = Math.abs(dLon) * Math.cos(toRad(aLat));
+  } else {
+    dist = dLat / Math.cos(toRad(bearing));
+    if (dist < 0) dist = -dist;
+  }
+
+  return { dist, bearing, dLat, dLon, mA: mA*Math.sign(aLat||1), mB: mB*Math.sign(bLat||1), dM };
+}
+
+// ── GREAT CIRCLE ─────────────────────────────────────────────
+function greatCircleDist(aLat,aLon,bLat,bLon){
+  const f1=toRad(aLat),l1=toRad(aLon),f2=toRad(bLat),l2=toRad(bLon);
+  const dL=l2-l1;
+  const cos_d=Math.sin(f1)*Math.sin(f2)+Math.cos(f1)*Math.cos(f2)*Math.cos(dL);
+  return toDeg(Math.acos(Math.max(-1,Math.min(1,cos_d))))*60; // nautical miles
+}
+
+function greatCircleBearing(aLat,aLon,bLat,bLon){
+  const f1=toRad(aLat),l1=toRad(aLon),f2=toRad(bLat),l2=toRad(bLon);
+  const dL=l2-l1;
+  const y=Math.sin(dL)*Math.cos(f2);
+  const x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dL);
+  let b=toDeg(Math.atan2(y,x)); if(b<0)b+=360; return b;
+}
+
+// Intermediate point along great circle
+function gcIntermediate(aLat,aLon,bLat,bLon,f){
+  const f1=toRad(aLat),l1=toRad(aLon),f2=toRad(bLat),l2=toRad(bLon);
+  const d=toRad(greatCircleDist(aLat,aLon,bLat,bLon)/60);
+  if(d<1e-10) return{lat:aLat,lon:aLon};
+  const A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
+  const x=A*Math.cos(f1)*Math.cos(l1)+B*Math.cos(f2)*Math.cos(l2);
+  const y=A*Math.cos(f1)*Math.sin(l1)+B*Math.cos(f2)*Math.sin(l2);
+  const z=A*Math.sin(f1)+B*Math.sin(f2);
+  return{lat:toDeg(Math.atan2(z,Math.sqrt(x*x+y*y))), lon:toDeg(Math.atan2(y,x))};
+}
+
+// ──────────────────────────────────────────────────────────────
+// MAP RENDERING
+// ──────────────────────────────────────────────────────────────
+const mapCv = document.getElementById('map-cv');
+const ctx   = mapCv.getContext('2d');
+
+let W=0, H=0;
+let showRhumb=true, showGC=true, showMer=true, showPar=true, showMerc=true;
+let ptA={lat:41.9,lon:12.5}, ptB={lat:51.5,lon:-0.1};
+let setMode=0; // 0=none,1=A,2=B via click
+let mouseLL={lat:0,lon:0};
+
+// Map extent — Mercator
+let viewLon0=-180, viewLon1=180; // longitude range shown
+let viewLat0=-70,  viewLat1=80;  // lat range
+
+// Convert geographic → screen
+function mercY(lat){
+  if(!showMerc) return (1-(lat+90)/180)*H;
+  const y=Math.log(Math.tan(Math.PI/4+toRad(lat)/2));
+  const yMax=Math.log(Math.tan(Math.PI/4+toRad(viewLat1)/2));
+  const yMin=Math.log(Math.tan(Math.PI/4+toRad(viewLat0)/2));
+  return H*(1-(y-yMin)/(yMax-yMin));
+}
+function scX(lon){ return W*(lon-viewLon0)/(viewLon1-viewLon0); }
+function scY(lat){ return mercY(lat); }
+function toLL(px,py){
+  const lon=viewLon0+(px/W)*(viewLon1-viewLon0);
+  if(!showMerc){
+    const lat=90-py/H*180; return{lat,lon};
+  }
+  const yMax=Math.log(Math.tan(Math.PI/4+toRad(viewLat1)/2));
+  const yMin=Math.log(Math.tan(Math.PI/4+toRad(viewLat0)/2));
+  const y=yMax-(py/H)*(yMax-yMin);
+  const lat=toDeg(2*Math.atan(Math.exp(y))-Math.PI/2);
+  return{lat,lon};
+}
+
+// Simplified world land polygons (key regions)
+const LAND_POLYS = [
+  // Europe
+  [[35,-9],[36,3],[38,2],[41,3],[43,-1],[44,8],[47,8],[48,15],[51,15],[54,9],[56,10],[58,5],[58,25],[60,28],[65,14],[70,18],[71,28],[69,18],[65,14],[58,25],[55,21],[54,15],[54,9],[57,5],[58,3],[58,-1],[56,-6],[53,-10],[51,-10],[49,-5],[43,-2],[37,-8],[35,-6],[35,-9]],
+  // UK
+  [[51,-5],[51,1],[54,0],[56,-3],[58,-3],[58,-7],[55,-7],[53,-5],[51,-5]],
+  // Scandinavia (simplified)
+  [[57,8],[59,10],[62,6],[64,8],[66,14],[70,18],[70,28],[65,28],[60,24],[59,20],[57,16],[56,10],[57,8]],
+  // North Africa
+  [[-35,18],[-34,26],[-30,32],[-22,34],[-15,32],[-10,13],[4,2],[4,8],[8,14],[10,14],[14,18],[18,20],[22,24],[26,30],[30,32],[34,34],[37,10],[34,0],[32,-6],[30,-10],[16,-18],[10,-18],[4,-14],[0,-10],[-8,-14],[-20,-14],[-35,18]],
+  // Middle East / Arabia simplified
+  [[12,44],[15,44],[18,42],[22,38],[26,36],[28,34],[32,34],[36,36],[38,44],[26,56],[22,60],[14,50],[12,44]],
+  // South Asia
+  [[8,80],[12,80],[20,88],[24,92],[26,90],[28,96],[22,96],[18,82],[14,80],[8,76],[8,80]],
+  // East Asia (China coast)
+  [[20,110],[22,114],[24,120],[30,122],[38,120],[40,122],[42,120],[44,130],[50,136],[52,140],[46,140],[38,140],[34,132],[32,126],[28,120],[20,110]],
+  // Southeast Asia
+  [[4,100],[8,98],[16,100],[20,106],[14,108],[10,104],[2,104],[0,104],[1,110],[4,110],[6,116],[4,100]],
+  // North America (east coast simplified)
+  [[30,-88],[32,-80],[34,-78],[36,-76],[40,-74],[42,-70],[44,-68],[46,-64],[48,-70],[50,-66],[52,-56],[60,-64],[60,-78],[56,-80],[54,-82],[50,-86],[50,-92],[46,-84],[42,-82],[40,-76],[36,-76],[30,-88]],
+  [[30,-88],[28,-82],[24,-82],[24,-78],[28,-80],[30,-82],[30,-88]],
+  // West coast NA
+  [[32,-117],[34,-120],[38,-122],[42,-124],[48,-124],[50,-128],[54,-130],[60,-146],[60,-152],[56,-132],[50,-128],[46,-124],[40,-124],[36,-122],[32,-117]],
+  // South America
+  [[12,-72],[8,-62],[4,-52],[0,-50],[-5,-35],[-10,-38],[-20,-40],[-25,-48],[-30,-50],[-34,-52],[−38,-58],[-42,-64],[-48,-66],[-54,-66],[-56,-68],[-50,-74],[-42,-74],[-36,-74],[-26,-70],[-18,-70],[-10,-76],[-4,-80],[0,-78],[4,-76],[10,-72],[12,-72]],
+  // Australia
+  [[-14,128],[-12,136],[-14,142],[-18,148],[-22,150],[-28,154],[-32,152],[-38,148],[-38,140],[-32,136],[-32,126],[-22,114],[-20,118],[-14,128]],
+  // Japan
+  [[31,130],[34,132],[34,136],[36,138],[38,140],[40,140],[42,142],[44,144],[42,140],[38,138],[34,136],[32,130],[31,130]],
+  // Greenland
+  [[60,-44],[64,-52],[68,-54],[72,-56],[76,-62],[80,-58],[82,-30],[78,-18],[72,-22],[66,-34],[60,-44]],
+  // Iceland
+  [[64,-24],[64,-14],[66,-14],[66,-18],[64,-24]],
+];
+
+function drawLand(){
+  ctx.fillStyle='#1e2e14'; ctx.strokeStyle='#283e18'; ctx.lineWidth=.8;
+  LAND_POLYS.forEach(poly=>{
+    if(!poly||poly.length<3) return;
+    ctx.beginPath();
+    poly.forEach(([lat,lon],i)=>{
+      const x=scX(lon), y=scY(lat);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+}
+
+function drawGrid(){
+  // Meridians
+  if(showMer){
+    ctx.strokeStyle='rgba(0,160,210,.14)'; ctx.lineWidth=.6; ctx.setLineDash([3,6]);
+    for(let lon=-180;lon<=180;lon+=15){
+      ctx.beginPath(); ctx.moveTo(scX(lon),0); ctx.lineTo(scX(lon),H); ctx.stroke();
+      ctx.fillStyle='rgba(0,160,210,.4)'; ctx.font='8px monospace'; ctx.textAlign='center';
+      ctx.fillText(`${lon}°`,scX(lon),H-3);
+    }
+  }
+  // Parallels
+  if(showPar){
+    ctx.strokeStyle='rgba(0,160,210,.14)'; ctx.lineWidth=.6; ctx.setLineDash([3,6]);
+    for(let lat=-60;lat<=80;lat+=15){
+      const y=scY(lat);
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+      ctx.fillStyle='rgba(0,160,210,.4)'; ctx.font='8px monospace'; ctx.textAlign='left';
+      ctx.fillText(`${lat}°`,3,y-2);
+    }
+  }
+  ctx.setLineDash([]);
+
+  // Equator & prime meridian highlight
+  ctx.strokeStyle='rgba(0,200,255,.22)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(0,scY(0)); ctx.lineTo(W,scY(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(scX(0),0); ctx.lineTo(scX(0),H); ctx.stroke();
+}
+
+function drawRhumb(aLat,aLon,bLat,bLon){
+  if(!showRhumb) return;
+  ctx.strokeStyle='rgba(255,200,0,.9)'; ctx.lineWidth=2.2; ctx.setLineDash([7,5]);
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(255,200,0,.5)';
+  ctx.beginPath();
+  // Rhumb = straight line on Mercator
+  ctx.moveTo(scX(aLon),scY(aLat));
+  ctx.lineTo(scX(bLon),scY(bLat));
+  ctx.stroke(); ctx.setLineDash([]); ctx.shadowBlur=0;
+}
+
+function drawGC(aLat,aLon,bLat,bLon){
+  if(!showGC) return;
+  const steps=80;
+  ctx.strokeStyle='rgba(255,80,80,.9)'; ctx.lineWidth=2.2; ctx.setLineDash([]);
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(255,60,60,.5)';
+  ctx.beginPath();
+  let prevLon=null;
+  for(let i=0;i<=steps;i++){
+    const{lat,lon}=gcIntermediate(aLat,aLon,bLat,bLon,i/steps);
+    const x=scX(lon), y=scY(lat);
+    if(i===0||(prevLon!==null&&Math.abs(lon-prevLon)>100)){ctx.moveTo(x,y);}
+    else ctx.lineTo(x,y);
+    prevLon=lon;
+  }
+  ctx.stroke(); ctx.shadowBlur=0;
+}
+
+function drawPoint(lat,lon,col,lbl,size=9){
+  const x=scX(lon), y=scY(lat);
+  ctx.shadowBlur=14; ctx.shadowColor=col;
+  ctx.beginPath(); ctx.arc(x,y,size,0,Math.PI*2);
+  ctx.fillStyle=col+'55'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=col; ctx.font='bold 11px monospace'; ctx.textAlign='left';
+  ctx.fillText(lbl,x+11,y+4);
+  ctx.font='8px monospace'; ctx.fillStyle='rgba(255,255,255,.5)';
+  ctx.fillText(`${fmtCoord(lat,'N','S')} ${fmtCoord(lon,'E','W')}`,x+11,y+14);
+}
+
+function drawMercatorMarks(aLat,aLon,bLat,bLon){
+  if(!showMer) return;
+  // Draw vertical Mercator lines at A and B showing meridional parts
+  const x1=scX(aLon), x2=scX(bLon);
+  ctx.strokeStyle='rgba(255,170,200,.25)'; ctx.lineWidth=1; ctx.setLineDash([2,4]);
+  [x1,x2].forEach(x=>{ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();});
+  ctx.setLineDash([]);
+  // Annotate dM
+  const mA=meridionalParts(aLat), mB=meridionalParts(bLat);
+  const midX=(x1+x2)/2;
+  const yA=scY(aLat), yB=scY(bLat);
+  ctx.strokeStyle='rgba(255,170,200,.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(midX,yA); ctx.lineTo(midX,yB); ctx.stroke();
+  ctx.fillStyle='rgba(255,200,220,.7)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText(`ΔM=${fmt(mB-mA,0)}'`,midX,Math.min(yA,yB)-6);
+}
+
+let calcResult=null;
+
+function render(){
+  W=mapCv.width=mapCv.clientWidth;
+  H=mapCv.height=mapCv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+
+  // Ocean
+  const oceanGrad=ctx.createLinearGradient(0,0,0,H);
+  oceanGrad.addColorStop(0,'#06101e');
+  oceanGrad.addColorStop(1,'#0a1828');
+  ctx.fillStyle=oceanGrad; ctx.fillRect(0,0,W,H);
+
+  drawGrid();
+  drawLand();
+
+  if(calcResult){
+    const{aLat,aLon,bLat,bLon}=calcResult;
+    drawMercatorMarks(aLat,aLon,bLat,bLon);
+    drawRhumb(aLat,aLon,bLat,bLon);
+    drawGC(aLat,aLon,bLat,bLon);
+    drawPoint(aLat,aLon,'#44ff88','A');
+    drawPoint(bLat,bLon,'#ff5555','B');
+  } else {
+    drawPoint(ptA.lat,ptA.lon,'#44ff88','A');
+    drawPoint(ptB.lat,ptB.lon,'#ff5555','B');
+  }
+
+  drawCompass(calcResult?calcResult.bearing:0);
+}
+
+// ── COMPASS ───────────────────────────────────────────────────
+const compCv=document.getElementById('compass');
+const compCtx=compCv.getContext('2d');
+function drawCompass(bearing){
+  compCtx.clearRect(0,0,70,70);
+  const cx=35,cy=35,r=28;
+  compCtx.beginPath();compCtx.arc(cx,cy,r,0,Math.PI*2);
+  compCtx.fillStyle='rgba(5,8,15,.8)';compCtx.fill();
+  compCtx.strokeStyle='rgba(0,200,255,.3)';compCtx.lineWidth=1;compCtx.stroke();
+  ['N','E','S','W'].forEach((d,i)=>{
+    const a=i*Math.PI/2-Math.PI/2;
+    compCtx.fillStyle=d==='N'?'#ff5555':'rgba(0,200,255,.6)';
+    compCtx.font='bold 9px monospace'; compCtx.textAlign='center'; compCtx.textBaseline='middle';
+    compCtx.fillText(d,cx+Math.cos(a)*20,cy+Math.sin(a)*20);
+  });
+  // Needle
+  const nb=toRad(bearing-90);
+  compCtx.save(); compCtx.translate(cx,cy);
+  compCtx.strokeStyle='#ffcc00'; compCtx.lineWidth=2;
+  compCtx.shadowBlur=6; compCtx.shadowColor='#ffcc00';
+  compCtx.beginPath(); compCtx.moveTo(0,0);
+  compCtx.lineTo(Math.cos(nb)*22,Math.sin(nb)*22); compCtx.stroke();
+  compCtx.shadowBlur=0;
+  compCtx.fillStyle='rgba(0,200,255,.5)'; compCtx.font='7px monospace';
+  compCtx.textAlign='center'; compCtx.textBaseline='middle';
+  compCtx.fillText(`${Math.round(bearing)}°`,0,0);
+  compCtx.restore();
+}
+
+// ── CALCULATE & UPDATE ────────────────────────────────────────
+function calculate(){
+  const aLat=parseFloat(document.getElementById('aLat').value);
+  const aLon=parseFloat(document.getElementById('aLon').value);
+  const bLat=parseFloat(document.getElementById('bLat').value);
+  const bLon=parseFloat(document.getElementById('bLon').value);
+
+  const rh=rhumb(aLat,aLon,bLat,bLon);
+  const gcDist=greatCircleDist(aLat,aLon,bLat,bLon);
+  const gcBear=greatCircleBearing(aLat,aLon,bLat,bLon);
+  const saving=rh.dist-gcDist;
+
+  // Update cards
+  document.getElementById('r-rhumb-dist').textContent=fmt(rh.dist,1);
+  document.getElementById('r-gc-dist').textContent=fmt(gcDist,1);
+  document.getElementById('r-saving').textContent=(saving>0?'+':'')+fmt(saving,1);
+  document.getElementById('r-bearing').textContent=fmt(rh.bearing,1)+'°';
+  document.getElementById('r-dlat').textContent=fmt(rh.dLat,1);
+  document.getElementById('r-dlon').textContent=fmt(rh.dLon,1);
+  document.getElementById('r-maA').textContent=fmt(rh.mA,1);
+  document.getElementById('r-maB').textContent=fmt(rh.mB,1);
+
+  // Info bar
+  document.getElementById('ib-rh').innerHTML=`<span style="color:var(--rhumb)">Lossod. ${fmt(rh.dist,0)} mn · ${fmt(rh.bearing,1)}°V</span>`;
+  document.getElementById('ib-gc').innerHTML=`<span style="color:var(--gc)">Ortodr. ${fmt(gcDist,0)} mn · ${fmt(gcBear,1)}°V ini</span>`;
+
+  // GC legs table
+  const nLegs=8;
+  const tbody=document.getElementById('leg-body');
+  tbody.innerHTML='';
+  for(let i=0;i<=nLegs;i++){
+    const p=gcIntermediate(aLat,aLon,bLat,bLon,i/nLegs);
+    const nextP=gcIntermediate(aLat,aLon,bLat,bLon,Math.min((i+1)/nLegs,1));
+    const seg=i<nLegs?greatCircleDist(p.lat,p.lon,nextP.lat,nextP.lon):0;
+    const brg=i<nLegs?greatCircleBearing(p.lat,p.lon,nextP.lat,nextP.lon):0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:#556">${i}</td>
+      <td style="color:#8aaccc">${fmt(p.lat,2)}°</td>
+      <td style="color:#8aaccc">${fmt(p.lon,2)}°</td>
+      <td style="color:#ffcc44">${i<nLegs?fmt(brg,1)+'°':'—'}</td>
+      <td style="color:#aaa">${i<nLegs?fmt(seg,0):'—'}</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('leg-sec').style.display='block';
+
+  calcResult={aLat,aLon,bLat,bLon,bearing:rh.bearing};
+  ptA={lat:aLat,lon:aLon}; ptB={lat:bLat,lon:bLon};
+  render();
+}
+
+// ── MAP INTERACTION ───────────────────────────────────────────
+let clickMode=0; // 0=none,1=next sets A,2=next sets B
+mapCv.addEventListener('mousemove',e=>{
+  const rect=mapCv.getBoundingClientRect();
+  const{lat,lon}=toLL(e.clientX-rect.left,e.clientY-rect.top);
+  document.getElementById('cursor-info').textContent=
+    `Lat: ${fmt(lat,3)}°  Lon: ${fmt(lon,3)}°`;
+  mouseLL={lat,lon};
+});
+mapCv.addEventListener('click',e=>{
+  const rect=mapCv.getBoundingClientRect();
+  const{lat,lon}=toLL(e.clientX-rect.left,e.clientY-rect.top);
+  if(clickMode===1){
+    document.getElementById('aLat').value=fmt(lat,3);
+    document.getElementById('aLon').value=fmt(lon,3);
+    ptA={lat,lon}; clickMode=2; calculate();
+  } else if(clickMode===2){
+    document.getElementById('bLat').value=fmt(lat,3);
+    document.getElementById('bLon').value=fmt(lon,3);
+    ptB={lat,lon}; clickMode=0; calculate();
+  } else {
+    // toggle A/B
+    clickMode=1;
+  }
+});
+
+// ── TOGGLES ───────────────────────────────────────────────────
+function bindTog(id,setter){
+  document.getElementById(id).addEventListener('click',function(){
+    this.classList.toggle('on'); setter(this.classList.contains('on')); render();
+  });
+}
+bindTog('tog-rh',v=>showRhumb=v);
+bindTog('tog-gc',v=>showGC=v);
+bindTog('tog-mer',v=>showMer=v);
+bindTog('tog-par',v=>showPar=v);
+bindTog('tog-merc',v=>{showMerc=v; render();});
+
+// ── PRESETS ───────────────────────────────────────────────────
+const ROUTES={
+  columb: {aLat:37.3,aLon:-6.9,bLat:24.5,bLon:-77.1,label:'Colombo 1492'},
+  clipper:{aLat:51.5,aLon:-0.1,bLat:40.7,bLon:-74.0,label:'Clipper London→NY'},
+  magellan:{aLat:36.5,aLon:-6.3,bLat:-52.0,bLon:-68.0,label:'Magellano'},
+  silk:   {aLat:45.4,aLon:12.3,bLat:39.9,bLon:116.4,label:'Via della Seta'},
+};
+document.querySelectorAll('[data-r]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const r=ROUTES[b.dataset.r];
+    document.getElementById('aLat').value=r.aLat;
+    document.getElementById('aLon').value=r.aLon;
+    document.getElementById('bLat').value=r.bLat;
+    document.getElementById('bLon').value=r.bLon;
+    calculate();
+  });
+});
+
+document.getElementById('calcBtn').addEventListener('click',calculate);
+['aLat','aLon','bLat','bLon'].forEach(id=>
+  document.getElementById(id).addEventListener('change',calculate)
+);
+
+// ── RESIZE & INIT ─────────────────────────────────────────────
+window.addEventListener('resize',render);
+calculate();
+</script>
+</body>
+</html>

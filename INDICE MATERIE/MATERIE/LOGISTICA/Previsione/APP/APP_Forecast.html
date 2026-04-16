@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canvas previsione serie storica — Edutecnica</title>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap');
+    :root{
+      --bg:#0b0f1a;
+      --card:#151b30;
+      --card2:#1a2340;
+      --text:#f3f4ff;
+      --muted:#b9c1e2;
+      --line:#313a66;
+      --violet:#8b5cf6;
+      --violet-2:#c4b5fd;
+      --aqua:#2dd4bf;
+      --pink:#f472b6;
+      --gold:#fbbf24;
+      --rose:#fb7185;
+      --input:#10162a;
+      --shadow:0 18px 40px rgba(0,0,0,.30);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 24%),
+        radial-gradient(circle at top right, rgba(45,212,191,.14), transparent 22%),
+        linear-gradient(180deg,#0a0e18 0%, #0d1220 100%);
+      color:var(--text);
+    }
+    .wrap{max-width:1380px;margin:24px auto;padding:0 16px 28px}
+    .hero{
+      display:flex; justify-content:space-between; gap:18px; align-items:center;
+      padding:22px 24px;
+      border-radius:24px;
+      border:1px solid rgba(167,139,250,.22);
+      background:linear-gradient(135deg, rgba(26,35,64,.96), rgba(14,20,36,.94));
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    .hero-title h1{
+      margin:0 0 8px;font-size:30px;
+      font-family:Cinzel, Georgia, serif;
+      color:#efe9ff;
+    }
+    .hero-title p{margin:0;color:var(--muted);line-height:1.5;max-width:860px}
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .back-link,.hero-badge{
+      display:inline-flex; align-items:center; gap:10px;
+      text-decoration:none; white-space:nowrap;
+      padding:10px 14px;border-radius:999px;font-size:13px
+    }
+    .back-link{
+      color:#99f6e4;border:1px solid rgba(45,212,191,.26);background:rgba(45,212,191,.08)
+    }
+    .hero-badge{
+      color:#ebe3ff;border:1px solid rgba(167,139,250,.24);background:rgba(139,92,246,.10)
+    }
+    .phi-dot{
+      width:10px;height:10px;border-radius:50%;
+      background:linear-gradient(135deg,var(--violet-2),var(--aqua));
+      box-shadow:0 0 12px rgba(139,92,246,.45)
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(21,27,48,.98), rgba(16,22,42,.96));
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    h1{margin:0 0 8px;font-size:28px}
+    h2{margin:0 0 12px;font-size:20px;color:#f1ebff}
+    h3{margin:0 0 10px;font-size:17px;color:#f1ebff}
+    p{margin:6px 0;color:var(--muted);line-height:1.45}
+    label{display:block;font-weight:700;margin-bottom:6px;color:#ddd6fe}
+    input, select, button, textarea{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:15px;
+      background:var(--input);
+      color:var(--text);
+      outline:none;
+      font-family:inherit;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--violet);
+      box-shadow:0 0 0 3px rgba(139,92,246,.18);
+    }
+    button, .linkbtn{
+      cursor:pointer;
+      background:linear-gradient(135deg,var(--violet),#6d4ed8);
+      border:none;
+      font-weight:700;
+      color:white;
+      text-decoration:none;
+      display:inline-block;
+      text-align:center;
+      padding:11px 12px;
+      border-radius:10px;
+    }
+    .linkbtn.alt{
+      background:linear-gradient(135deg,var(--aqua),#0ea5a0);
+      color:#082521;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:14px 16px;
+    }
+    @media (max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:700px){.grid{grid-template-columns:1fr}}
+    .stats{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px}
+    @media (max-width:1100px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:700px){.stats{grid-template-columns:1fr}}
+    .stat{
+      background:linear-gradient(180deg, rgba(26,35,64,.92), rgba(18,24,44,.92));
+      border:1px solid rgba(49,58,102,.9);
+      border-radius:14px;padding:14px
+    }
+    .stat .k{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+    .stat .v{font-size:24px;font-weight:700;margin-top:6px}
+    .violet{color:var(--violet-2)} .aqua{color:#8ef1e3} .pink{color:#f9a8d4} .gold{color:#fcd34d} .rose{color:#fda4af}
+    .muted{color:var(--muted)}
+    .formula, .codehint{
+      background:linear-gradient(180deg, rgba(17,23,40,.96), rgba(13,19,34,.96));
+      border:1px dashed rgba(167,139,250,.34);
+      border-radius:14px;
+      padding:13px;
+      color:#dfe6ff;
+      line-height:1.65;
+      white-space:pre-wrap;
+    }
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .toolbar button{width:auto}
+    .chart-wrap{
+      border:1px solid rgba(49,58,102,.9);
+      border-radius:14px; overflow:auto;
+      background:linear-gradient(180deg,#0f1527,#121a31);
+    }
+    canvas{display:block; width:100%; height:auto}
+    .legend{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; color:var(--muted); font-size:13px}
+    .legend .sw{display:inline-block; width:14px; height:14px; border-radius:4px; margin-right:6px; vertical-align:middle}
+    .three{display:grid; grid-template-columns:1.5fr .9fr; gap:18px}
+    .two{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+    @media (max-width:980px){.three,.two{grid-template-columns:1fr}}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      background:rgba(139,92,246,.10); border:1px solid rgba(167,139,250,.24); color:#e9ddff;
+      font-size:13px
+    }
+    .table-wrap{overflow:auto;border:1px solid rgba(49,58,102,.9);border-radius:14px}
+    table{width:100%; border-collapse:collapse; min-width: 560px}
+    th,td{padding:10px 12px; border-bottom:1px solid rgba(167,139,250,.10); text-align:left; font-size:13px}
+    th{background:#141b31; color:#ddd6fe; position:sticky; top:0; z-index:1}
+    tr:hover td{background:rgba(139,92,246,.05)}
+    .ok{color:#8ef1e3;font-weight:700}
+    .bad{color:#fda4af;font-weight:700}
+    .warn{color:#fcd34d;font-weight:700}
+  </style>
+
+</head>
+
+<body>
+  <div id="appPage">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-title">
+          <h1>Canvas previsione serie storica</h1>
+          <p>Analisi di una serie storica da CSV con confronto fra metodi, metriche di fit, regressione lineare, grafici e previsione futura in un layout coerente con Edutecnica.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="back-link" href="../../Index.html">← Torna all’indice</a>
+          <div class="hero-badge"><span class="phi-dot"></span> Applicazione · Anno 2</div>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <label for="csvFile">Carica CSV</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div>
+            <label for="method">Metodo</label>
+            <select id="method">
+              <option value="moving_average">Media mobile</option>
+              <option value="additive">Additiva</option>
+              <option value="multiplicative">Moltiplicativa</option>
+              <option value="linear_regression">Regressione lineare</option>
+            </select>
+          </div>
+          <div>
+            <label for="horizon">Periodi futuri da prevedere</label>
+            <input id="horizon" type="number" min="1" max="60" step="1" value="6" />
+          </div>
+          <div>
+            <label for="window">Finestra media mobile</label>
+            <input id="window" type="number" min="1" max="100" step="1" value="3" />
+          </div>
+          <div>
+            <label for="seasonLength">Periodo stagionale</label>
+            <input id="seasonLength" type="number" min="2" max="100" step="1" value="12" />
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:14px">
+          <div>
+            <label for="delimiter">Separatore CSV</label>
+            <select id="delimiter">
+              <option value="auto">Auto</option>
+              <option value=",">Virgola</option>
+              <option value=";">Punto e virgola</option>
+              <option value="\t">Tab</option>
+            </select>
+          </div>
+          <div>
+            <label for="hasHeader">Intestazione</label>
+            <select id="hasHeader">
+              <option value="yes">Sì</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div>
+            <label for="timeMode">Tipo serie</label>
+            <select id="timeMode">
+              <option value="date">Data,Numero</option>
+              <option value="generic">Etichetta,Numero</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2;">
+            <label for="manualCsv">Oppure incolla CSV</label>
+            <textarea id="manualCsv" rows="2" placeholder="Data;Numero&#10;31/01/2024;1250,5&#10;29/02/2024;1310,2"></textarea>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button id="analyzeBtn">Calcola previsione</button>
+          <button id="sampleBtn" type="button">Carica esempio</button>
+          <button id="downloadBtn" type="button">Scarica previsione CSV</button>
+        </div>
+
+        <div style="margin-top:12px" class="codehint">Esempio:
+Data;Numero
+31/01/2024;1250,5
+29/02/2024;1310,2
+31/03/2024;1288,7
+30/04/2024;1395,0</div>
+
+        <div style="margin-top:12px" class="formula">La lettura ora è più flessibile: l'app prova a riconoscere automaticamente le colonne <strong>Data</strong> e <strong>Numero</strong>, tollera colonne extra, separatori diversi e numeri con virgola o punto.</div>
+      </div>
+
+      <div class="card">
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Osservazioni</div>
+            <div class="v violet" id="nObs">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">MAE</div>
+            <div class="v aqua" id="maeVal">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">RMSE</div>
+            <div class="v pink" id="rmseVal">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Media serie</div>
+            <div class="v gold" id="meanVal">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Ultima previsione</div>
+            <div class="v rose" id="lastForecast">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">R² regressione</div>
+            <div class="v violet" id="r2Val">0</div>
+          </div>
+        </div>
+        <div class="formula" style="margin-top:14px">
+          <div><strong>Equazione retta di regressione</strong></div>
+          <div id="regEquation">y = m·x + q</div>
+        </div>
+        <p id="status" class="muted" style="margin-top:12px">Carica un file o incolla un CSV per iniziare.</p>
+      </div>
+
+      <div class="card">
+        <h2>Grafico storico, fit e previsione</h2>
+        <div class="chart-wrap">
+          <canvas id="mainChart" width="1220" height="430"></canvas>
+        </div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--aqua)"></i> Storico</span>
+          <span><i class="sw" style="background:var(--pink)"></i> Fit modello</span>
+          <span><i class="sw" style="background:var(--rose)"></i> Previsione futura</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="three">
+          <div>
+            <h2>Residui del fit</h2>
+            <div class="chart-wrap">
+              <canvas id="residChart" width="1220" height="430"></canvas>
+            </div>
+            <div class="legend">
+              <span><i class="sw" style="background:var(--gold)"></i> Residui = osservato - fit</span>
+            </div>
+          </div>
+          <div>
+            <h2>Controlli e note</h2>
+            <div style="margin-bottom:10px">
+              <span class="pill" id="methodLabel">Metodo: -</span>
+              <span class="pill" id="seriesLabel">Serie: -</span>
+              <span class="pill" id="freqLabel">Frequenza futura: mensile</span>
+            </div>
+            <div class="formula">
+              <div><strong>Interpretazione rapida</strong></div>
+              <div id="quickInsight">Nessuna analisi eseguita.</div>
+            </div>
+            <div class="formula" style="margin-top:12px">
+              <div><strong>Vincoli principali</strong></div>
+              <div>
+                • Moltiplicativa richiede valori strettamente positivi.<br>
+                • Additiva e moltiplicativa richiedono almeno circa 2 stagioni complete.<br>
+                • Regressione lineare produce anche forecast lineare futuro.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="two">
+          <div>
+            <h2>Tabella fit storico</h2>
+            <div class="table-wrap">
+              <table id="fitTable">
+                <thead>
+                  <tr>
+                    <th>Periodo</th>
+                    <th>Storico</th>
+                    <th>Fit</th>
+                    <th>Residuo</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h2>Tabella previsione futura</h2>
+            <div class="table-wrap">
+              <table id="forecastTable">
+                <thead>
+                  <tr>
+                    <th>Periodo</th>
+                    <th>Previsione</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <h2>Confronto automatico tra metodi</h2>
+        <p class="muted">Il canvas valuta i metodi applicabili sul dataset corrente e li ordina per qualità del fit storico.</p>
+        <div class="stats" style="margin-top:12px">
+          <div class="stat">
+            <div class="k">Metodo migliore per MAE</div>
+            <div class="v aqua" id="bestMethodMAE">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">MAE migliore</div>
+            <div class="v pink" id="bestMAE">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">Metodo migliore per RMSE</div>
+            <div class="v gold" id="bestMethodRMSE">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">RMSE migliore</div>
+            <div class="v rose" id="bestRMSE">-</div>
+          </div>
+          <div class="stat">
+            <div class="k">Metodi valutati</div>
+            <div class="v violet" id="methodsCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Metodo selezionato</div>
+            <div class="v aqua" id="selectedMethodSummary">-</div>
+          </div>
+        </div>
+        <div class="table-wrap" style="margin-top:14px">
+          <table id="compareTable">
+            <thead>
+              <tr>
+                <th>Rank MAE</th>
+                <th>Metodo</th>
+                <th>MAE</th>
+                <th>RMSE</th>
+                <th>Valutazione</th>
+                <th>Stato</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <a href="#teoria" class="linkbtn">Apri la teoria statistica</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="theoryPage" class="hide">
+    <div class="theory">
+      <div class="card" id="teoria">
+        <h1>Teoria statistica</h1>
+        <p>Questa pagina riassume i concetti usati dal canvas di previsione.</p>
+
+        <div class="formula">
+          <h3>1. Fit e forecast</h3>
+          <p>Il <strong>fit</strong> è il valore stimato dal modello sui dati storici. Il <strong>forecast</strong> è la previsione sui periodi futuri.</p>
+        </div>
+
+        <div class="formula">
+          <h3>2. Media mobile</h3>
+          <p>La media mobile usa la media degli ultimi n periodi per smussare la serie e, nel caso previsivo, per estendere i valori in avanti.</p>
+        </div>
+
+        <div class="formula">
+          <h3>3. Additiva</h3>
+          <p>Approccio adatto quando la stagionalità ha ampiezza circa costante. In forma descrittiva:</p>
+          <p><strong>y(t) = Trend(t) + Stagione(t) + Errore(t)</strong></p>
+        </div>
+
+        <div class="formula">
+          <h3>4. Moltiplicativa</h3>
+          <p>Approccio adatto quando la stagionalità cresce o cala col livello della serie. Richiede valori positivi.</p>
+          <p><strong>y(t) = Trend(t) × Stagione(t) × Errore(t)</strong></p>
+        </div>
+
+        <div class="formula">
+          <h3>5. Regressione lineare</h3>
+          <p>Stima una retta del tipo:</p>
+          <p><strong>y = m·x + q</strong></p>
+          <p>dove <strong>m</strong> è la pendenza e <strong>q</strong> è l’intercetta.</p>
+        </div>
+
+        <div class="formula">
+          <h3>6. Residui</h3>
+          <p>I residui misurano lo scarto tra osservato e stimato:</p>
+          <p><strong>e(t) = y(t) - ŷ(t)</strong></p>
+        </div>
+
+        <div class="formula">
+          <h3>7. MAE e RMSE</h3>
+          <p><strong>MAE</strong> = errore assoluto medio. Misura l’errore medio in valore assoluto.</p>
+          <p><strong>RMSE</strong> = radice dell’errore quadratico medio. Penalizza maggiormente gli errori grandi.</p>
+        </div>
+
+        <div class="formula">
+          <h3>8. R²</h3>
+          <p>Indica quanta parte della variabilità della serie è spiegata dalla regressione lineare. Più è vicino a 1, migliore è l’adattamento della retta.</p>
+        </div>
+
+        <div style="margin-top:16px">
+          <a href="#" class="linkbtn alt" id="backApp">Torna al canvas</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const E = id => document.getElementById(id);
+    let uploadedText = "";
+    let lastForecastRows = [];
+    let lastForecastFilename = "previsione.csv";
+    let lastParseMeta = null;
+
+    function showTheoryFromHash(){
+      if (window.location.hash === "#teoria"){
+        E("appPage").classList.add("hide");
+        E("theoryPage").classList.remove("hide");
+      } else {
+        E("theoryPage").classList.add("hide");
+        E("appPage").classList.remove("hide");
+      }
+    }
+    window.addEventListener("hashchange", showTheoryFromHash);
+    E("backApp").addEventListener("click", function(ev){
+      ev.preventDefault();
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      showTheoryFromHash();
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+    showTheoryFromHash();
+
+    E("csvFile").addEventListener("change", async (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      uploadedText = await f.text();
+      E("status").textContent = "File caricato. Premi Calcola previsione.";
+    });
+
+    E("sampleBtn").addEventListener("click", () => {
+      E("manualCsv").value = "Data;Numero\n31/01/2024;1250,5\n29/02/2024;1310,2\n31/03/2024;1288,7\n30/04/2024;1395,0\n31/05/2024;1458,1\n30/06/2024;1510,4\n31/07/2024;1598,8\n31/08/2024;1564,3\n30/09/2024;1482,9\n31/10/2024;1441,7\n30/11/2024;1388,2\n31/12/2024;1494,6\n31/01/2025;1290,1\n28/02/2025;1345,0\n31/03/2025;1322,4\n30/04/2025;1430,7\n31/05/2025;1491,3\n30/06/2025;1544,5\n31/07/2025;1636,8\n31/08/2025;1602,1\n30/09/2025;1510,8\n31/10/2025;1474,2\n30/11/2025;1410,6\n31/12/2025;1525,3";
+      E("status").textContent = "Esempio caricato. Premi Calcola previsione.";
+      E("timeMode").value = "date";
+    });
+
+    E("downloadBtn").addEventListener("click", () => {
+      if (!lastForecastRows.length){
+        E("status").innerHTML = '<span class="warn">Attenzione:</span> nessuna previsione da esportare.';
+        return;
+      }
+      let csv = "Data;Previsione\n";
+      lastForecastRows.forEach(r => {
+        csv += r.period + ";" + String(r.value).replace(".", ",") + "\n";
+      });
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = lastForecastFilename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    E("analyzeBtn").addEventListener("click", () => {
+      try{
+        const raw = (E("manualCsv").value || "").trim() || (uploadedText || "").trim();
+        if (!raw) throw new Error("Nessun CSV disponibile.");
+        const mode = E("timeMode").value;
+        const data = parseCsv(raw, mode);
+        if (data.length < 3) throw new Error("Servono almeno 3 righe dati.");
+        analyze(data, mode);
+      }catch(err){
+        E("status").innerHTML = '<span class="bad">Errore:</span> ' + err.message;
+      }
+    });
+
+    function detectDelimiter(text){
+      const line = text.split(/\r?\n/).find(x => x.trim().length > 0) || "";
+      const opts = [",",";","\t"];
+      let best = ",", bestN = -1;
+      for(const d of opts){
+        const n = line.split(d).length;
+        if(n > bestN){ bestN = n; best = d; }
+      }
+      return best;
+    }
+
+    function parseItalianNumber(raw){
+      if (raw == null) return NaN;
+      let s = String(raw).trim().replace(/\s/g,"");
+      s = s.replace(/[€£$%]/g, "");
+      if (!s) return NaN;
+      if (s.includes(",") && s.includes(".")){
+        if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+        else s = s.replace(/,/g, "");
+      } else if (s.includes(",")) {
+        s = s.replace(",", ".");
+      }
+      s = s.replace(/[^0-9.+-]/g, "");
+      return parseFloat(s);
+    }
+
+    function parseDateFlexible(text){
+      const s = String(text || "").trim();
+      if (!s) return null;
+      let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (m){
+        let day = parseInt(m[1],10), month = parseInt(m[2],10), year = parseInt(m[3],10);
+        if (year < 100) year += 2000;
+        const d = new Date(year, month - 1, day);
+        return (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) ? d : null;
+      }
+      m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+      if (m){
+        let day = parseInt(m[1],10), month = parseInt(m[2],10), year = parseInt(m[3],10);
+        if (year < 100) year += 2000;
+        const d = new Date(year, month - 1, day);
+        return (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) ? d : null;
+      }
+      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (m){
+        const year = parseInt(m[1],10), month = parseInt(m[2],10), day = parseInt(m[3],10);
+        const d = new Date(year, month - 1, day);
+        return (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) ? d : null;
+      }
+      const parsed = new Date(s);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateIT(d){
+      const day = String(d.getDate()).padStart(2,"0");
+      const month = String(d.getMonth()+1).padStart(2,"0");
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function normalizeHeaderName(value){
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+
+    function looksLikeHeaderRow(row){
+      const joined = row.map(normalizeHeaderName).join(" ");
+      return /data|date|giorno|day|mese|month|periodo|tempo|numero|valore|value|importo|totale|amount|qty|quantita/.test(joined);
+    }
+
+    function scoreDateColumn(rows, idx){
+      let ok = 0;
+      rows.forEach(r => { if (parseDateFlexible(r[idx])) ok++; });
+      return ok;
+    }
+
+    function scoreNumericColumn(rows, idx){
+      let ok = 0;
+      rows.forEach(r => { if (Number.isFinite(parseItalianNumber(r[idx]))) ok++; });
+      return ok;
+    }
+
+    function findDateAndNumberColumns(rows, hasHeader){
+      const header = hasHeader && rows.length ? rows[0].map(normalizeHeaderName) : [];
+      const dataRows = rows.slice(hasHeader ? 1 : 0).filter(r => r.length >= 2);
+      const maxCols = Math.max(0, ...rows.map(r => r.length));
+      const dateNames = ["data","date","giorno","day","mese","month","periodo","period","tempo","timestamp"];
+      const numberNames = ["numero","valore","value","importo","amount","totale","total","qty","quantita","quantita venduta","vendite","sales","count"];
+
+      let dateIdx = -1;
+      let numIdx = -1;
+
+      if (hasHeader && header.length){
+        dateIdx = header.findIndex(h => dateNames.includes(h) || h.startsWith("data ") || h.startsWith("date "));
+        numIdx = header.findIndex(h => numberNames.includes(h) || h.startsWith("numero ") || h.startsWith("valore "));
+      }
+
+      const dateScores = [];
+      const numScores = [];
+      for(let i=0;i<maxCols;i++){
+        dateScores.push({idx:i, score:scoreDateColumn(dataRows, i)});
+        numScores.push({idx:i, score:scoreNumericColumn(dataRows, i)});
+      }
+      dateScores.sort((a,b) => b.score - a.score);
+      numScores.sort((a,b) => b.score - a.score);
+
+      if (dateIdx === -1 && dateScores[0] && dateScores[0].score > 0) dateIdx = dateScores[0].idx;
+      if (numIdx === -1){
+        const bestNum = numScores.find(x => x.idx !== dateIdx && x.score > 0);
+        if (bestNum) numIdx = bestNum.idx;
+      }
+
+      return {
+        dateIdx,
+        numIdx,
+        dateLabel: dateIdx >= 0 ? (hasHeader ? (rows[0][dateIdx] || `Colonna ${dateIdx + 1}`) : `Colonna ${dateIdx + 1}`) : "-",
+        numLabel: numIdx >= 0 ? (hasHeader ? (rows[0][numIdx] || `Colonna ${numIdx + 1}`) : `Colonna ${numIdx + 1}`) : "-"
+      };
+    }
+
+    function parseCsv(text, mode){
+      const lines = text.split(/\r?\n/).filter(x => x.trim().length > 0);
+      if (!lines.length) throw new Error("CSV vuoto.");
+      let delimiter = E("delimiter").value;
+      if (delimiter === "auto") delimiter = detectDelimiter(text);
+      const rows = lines.map(line => line.split(delimiter).map(x => x.trim().replace(/^\ufeff/,"")));
+
+      let hasHeader = E("hasHeader").value === "yes";
+      if (!hasHeader && rows.length && looksLikeHeaderRow(rows[0])) hasHeader = true;
+      const start = hasHeader ? 1 : 0;
+
+      let data = [];
+      lastParseMeta = {delimiter, hasHeader, mode, dateColumn:"-", numberColumn:"-", skippedRows:0};
+
+      if (mode === "date"){
+        const detected = findDateAndNumberColumns(rows, hasHeader);
+        if (detected.dateIdx === -1 || detected.numIdx === -1) throw new Error("Non riesco a riconoscere in modo affidabile le colonne Data e Numero.");
+        for(let i=start;i<rows.length;i++){
+          const r = rows[i];
+          const d = parseDateFlexible(r[detected.dateIdx]);
+          const v = parseItalianNumber(r[detected.numIdx]);
+          if (d && Number.isFinite(v)) data.push({period:d, value:v});
+          else lastParseMeta.skippedRows++;
+        }
+        data.sort((a,b) => a.period - b.period);
+        if (!data.length) throw new Error("Non trovo dati validi nelle colonne Data e Numero.");
+        lastParseMeta.dateColumn = detected.dateLabel;
+        lastParseMeta.numberColumn = detected.numLabel;
+      } else {
+        const detected = findDateAndNumberColumns(rows, hasHeader);
+        let labelIdx = 0;
+        let valueIdx = detected.numIdx >= 0 ? detected.numIdx : 1;
+        if (labelIdx === valueIdx) labelIdx = detected.dateIdx >= 0 ? detected.dateIdx : 0;
+        for(let i=start;i<rows.length;i++){
+          const r = rows[i];
+          if (r.length < 2) { lastParseMeta.skippedRows++; continue; }
+          const label = r[labelIdx];
+          const v = parseItalianNumber(r[valueIdx]);
+          if (label && Number.isFinite(v)) data.push({period:label, value:v});
+          else lastParseMeta.skippedRows++;
+        }
+        if (!data.length) throw new Error("Non trovo dati validi nelle colonne Etichetta e Numero.");
+        lastParseMeta.dateColumn = hasHeader ? (rows[0][labelIdx] || `Colonna ${labelIdx+1}`) : `Colonna ${labelIdx+1}`;
+        lastParseMeta.numberColumn = hasHeader ? (rows[0][valueIdx] || `Colonna ${valueIdx+1}`) : `Colonna ${valueIdx+1}`;
+      }
+      return data;
+    }
+
+    function mean(arr){
+      const v = arr.filter(x => Number.isFinite(x));
+      return v.length ? v.reduce((a,b)=>a+b,0)/v.length : NaN;
+    }
+
+    function movingAverageFitAndForecast(values, window, horizon){
+      const fitted = Array(values.length).fill(null);
+      for(let i=window-1;i<values.length;i++){
+        fitted[i] = mean(values.slice(i-window+1, i+1));
+      }
+      const work = values.slice();
+      const forecasts = [];
+      for(let i=0;i<horizon;i++){
+        const pred = work.length < window ? mean(work) : mean(work.slice(work.length-window));
+        forecasts.push(pred);
+        work.push(pred);
+      }
+      return {fitted, forecast:forecasts, equation:null};
+    }
+
+    function linearRegressionFitAndForecast(values, horizon){
+      const n = values.length;
+      const x = Array.from({length:n}, (_,i)=>i);
+      const xm = mean(x), ym = mean(values);
+      let num = 0, den = 0;
+      for(let i=0;i<n;i++){
+        num += (x[i]-xm)*(values[i]-ym);
+        den += (x[i]-xm)*(x[i]-xm);
+      }
+      const m = den ? num/den : 0;
+      const q = ym - m*xm;
+      const fitted = x.map(t => m*t + q);
+      const futureX = Array.from({length:horizon}, (_,i)=>n+i);
+      const forecast = futureX.map(t => m*t + q);
+      return {fitted, forecast, equation:`y = ${m.toFixed(4)}x + ${q.toFixed(4)}`, m, q};
+    }
+
+    function simpleAdditiveFitAndForecast(values, seasonLength, horizon){
+      if (values.length < Math.max(2 * seasonLength, 6)){
+        throw new Error("Serie troppo corta per una previsione additiva robusta. Servono almeno circa 2 stagioni complete.");
+      }
+      const trend = [];
+      for(let i=0;i<values.length;i++){
+        const start = Math.max(0, i - seasonLength + 1);
+        trend.push(mean(values.slice(start, i+1)));
+      }
+      const seasonal = values.map((v,i) => v - trend[i]);
+      const seasonalPattern = [];
+      for(let p=0;p<seasonLength;p++){
+        const bucket = [];
+        for(let i=0;i<seasonal.length;i++){
+          if (i % seasonLength === p && Number.isFinite(seasonal[i])) bucket.push(seasonal[i]);
+        }
+        seasonalPattern.push(mean(bucket));
+      }
+      const baseLevel = trend[trend.length - 1];
+      const fitted = values.map((v,i) => trend[i] + seasonalPattern[i % seasonLength]);
+      const forecast = [];
+      for(let i=0;i<horizon;i++){
+        forecast.push(baseLevel + seasonalPattern[i % seasonLength]);
+      }
+      return {fitted, forecast, equation:null};
+    }
+
+    function simpleMultiplicativeFitAndForecast(values, seasonLength, horizon){
+      if (values.some(v => v <= 0)){
+        throw new Error("La previsione moltiplicativa richiede valori tutti strettamente positivi.");
+      }
+      if (values.length < Math.max(2 * seasonLength, 6)){
+        throw new Error("Serie troppo corta per una previsione moltiplicativa robusta. Servono almeno circa 2 stagioni complete.");
+      }
+      const trend = [];
+      for(let i=0;i<values.length;i++){
+        const start = Math.max(0, i - seasonLength + 1);
+        trend.push(mean(values.slice(start, i+1)));
+      }
+      const seasonal = values.map((v,i) => trend[i] === 0 ? NaN : v / trend[i]);
+      const seasonalPattern = [];
+      for(let p=0;p<seasonLength;p++){
+        const bucket = [];
+        for(let i=0;i<seasonal.length;i++){
+          if (i % seasonLength === p && Number.isFinite(seasonal[i])) bucket.push(seasonal[i]);
+        }
+        seasonalPattern.push(bucket.length ? mean(bucket) : 1.0);
+      }
+      const fitted = values.map((v,i) => trend[i] * seasonalPattern[i % seasonLength]);
+      const baseLevel = trend[trend.length - 1];
+      const forecast = [];
+      for(let i=0;i<horizon;i++){
+        forecast.push(baseLevel * seasonalPattern[i % seasonLength]);
+      }
+      return {fitted, forecast, equation:null};
+    }
+
+    function computeMetrics(values, fitted){
+      const pairs = [];
+      for(let i=0;i<values.length;i++){
+        if (fitted[i] != null && Number.isFinite(fitted[i])) pairs.push([values[i], fitted[i]]);
+      }
+      const errors = pairs.map(p => p[0] - p[1]);
+      const mae = pairs.length ? mean(errors.map(e => Math.abs(e))) : NaN;
+      const rmse = pairs.length ? Math.sqrt(mean(errors.map(e => e*e))) : NaN;
+      return {mae, rmse, residuals: values.map((v,i) => (fitted[i] != null && Number.isFinite(fitted[i])) ? v - fitted[i] : null)};
+    }
+
+    function regressionR2(values){
+      const n = values.length;
+      const x = Array.from({length:n}, (_,i)=>i);
+      const xm = mean(x), ym = mean(values);
+      let num = 0, den = 0;
+      for(let i=0;i<n;i++){
+        num += (x[i]-xm)*(values[i]-ym);
+        den += (x[i]-xm)*(x[i]-xm);
+      }
+      const m = den ? num/den : 0;
+      const q = ym - m*xm;
+      const fitted = x.map(t => m*t + q);
+      let sse = 0, sst = 0;
+      for(let i=0;i<n;i++){
+        sse += (values[i]-fitted[i])**2;
+        sst += (values[i]-ym)**2;
+      }
+      return sst ? 1 - sse/sst : 0;
+    }
+
+    function inferFuturePeriods(data, horizon, mode){
+      if (mode !== "date"){
+        return Array.from({length:horizon}, (_,i)=>"Futuro " + (i+1));
+      }
+      const dates = data.map(d => d.period);
+      if (dates.length < 2){
+        const last = dates[dates.length - 1];
+        return Array.from({length:horizon}, (_,i) => {
+          const d = new Date(last);
+          d.setMonth(d.getMonth() + i + 1);
+          return formatDateIT(d);
+        });
+      }
+      const last = dates[dates.length - 1];
+      const prev = dates[dates.length - 2];
+      const diffDays = Math.round((last - prev) / (1000 * 60 * 60 * 24));
+      let step = "month";
+      if (diffDays <= 2) step = "day";
+      else if (diffDays >= 85 && diffDays <= 100) step = "quarter";
+      else if (diffDays >= 27 && diffDays <= 35) step = "month";
+
+      const out = [];
+      for(let i=1;i<=horizon;i++){
+        const d = new Date(last);
+        if (step === "day") d.setDate(d.getDate() + i);
+        else if (step === "quarter") d.setMonth(d.getMonth() + 3*i);
+        else d.setMonth(d.getMonth() + i);
+        out.push(formatDateIT(d));
+      }
+      return {labels:out, step};
+    }
+
+    function fmt(v, d=3){
+      if (v == null || !Number.isFinite(v)) return "";
+      return new Intl.NumberFormat("it-IT", {maximumFractionDigits:d}).format(v);
+    }
+
+    function drawMultiLine(canvasId, labels, series, forceZero=false){
+      const canvas = E(canvasId);
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width, h = canvas.height;
+      const pad = {top:20,right:20,bottom:52,left:70};
+      const iw = w - pad.left - pad.right, ih = h - pad.top - pad.bottom;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = "#121528";
+      ctx.fillRect(0,0,w,h);
+
+      const allVals = [];
+      series.forEach(s => s.data.forEach(v => { if (v != null && Number.isFinite(v)) allVals.push(v); }));
+      if (!allVals.length) return;
+      const extras = forceZero ? [0] : [];
+      const minY = Math.min.apply(null, allVals.concat(extras.length ? extras : [allVals[0]]));
+      const maxY = Math.max.apply(null, allVals.concat(extras.length ? extras : [allVals[0]]));
+      const rangeY = (maxY - minY) || 1;
+      const padY = rangeY * 0.08 + (rangeY === 1 ? 1 : 0);
+      const y0 = minY - padY, y1 = maxY + padY;
+
+      function xScale(i){ return pad.left + (labels.length <= 1 ? 0 : (i / (labels.length - 1)) * iw); }
+      function yScale(v){ return pad.top + ih - ((v - y0) / ((y1 - y0) || 1)) * ih; }
+
+      ctx.strokeStyle = "#2d3158";
+      ctx.lineWidth = 1;
+      ctx.font = "12px Arial";
+      ctx.fillStyle = "#b5b8d6";
+
+      for(let i=0;i<=5;i++){
+        const val = y0 + ((y1-y0)/5)*i;
+        const y = yScale(val);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w-pad.right, y); ctx.stroke();
+        ctx.fillText(fmt(val), 10, y+4);
+      }
+
+      const xTicks = Math.min(10, labels.length);
+      for(let i=0;i<xTicks;i++){
+        const idx = Math.round(i * (labels.length - 1) / Math.max(1, xTicks - 1));
+        const x = xScale(idx);
+        ctx.beginPath(); ctx.moveTo(x,pad.top); ctx.lineTo(x,h-pad.bottom); ctx.stroke();
+        ctx.fillText(String(labels[idx]).slice(0,12), x - 18, h - 18);
+      }
+
+      if (forceZero && y0 < 0 && y1 > 0){
+        const y = yScale(0);
+        ctx.strokeStyle = "#ffffff55";
+        ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(w-pad.right,y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#566";
+      ctx.beginPath();
+      ctx.moveTo(pad.left,pad.top);
+      ctx.lineTo(pad.left,h-pad.bottom);
+      ctx.lineTo(w-pad.right,h-pad.bottom);
+      ctx.stroke();
+
+      series.forEach(s => {
+        ctx.beginPath();
+        let started = false;
+        s.data.forEach((v,i) => {
+          if (v == null || !Number.isFinite(v)){ started = false; return; }
+          const x = xScale(i), y = yScale(v);
+          if (!started){ ctx.moveTo(x,y); started = true; }
+          else ctx.lineTo(x,y);
+        });
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.width || 2.5;
+        if (s.dash) ctx.setLineDash(s.dash); else ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    function fillFitTable(labels, values, fitted, residuals){
+      const tb = E("fitTable").querySelector("tbody");
+      tb.innerHTML = "";
+      for(let i=0;i<labels.length;i++){
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + labels[i] + "</td>" +
+          "<td>" + fmt(values[i]) + "</td>" +
+          "<td>" + fmt(fitted[i]) + "</td>" +
+          "<td>" + fmt(residuals[i]) + "</td>";
+        tb.appendChild(tr);
+      }
+    }
+
+    function fillForecastTable(labels, forecast){
+      const tb = E("forecastTable").querySelector("tbody");
+      tb.innerHTML = "";
+      lastForecastRows = [];
+      for(let i=0;i<labels.length;i++){
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + labels[i] + "</td><td>" + fmt(forecast[i]) + "</td>";
+        tb.appendChild(tr);
+        lastForecastRows.push({period: labels[i], value: Number(forecast[i].toFixed ? forecast[i].toFixed(6) : forecast[i])});
+      }
+    }
+
+
+    function methodLabelName(method){
+      return {
+        moving_average:"media mobile",
+        additive:"additiva",
+        multiplicative:"moltiplicativa",
+        linear_regression:"regressione lineare"
+      }[method] || method;
+    }
+
+    function scoreComment(maeRatio){
+      if (!Number.isFinite(maeRatio)) return "n.d.";
+      if (maeRatio < 0.05) return "molto buono";
+      if (maeRatio < 0.12) return "discreto";
+      return "debole";
+    }
+
+    function tryMethod(method, values, window, seasonLength, horizon){
+      try{
+        let result;
+        if (method === "moving_average"){
+          result = movingAverageFitAndForecast(values, window, horizon);
+        } else if (method === "additive"){
+          result = simpleAdditiveFitAndForecast(values, seasonLength, horizon);
+        } else if (method === "multiplicative"){
+          result = simpleMultiplicativeFitAndForecast(values, seasonLength, horizon);
+        } else {
+          result = linearRegressionFitAndForecast(values, horizon);
+        }
+        const metrics = computeMetrics(values, result.fitted);
+        return {
+          method,
+          label: methodLabelName(method),
+          mae: metrics.mae,
+          rmse: metrics.rmse,
+          ok: true,
+          reason: ""
+        };
+      } catch(err){
+        return {
+          method,
+          label: methodLabelName(method),
+          mae: NaN,
+          rmse: NaN,
+          ok: false,
+          reason: err.message
+        };
+      }
+    }
+
+    function fillCompareTable(results, selectedMethod, values){
+      const tb = E("compareTable").querySelector("tbody");
+      tb.innerHTML = "";
+      const valid = results.filter(r => r.ok && Number.isFinite(r.mae)).sort((a,b) => a.mae - b.mae || a.rmse - b.rmse);
+      const avg = mean(values);
+      results.sort((a,b) => {
+        const av = a.ok ? 0 : 1;
+        const bv = b.ok ? 0 : 1;
+        if (av !== bv) return av - bv;
+        return (a.mae - b.mae) || (a.rmse - b.rmse);
+      });
+
+      results.forEach(r => {
+        const tr = document.createElement("tr");
+        const rank = valid.findIndex(v => v.method === r.method);
+        const ratio = Number.isFinite(r.mae) && Number.isFinite(avg) && avg !== 0 ? Math.abs(r.mae / avg) : NaN;
+        const evalTxt = r.ok ? scoreComment(ratio) : "";
+        const state = r.ok ? (r.method === selectedMethod ? "selezionato" : "ok") : r.reason;
+        tr.innerHTML =
+          "<td>" + (rank >= 0 ? (rank + 1) : "-") + "</td>" +
+          "<td>" + r.label + "</td>" +
+          "<td>" + (r.ok ? fmt(r.mae,4) : "") + "</td>" +
+          "<td>" + (r.ok ? fmt(r.rmse,4) : "") + "</td>" +
+          "<td>" + evalTxt + "</td>" +
+          "<td>" + state + "</td>";
+        tb.appendChild(tr);
+      });
+
+      const bestMae = valid[0];
+      const bestRmse = results.filter(r => r.ok && Number.isFinite(r.rmse)).sort((a,b) => a.rmse - b.rmse)[0];
+      E("bestMethodMAE").textContent = bestMae ? bestMae.label : "-";
+      E("bestMAE").textContent = bestMae ? fmt(bestMae.mae,4) : "-";
+      E("bestMethodRMSE").textContent = bestRmse ? bestRmse.label : "-";
+      E("bestRMSE").textContent = bestRmse ? fmt(bestRmse.rmse,4) : "-";
+      E("methodsCount").textContent = String(valid.length);
+      E("selectedMethodSummary").textContent = methodLabelName(selectedMethod);
+      return {bestMae, bestRmse, validCount: valid.length};
+    }
+
+    function analyze(data, mode){
+      const values = data.map(d => d.value);
+      const labels = data.map(d => mode === "date" ? formatDateIT(d.period) : d.period);
+      const method = E("method").value;
+      const window = Math.max(1, parseInt(E("window").value || "3", 10));
+      const seasonLength = Math.max(2, parseInt(E("seasonLength").value || "12", 10));
+      const horizon = Math.max(1, parseInt(E("horizon").value || "6", 10));
+
+      const comparisonResults = [
+        tryMethod("moving_average", values, window, seasonLength, horizon),
+        tryMethod("additive", values, window, seasonLength, horizon),
+        tryMethod("multiplicative", values, window, seasonLength, horizon),
+        tryMethod("linear_regression", values, window, seasonLength, horizon)
+      ];
+
+      let result;
+      if (method === "moving_average"){
+        result = movingAverageFitAndForecast(values, window, horizon);
+      } else if (method === "additive"){
+        result = simpleAdditiveFitAndForecast(values, seasonLength, horizon);
+      } else if (method === "multiplicative"){
+        result = simpleMultiplicativeFitAndForecast(values, seasonLength, horizon);
+      } else {
+        result = linearRegressionFitAndForecast(values, horizon);
+      }
+
+      const metrics = computeMetrics(values, result.fitted);
+      const compareSummary = fillCompareTable(comparisonResults, method, values);
+      const r2 = regressionR2(values);
+      let futureInfo = inferFuturePeriods(data, horizon, mode);
+      let futureLabels = Array.isArray(futureInfo) ? futureInfo : futureInfo.labels;
+      let freqLabel = Array.isArray(futureInfo) ? "non determinata" : (futureInfo.step === "day" ? "giornaliera" : futureInfo.step === "quarter" ? "trimestrale" : "mensile");
+
+      drawMultiLine("mainChart", labels.concat(futureLabels), [
+        {data: values.concat(Array(horizon).fill(null)), color:"#2dd4bf"},
+        {data: result.fitted.concat(Array(horizon).fill(null)), color:"#f472b6"},
+        {data: Array(values.length).fill(null).concat(result.forecast), color:"#fb7185", dash:[7,5]}
+      ]);
+
+      drawMultiLine("residChart", labels, [
+        {data: metrics.residuals, color:"#fbbf24"}
+      ], true);
+
+      fillFitTable(labels, values, result.fitted, metrics.residuals);
+      fillForecastTable(futureLabels, result.forecast);
+
+      lastForecastFilename = "previsione_" + method + ".csv";
+
+      E("nObs").textContent = values.length;
+      E("maeVal").textContent = fmt(metrics.mae, 4);
+      E("rmseVal").textContent = fmt(metrics.rmse, 4);
+      E("meanVal").textContent = fmt(mean(values), 4);
+      E("lastForecast").textContent = fmt(result.forecast[result.forecast.length - 1], 4);
+      E("r2Val").textContent = fmt(r2, 4);
+      E("regEquation").textContent = result.equation || "Disponibile quando usi il metodo Regressione lineare";
+      E("methodLabel").textContent = "Metodo: " + ({
+        moving_average:"media mobile",
+        additive:"additiva",
+        multiplicative:"moltiplicativa",
+        linear_regression:"regressione lineare"
+      })[method];
+      E("seriesLabel").textContent = "Serie: " + (mode === "date" ? "temporale" : "generica");
+      E("freqLabel").textContent = "Frequenza futura: " + freqLabel;
+
+      let insight = "Errore medio contenuto.";
+      if (Number.isFinite(metrics.mae) && Number.isFinite(mean(values))){
+        const ratio = Math.abs(metrics.mae / (mean(values) || 1));
+        if (ratio < 0.05) insight = "Il fit appare molto buono rispetto al livello medio della serie.";
+        else if (ratio < 0.12) insight = "Il fit appare discreto, con errore moderato.";
+        else insight = "Il fit è piuttosto rumoroso: conviene confrontare più metodi o rivedere la stagionalità.";
+      }
+      if (compareSummary.bestMae){
+        const sameBest = compareSummary.bestMae.method === method;
+        insight += " Migliore per MAE: " + compareSummary.bestMae.label + ".";
+        if (!sameBest) insight += " Il metodo selezionato non è il migliore sul fit storico.";
+      }
+      E("quickInsight").textContent = insight;
+
+      E("status").innerHTML =
+        '<span class="ok">Analisi completata.</span> Metodo: ' +
+        ({
+          moving_average:"media mobile",
+          additive:"additiva",
+          multiplicative:"moltiplicativa",
+          linear_regression:"regressione lineare"
+        })[method] +
+        '. MAE = ' + fmt(metrics.mae, 4) +
+        ', RMSE = ' + fmt(metrics.rmse, 4) +
+        '. Previsione calcolata su ' + horizon + ' periodi futuri.' +
+        (lastParseMeta ? ' File letto con separatore <strong>' + (lastParseMeta.delimiter === ';' ? ';' : lastParseMeta.delimiter === ',' ? ',' : lastParseMeta.delimiter === "\t" ? 'tab' : lastParseMeta.delimiter) + '</strong>, colonna data <strong>' + lastParseMeta.dateColumn + '</strong>, colonna numero <strong>' + lastParseMeta.numberColumn + '</strong>' + (lastParseMeta.skippedRows ? ', righe scartate: <strong>' + lastParseMeta.skippedRows + '</strong>' : '') + '.' : '');
+    }
+  </script>
+</body>
+</html>
