@@ -1,155 +1,424 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Italy Logistic Optimizer - Standalone</title>
-    <style>
-        body { margin: 0; background: #05080a; color: #64ffda; font-family: 'Courier New', monospace; display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 380px; background: #0d1117; border-right: 2px solid #64ffda; padding: 15px; overflow-y: auto; box-sizing: border-box; }
-        #canvas-container { flex-grow: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
-        canvas { background: #020408; border: 1px solid #1f6feb; }
-        .node-card { background: rgba(31, 111, 235, 0.1); border: 1px solid #1f6feb; padding: 10px; border-radius: 4px; margin-bottom: 12px; position: relative; }
-        input { background: #000; border: 1px solid #1f6feb; color: #64ffda; padding: 4px; font-size: 11px; width: 65px; border-radius: 2px; }
-        .city-name { width: 60% !important; font-weight: bold; color: #fff; margin-bottom: 10px !important; }
-        .row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 5px; align-items: center; }
-        .btn-del { background: #ff4444; color: white; border: none; cursor: pointer; padding: 4px 8px; font-size: 10px; border-radius: 3px; font-weight: bold; }
-        .btn-add { width: 100%; padding: 12px; background: #64ffda; color: #000; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .results { background: #161b22; padding: 15px; border: 1px solid #f1c40f; margin-bottom: 15px; text-align: center; }
-        label { color: #8892b0; font-size: 9px; text-transform: uppercase; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Facility Location Optimizer · OSM</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#05080a;--panel:#0d1117;--card:#0f1923;--line:#1f6feb;
+  --em:#64ffda;--vi:#bc13fe;--warn:#f1c40f;--red:#ff5555;
+  --text:#d8e1ea;--muted:#8b98a8;
+}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+body{display:flex}
+#sidebar{width:340px;min-width:340px;background:var(--panel);border-right:1px solid rgba(31,111,235,.35);display:flex;flex-direction:column;height:100vh}
+#sidebar-header{padding:14px 16px;border-bottom:1px solid rgba(31,111,235,.22)}
+#sidebar-header h1{margin:0 0 4px;font-size:13px;letter-spacing:2px;color:var(--em)}
+#sidebar-header p{margin:0;font-size:11px;color:var(--muted);line-height:1.4}
+#result-box{padding:12px 16px;background:rgba(241,196,15,.05);border-bottom:1px solid rgba(241,196,15,.18)}
+.rb-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}
+.rb-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.rb-val{font-size:14px;font-weight:700;color:var(--warn);text-align:right}
+.rb-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:5px}
+#mode-tabs{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid rgba(31,111,235,.2)}
+.mtab{flex:1;padding:8px 6px;background:transparent;border:1px solid rgba(31,111,235,.3);color:var(--muted);border-radius:7px;cursor:pointer;font-size:11px}
+.mtab.on{border-color:var(--em);color:var(--em);background:rgba(100,255,218,.08)}
+#stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 16px 10px;border-bottom:1px solid rgba(31,111,235,.16)}
+.sb{background:rgba(0,0,0,.25);border:1px solid rgba(31,111,235,.16);border-radius:8px;padding:8px 6px;text-align:center}
+.sb b{display:block;color:var(--em);font-size:14px}
+.sb span{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+#nodes-scroll{flex:1;overflow:auto;padding:10px 16px}
+#nodes-scroll::-webkit-scrollbar{width:6px}
+#nodes-scroll::-webkit-scrollbar-thumb{background:#22374f;border-radius:4px}
+.ncard{background:var(--card);border:1px solid rgba(31,111,235,.28);border-radius:10px;padding:10px;margin-bottom:10px}
+.nc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.nc-dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.25);flex:0 0 auto}
+.nc-name{flex:1;background:transparent;border:none;border-bottom:1px solid rgba(31,111,235,.28);color:#fff;padding:4px 2px;font-size:12px;font-weight:700;outline:none}
+.nc-name:focus{border-color:var(--em)}
+.nc-del{background:none;border:none;color:#ff7676;cursor:pointer;font-size:15px}
+.nc-fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.nc-field label{display:block;margin-bottom:3px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.nc-field input{width:100%;background:#07101a;border:1px solid rgba(31,111,235,.22);color:var(--text);padding:7px;border-radius:6px;font-size:11px;outline:none}
+.nc-field input:focus{border-color:var(--em)}
+#bottom-bar{padding:12px 16px;border-top:1px solid rgba(31,111,235,.22);display:flex;flex-direction:column;gap:8px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.abtn{padding:10px;border:none;border-radius:8px;cursor:pointer;font-weight:700;letter-spacing:.6px;font-size:11px}
+.abtn.primary{background:linear-gradient(135deg,#1f6feb,#0d4ea6);color:#fff}
+.abtn.sec{background:rgba(100,255,218,.08);border:1px solid rgba(100,255,218,.28);color:var(--em)}
+#map-wrap{position:relative;flex:1;height:100vh}
+#map{height:100%;width:100%}
+#hud-top,#legend,#help-box{position:absolute;z-index:900;background:rgba(5,8,10,.88);border:1px solid rgba(31,111,235,.3);border-radius:8px;color:var(--text);backdrop-filter:blur(2px)}
+#hud-top{top:10px;right:12px;padding:8px 11px;font-size:11px;line-height:1.5}
+#legend{bottom:12px;left:12px;padding:8px 10px;font-size:11px;line-height:1.8}
+#help-box{top:10px;left:12px;padding:8px 10px;font-size:11px;line-height:1.5;max-width:280px}
+#iso-toggle{position:absolute;top:94px;left:12px;z-index:900;display:flex;gap:6px;flex-wrap:wrap;max-width:300px}
+.itog{padding:7px 10px;background:rgba(5,8,10,.84);border:1px solid rgba(31,111,235,.3);color:var(--muted);border-radius:7px;cursor:pointer;font-size:11px}
+.itog.on{border-color:var(--em);color:var(--em)}
+.leg-row{display:flex;align-items:center;gap:6px}.leg-dot{width:10px;height:10px;border-radius:50%}
+.node-icon,.hub-icon{display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.55);box-shadow:0 0 16px rgba(0,0,0,.25)}
+.node-icon{font-size:10px}
+.hub-icon{font-size:10px;color:#071017;border-color:rgba(255,255,255,.9)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0d1117;color:#dfe8ef}
+.leaflet-control-attribution{background:rgba(255,255,255,.8)!important}
+</style>
 </head>
 <body>
-
 <div id="sidebar">
-    <div class="results">
-        <b style="color:#fff">BARICENTRO CALCOLATO</b><br>
-        <span style="font-size:14px; color:#f1c40f;">LAT: <span id="outLat">--</span> | LON: <span id="outLon">--</span></span>
+  <div id="sidebar-header">
+    <h1>FACILITY LOCATION · OSM</h1>
+    <p>Mappa OpenStreetMap reale, calcolo lato client in HTML/JS. Trascina i nodi sulla mappa o modifica i valori nella sidebar.</p>
+  </div>
+  <div id="result-box">
+    <div class="rb-row">
+      <span class="rb-label">Hub principale</span>
+      <span class="rb-val"><span id="outLat">--</span>°N · <span id="outLon">--</span>°E</span>
     </div>
-    <div id="nodesList"></div>
-    <button class="btn-add" onclick="addNode()">+ AGGIUNGI NODO</button>
+    <div class="rb-row">
+      <span class="rb-label">Costo totale ponderato</span>
+      <span class="rb-val" id="outCost">--</span>
+    </div>
+    <div class="rb-note" id="outNote">Configura i nodi e calcola.</div>
+  </div>
+  <div id="mode-tabs">
+    <button class="mtab on" data-m="centroid" onclick="setMode(this)">Baricentro</button>
+    <button class="mtab" data-m="weber" onclick="setMode(this)">Weber</button>
+    <button class="mtab" data-m="multi" onclick="setMode(this)">Multi-Hub</button>
+  </div>
+  <div id="stats-bar">
+    <div class="sb"><b id="s-nodes">0</b><span>Nodi</span></div>
+    <div class="sb"><b id="s-flow">0</b><span>Flusso</span></div>
+    <div class="sb"><b id="s-iter">0</b><span>Iterazioni</span></div>
+  </div>
+  <div id="nodes-scroll"></div>
+  <div id="bottom-bar">
+    <div class="action-grid">
+      <button class="abtn sec" onclick="addNode()">+ Nodo</button>
+      <button class="abtn sec" onclick="addPreset()">+ Preset IT</button>
+    </div>
+    <div class="action-grid">
+      <button class="abtn sec" onclick="fitToData()">Centra mappa</button>
+      <button class="abtn sec" onclick="exportJSON()">Esporta JSON</button>
+    </div>
+    <button class="abtn primary" onclick="compute()">▶ CALCOLA</button>
+  </div>
+</div>
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="help-box">
+    <b>Uso rapido</b><br>
+    Click sulla mappa: aggiungi nodo<br>
+    Trascina un nodo: aggiorna coordinate<br>
+    Popup nodo: dettagli sintetici
+  </div>
+  <div id="iso-toggle">
+    <button class="itog on" onclick="toggleLayer(this,'flows')">Flussi</button>
+    <button class="itog on" onclick="toggleLayer(this,'labels')">Etichette</button>
+    <button class="itog" onclick="toggleLayer(this,'iso')">Isocosto</button>
+  </div>
+  <div id="hud-top">
+    Metodo: <span id="hud-mode" style="color:var(--em);font-weight:700">Baricentro ponderato</span><br>
+    Base map: OpenStreetMap
+  </div>
+  <div id="legend">
+    <div class="leg-row"><div class="leg-dot" style="background:#1f6feb"></div>Nodo domanda</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#64ffda"></div>Hub principale</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#bc13fe"></div>Hub secondario</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#f1c40f;border-radius:2px;width:18px;height:3px"></div>Flusso assegnato</div>
+  </div>
 </div>
 
-<div id="canvas-container">
-    <canvas id="italyCanvas" width="550" height="700"></canvas>
-</div>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-    const canvas = document.getElementById('italyCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Immagine incorporata (Placeholder stilizzato dell'Italia)
-    const mapImg = new Image();
-    // Questa è una stringa Base64 di un'icona mappa per garantire che appaia sempre
-    mapImg.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA3MCI+PHBhdGggZD0iTTM1IDVMNDAgMTBMMzUgMTVMMzAgMjVMMjUgMzBMMjAgNDBMMTUgNDVMMTAgNTVMNSA2MEw3IDY1TDE1IDYwTDIwIDU1TDI1IDUwTDMwIDQ1TDM1IDQwTDQwIDM1TDQ1IDMwTDQ3IDI1TDQ1IDVMMzUgNVoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzE0NTE4NiIgc3Ryb2tlLXdpZHRoPSIwLjUiLz48L3N2Zz4=";
+const map = L.map('map', { zoomControl:true }).setView([42.5, 12.5], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-    const GEO = { latMin: 35.0, latMax: 48.0, lonMin: 6.0, lonMax: 19.0 };
+const PALETTE=['#1f6feb','#e36209','#1a7f37','#8250df','#cf222e','#0969da','#bc13fe'];
+let mode='centroid';
+let iterations=0;
+let layers={flows:true,labels:true,iso:false};
+let nodes=[
+  {name:'MILANO', lat:45.46,lon:9.19,  q:12000,c:1.0,color:'#1f6feb'},
+  {name:'ROMA',   lat:41.89,lon:12.49, q:18000,c:1.0,color:'#1f6feb'},
+  {name:'NAPOLI', lat:40.85,lon:14.26, q:9000, c:1.2,color:'#1f6feb'},
+  {name:'TORINO', lat:45.07,lon:7.69,  q:8000, c:1.1,color:'#1f6feb'},
+  {name:'BOLOGNA',lat:44.49,lon:11.34, q:7000, c:1.0,color:'#1f6feb'},
+  {name:'BARI',   lat:41.11,lon:16.87, q:6000, c:1.3,color:'#1f6feb'}
+];
+let hubs=[];
+let nodeLayers=[];
+let flowLayers=[];
+let hubLayers=[];
+let isoLayer=null;
 
-    let nodes = [
-        { name: "MILANO", lat: 45.46, lon: 9.19, q: 10000, c: 1.0 },
-        { name: "ROMA", lat: 41.89, lon: 12.49, q: 15000, c: 1.0 },
-        { name: "BARI", lat: 41.11, lon: 16.87, q: 7000, c: 1.3 }
-    ];
+function distKm(lat1,lon1,lat2,lon2){
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function centroid(pts){
+  let sLat=0,sLon=0,sW=0;
+  pts.forEach(n=>{const w=(n.q||0)*(n.c||1); sLat+=n.lat*w; sLon+=n.lon*w; sW+=w;});
+  return sW ? {lat:sLat/sW, lon:sLon/sW} : {lat:42, lon:12};
+}
+function weberStep(pts,curr){
+  let numLat=0,numLon=0,denom=0;
+  pts.forEach(n=>{
+    const w=(n.q||0)*(n.c||1);
+    const d=Math.max(0.001,Math.hypot(n.lat-curr.lat,n.lon-curr.lon));
+    const wi=w/d;
+    numLat+=n.lat*wi; numLon+=n.lon*wi; denom+=wi;
+  });
+  return {lat:numLat/denom, lon:numLon/denom};
+}
+function weber(pts,maxIter=80){
+  let curr=centroid(pts); let it=0;
+  for(;it<maxIter;it++){
+    const next=weberStep(pts,curr);
+    if(Math.hypot(next.lat-curr.lat,next.lon-curr.lon)<1e-6) break;
+    curr=next;
+  }
+  return {...curr,iters:it};
+}
+function multiHub(pts,k=2,maxIter=60){
+  if(pts.length<=k) return pts.map((p,i)=>({lat:p.lat,lon:p.lon,color:i===0?'#64ffda':'#bc13fe'}));
+  let centers=[{lat:pts[0].lat,lon:pts[0].lon}];
+  while(centers.length<k){
+    const dists=pts.map(p=>Math.min(...centers.map(c=>Math.hypot(p.lat-c.lat,p.lon-c.lon))));
+    const sum=dists.reduce((a,b)=>a+b,0);
+    let r=Math.random()*sum, idx=0;
+    for(; idx<dists.length-1; idx++){ r-=dists[idx]; if(r<=0) break; }
+    centers.push({lat:pts[idx].lat, lon:pts[idx].lon});
+  }
+  for(let it=0; it<maxIter; it++){
+    const assign=pts.map(p=>{
+      let best=0,bestD=Infinity;
+      centers.forEach((c,ci)=>{const d=Math.hypot(p.lat-c.lat,p.lon-c.lon); if(d<bestD){best=ci; bestD=d;}});
+      return best;
+    });
+    const next=Array.from({length:k},()=>({lat:0,lon:0,sw:0}));
+    pts.forEach((p,i)=>{const ci=assign[i], w=p.q*p.c; next[ci].lat+=p.lat*w; next[ci].lon+=p.lon*w; next[ci].sw+=w;});
+    let moved=false;
+    next.forEach((n,ci)=>{
+      if(n.sw>0){
+        const nl=n.lat/n.sw, nn=n.lon/n.sw;
+        if(Math.hypot(nl-centers[ci].lat,nn-centers[ci].lon)>1e-6) moved=true;
+        centers[ci]={lat:nl, lon:nn};
+      }
+    });
+    if(!moved) break;
+  }
+  return centers.map((c,i)=>({...c,color:i===0?'#64ffda':'#bc13fe'}));
+}
+function totalCost(pts,hubList){
+  let cost=0;
+  pts.forEach(p=>{
+    const w=(p.q||0)*(p.c||1);
+    const minD=Math.min(...hubList.map(h=>distKm(p.lat,p.lon,h.lat,h.lon)));
+    cost += w*minD;
+  });
+  return cost;
+}
+function nearestHub(node){
+  let best=hubs[0], minD=Infinity;
+  hubs.forEach(h=>{const d=distKm(node.lat,node.lon,h.lat,h.lon); if(d<minD){minD=d; best=h;}});
+  return best;
+}
+function nodeSize(q){ return Math.max(16, Math.min(36, Math.sqrt(q||0)/4)); }
+function divCircle(color,size,label,isHub=false){
+  const cls=isHub?'hub-icon':'node-icon';
+  return L.divIcon({
+    className:'',
+    html:`<div class="${cls}" style="background:${color};width:${size}px;height:${size}px;">${label||''}</div>`,
+    iconSize:[size,size],
+    iconAnchor:[size/2,size/2],
+    popupAnchor:[0,-size/2]
+  });
+}
+function renderNodes(){
+  nodeLayers.forEach(l=>map.removeLayer(l));
+  nodeLayers=[];
+  const list=document.getElementById('nodes-scroll');
+  list.innerHTML='';
 
-    function latLonToPixel(lat, lon) {
-        const x = (lon - GEO.lonMin) * (canvas.width / (GEO.lonMax - GEO.lonMin));
-        const y = (GEO.latMax - lat) * (canvas.height / (GEO.latMax - GEO.latMin));
-        return { x, y };
+  nodes.forEach((n,i)=>{
+    const size=nodeSize(n.q);
+    const marker=L.marker([n.lat,n.lon], {
+      draggable:true,
+      icon:divCircle(n.color||'#1f6feb', size, layers.labels?String(i+1):'', false)
+    }).addTo(map);
+    marker.bindPopup(() => {
+      const h=hubs.length?nearestHub(n):null;
+      const d=h ? distKm(n.lat,n.lon,h.lat,h.lon).toFixed(0)+' km' : '--';
+      return `<b>${n.name}</b><br>Lat: ${n.lat.toFixed(4)}<br>Lon: ${n.lon.toFixed(4)}<br>Q: ${n.q.toLocaleString('it-IT')}<br>C: ${n.c}<br>Distanza hub: ${d}`;
+    });
+    marker.on('dragend', e => {
+      const p=e.target.getLatLng();
+      nodes[i].lat=+p.lat.toFixed(5);
+      nodes[i].lon=+p.lng.toFixed(5);
+      renderNodes();
+      compute();
+    });
+    nodeLayers.push(marker);
+
+    const card=document.createElement('div');
+    card.className='ncard';
+    card.innerHTML=`
+      <div class="nc-head">
+        <div class="nc-dot" style="background:${n.color}"></div>
+        <input class="nc-name" value="${escapeHtml(n.name)}" oninput="nodes[${i}].name=this.value; renderNodes();">
+        <button class="nc-del" onclick="delNode(${i})">✕</button>
+      </div>
+      <div class="nc-fields">
+        <div class="nc-field"><label>Latitudine</label><input type="number" step="0.0001" value="${n.lat}" oninput="nodes[${i}].lat=+this.value; renderNodes(); compute();"></div>
+        <div class="nc-field"><label>Longitudine</label><input type="number" step="0.0001" value="${n.lon}" oninput="nodes[${i}].lon=+this.value; renderNodes(); compute();"></div>
+        <div class="nc-field"><label>Flusso Q</label><input type="number" value="${n.q}" oninput="nodes[${i}].q=+this.value; renderNodes(); compute();"></div>
+        <div class="nc-field"><label>Costo C</label><input type="number" step="0.1" value="${n.c}" oninput="nodes[${i}].c=+this.value; compute();"></div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+function renderHubs(){
+  hubLayers.forEach(l=>map.removeLayer(l)); hubLayers=[];
+  hubs.forEach((h,idx)=>{
+    const marker=L.marker([h.lat,h.lon], {
+      interactive:false,
+      icon:divCircle(h.color||'#64ffda', 28, idx===0?'H':'H'+(idx+1), true)
+    }).addTo(map);
+    hubLayers.push(marker);
+  });
+}
+function renderFlows(){
+  flowLayers.forEach(l=>map.removeLayer(l)); flowLayers=[];
+  if(!layers.flows || !hubs.length) return;
+  nodes.forEach(n=>{
+    const h=nearestHub(n);
+    const line=L.polyline([[n.lat,n.lon],[h.lat,h.lon]], {
+      color:'#f1c40f',
+      weight:Math.max(1.5, Math.min(7, n.q/3000)),
+      opacity:0.48,
+      dashArray: mode==='multi' ? null : '4 5'
+    }).addTo(map);
+    flowLayers.push(line);
+  });
+}
+function renderIso(){
+  if(isoLayer){ map.removeLayer(isoLayer); isoLayer=null; }
+  if(!layers.iso || !nodes.length) return;
+  const bounds = L.latLngBounds([[36,6],[47.8,19]]);
+  const cells=[];
+  const step=0.6;
+  let min=Infinity,max=-Infinity;
+  for(let lat=36; lat<=47.4; lat+=step){
+    for(let lon=6; lon<=18.8; lon+=step){
+      let cost=0;
+      nodes.forEach(n=>{ cost += (n.q*n.c)*distKm(lat,lon,n.lat,n.lon); });
+      min=Math.min(min,cost); max=Math.max(max,cost);
+      cells.push({lat,lon,cost});
     }
-
-    function update() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Sfondo Tecnico (Griglia)
-        ctx.strokeStyle = "#161b22";
-        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-
-        let sumLatQC = 0, sumLonQC = 0, totalQC = 0;
-        nodes.forEach(n => {
-            const weight = (parseFloat(n.q) || 0) * (parseFloat(n.c) || 0);
-            sumLatQC += n.lat * weight;
-            sumLonQC += n.lon * weight;
-            totalQC += weight;
-        });
-
-        if(totalQC > 0) {
-            const cogLat = sumLatQC / totalQC;
-            const cogLon = sumLonQC / totalQC;
-            const cogPix = latLonToPixel(cogLat, cogLon);
-
-            document.getElementById('outLat').innerText = cogLat.toFixed(2);
-            document.getElementById('outLon').innerText = cogLon.toFixed(2);
-
-            // Linee di forza
-            nodes.forEach(n => {
-                const p = latLonToPixel(n.lat, n.lon);
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y); ctx.lineTo(cogPix.x, cogPix.y);
-                ctx.strokeStyle = "rgba(100, 255, 218, 0.2)";
-                ctx.lineWidth = Math.min(6, (n.q * n.c) / 3000);
-                ctx.stroke();
-
-                // Nodo
-                ctx.fillStyle = "#1f6feb";
-                ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = "#fff"; ctx.font = "10px monospace";
-                ctx.fillText(n.name, p.x + 8, p.y + 3);
-            });
-
-            // HUB RISULTANTE
-            ctx.shadowBlur = 20; ctx.shadowColor = "#64ffda";
-            ctx.fillStyle = "#64ffda";
-            ctx.beginPath(); ctx.arc(cogPix.x, cogPix.y, 10, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
-            ctx.strokeRect(cogPix.x-12, cogPix.y-12, 24, 24);
-        }
-    }
-
-    function renderInputs() {
-        const list = document.getElementById('nodesList');
-        list.innerHTML = "";
-        nodes.forEach((n, i) => {
-            const card = document.createElement('div');
-            card.className = 'node-card';
-            card.innerHTML = `
-                <div class="row">
-                    <input type="text" class="city-name" value="${n.name}" oninput="nodes[${i}].name=this.value; update()">
-                    <button class="btn-del" onclick="deleteNode(${i})">ELIMINA</button>
-                </div>
-                <div class="row">
-                    <label>Lat/Lon</label>
-                    <div>
-                        <input type="number" step="0.01" value="${n.lat}" oninput="nodes[${i}].lat=parseFloat(this.value); update()">
-                        <input type="number" step="0.01" value="${n.lon}" oninput="nodes[${i}].lon=parseFloat(this.value); update()">
-                    </div>
-                </div>
-                <div class="row">
-                    <label>Flusso (Q)</label>
-                    <input type="number" value="${n.q}" oninput="nodes[${i}].q=parseFloat(this.value); update()">
-                </div>
-                <div class="row">
-                    <label>Costo (C)</label>
-                    <input type="number" step="0.1" value="${n.c}" oninput="nodes[${i}].c=parseFloat(this.value); update()">
-                </div>
-            `;
-            list.appendChild(card);
-        });
-    }
-
-    function deleteNode(idx) {
-        nodes.splice(idx, 1);
-        renderInputs();
-        update();
-    }
-
-    function addNode() {
-        nodes.push({ name: "NUOVO NODO", lat: 42.0, lon: 12.5, q: 5000, c: 1.0 });
-        renderInputs();
-        update();
-    }
-
-    renderInputs();
-    update();
+  }
+  const group=L.layerGroup();
+  cells.forEach(c=>{
+    const t=(c.cost-min)/((max-min)||1);
+    const fill=`rgba(${Math.round(220*t)},${Math.round(180-(110*t))},${Math.round(255-(120*t))},0.20)`;
+    const rect=L.rectangle([[c.lat,c.lon],[c.lat+step,c.lon+step]], {
+      stroke:false, fillColor:fill, fillOpacity:0.6, interactive:false
+    }).addTo(group);
+  });
+  group.addTo(map);
+  isoLayer=group;
+}
+function updateOutputs(){
+  const cost=hubs.length ? totalCost(nodes,hubs) : 0;
+  const h=hubs[0] || {lat:0,lon:0};
+  document.getElementById('outLat').textContent=hubs.length ? h.lat.toFixed(4) : '--';
+  document.getElementById('outLon').textContent=hubs.length ? h.lon.toFixed(4) : '--';
+  document.getElementById('outCost').textContent=hubs.length ? cost.toFixed(0)+' km·ton' : '--';
+  const notes={
+    centroid:'Baricentro ponderato: media geografica pesata su Q×C.',
+    weber:'Weber: minimizza iterativamente Σ wᵢ·dᵢ con distanza geografica.',
+    multi:'Multi-Hub: 2 centri ponderati con assegnazione del nodo al centro più vicino.'
+  };
+  document.getElementById('outNote').textContent=notes[mode];
+  document.getElementById('s-nodes').textContent=nodes.length;
+  document.getElementById('s-flow').textContent=nodes.reduce((s,n)=>s+(n.q||0),0).toLocaleString('it-IT');
+  document.getElementById('s-iter').textContent=iterations;
+}
+function compute(){
+  if(!nodes.length){ hubs=[]; return; }
+  iterations=0;
+  if(mode==='centroid'){
+    const h=centroid(nodes); hubs=[{...h,color:'#64ffda'}];
+  }else if(mode==='weber'){
+    const res=weber(nodes); hubs=[{lat:res.lat,lon:res.lon,color:'#64ffda'}]; iterations=res.iters;
+  }else{
+    hubs=multiHub(nodes,2); iterations=60;
+  }
+  renderIso();
+  renderFlows();
+  renderHubs();
+  renderNodes();
+  updateOutputs();
+}
+function fitToData(){
+  const pts=[...nodes.map(n=>[n.lat,n.lon]), ...hubs.map(h=>[h.lat,h.lon])];
+  if(!pts.length) return;
+  map.fitBounds(pts,{padding:[40,40]});
+}
+function setMode(btn){
+  mode=btn.dataset.m;
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('hud-mode').textContent={centroid:'Baricentro ponderato',weber:'Weber iterativo',multi:'Multi-Hub'}[mode];
+  compute();
+}
+function toggleLayer(btn,key){
+  layers[key]=!layers[key];
+  btn.classList.toggle('on',layers[key]);
+  if(key==='labels'){ renderNodes(); renderHubs(); }
+  if(key==='flows'){ renderFlows(); }
+  if(key==='iso'){ renderIso(); }
+}
+function delNode(i){ nodes.splice(i,1); renderNodes(); compute(); }
+function addNode(lat=43,lon=12){
+  const i=nodes.length;
+  nodes.push({name:`NODO ${i+1}`, lat:+lat.toFixed(5), lon:+lon.toFixed(5), q:5000, c:1.0, color:PALETTE[i%PALETTE.length]});
+  renderNodes(); compute();
+}
+function addPreset(){
+  const presets=[
+    {name:'VENEZIA',lat:45.44,lon:12.33,q:6000,c:1.1},
+    {name:'FIRENZE',lat:43.77,lon:11.25,q:7500,c:1.0},
+    {name:'PALERMO',lat:38.12,lon:13.36,q:8000,c:1.4},
+    {name:'GENOVA', lat:44.41,lon:8.93, q:9000,c:1.0},
+    {name:'CATANIA',lat:37.50,lon:15.09,q:5500,c:1.3},
+    {name:'TRIESTE',lat:45.65,lon:13.77,q:4000,c:1.1}
+  ];
+  const p=presets[nodes.length%presets.length];
+  nodes.push({...p,color:PALETTE[nodes.length%PALETTE.length]});
+  renderNodes(); compute();
+}
+function exportJSON(){
+  const payload={mode,nodes,hubs,generatedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='facility_location_data.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+}
+map.on('click', e => addNode(e.latlng.lat, e.latlng.lng));
+compute();
+fitToData();
 </script>
 </body>
 </html>
