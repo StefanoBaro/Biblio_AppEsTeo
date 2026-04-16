@@ -1,607 +1,608 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABC Analyzer Pro</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
-    :root {
-      --bg: #090b10;
-      --bg-soft: #10131a;
-      --panel: #121821;
-      --panel-2: #182231;
-      --line: rgba(122, 90, 216, .22);
-      --line-soft: rgba(74, 163, 124, .16);
-      --text: #eef0ff;
-      --muted: #b8bddc;
-      --accent: #4aa37c;
-      --accent-2: #7ad3ac;
-      --violet: #7a5ad8;
-      --violet-2: #b19cff;
-      --good: #7ef0c2;
-      --warn: #ffd16b;
-      --bad: #ff8f8f;
-      --shadow: 0 16px 36px rgba(0,0,0,.34);
-      --radius: 18px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(circle at 14% 18%, rgba(122,90,216,.11), transparent 18%),
-        radial-gradient(circle at 84% 78%, rgba(74,163,124,.10), transparent 24%),
-        radial-gradient(circle at top right, rgba(177,156,255,.08), transparent 22%),
-        linear-gradient(180deg, #07080c 0%, #0c0f16 35%, #131826 100%);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    .shell { max-width: 1480px; margin: 0 auto; padding: 24px; }
-    .hero {
-      display: flex; justify-content: space-between; gap: 20px; align-items: center;
-      padding: 22px 26px; border: 1px solid var(--line); border-radius: 26px;
-      background: linear-gradient(135deg, rgba(24,34,49,.96), rgba(15,20,31,.94));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(122,90,216,.10), rgba(74,163,124,.06) 42%, transparent 100%);
-      pointer-events: none;
-    }
-    .hero > * { position: relative; z-index: 1; }
-    .hero h1 { margin: 0 0 8px; font-size: 32px; font-family: 'Cinzel', serif; color: var(--violet-2); letter-spacing: .5px; }
-    .hero p { margin: 0; color: var(--muted); max-width: 820px; }
-    .badge {
-      border: 1px solid rgba(122,90,216,.28);
-      color: var(--violet-2);
-      padding: 10px 14px; border-radius: 999px; font-size: 13px;
-      background: rgba(122,90,216,.08);
-      white-space: nowrap;
-    }
-    .home-link {
-      display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px;
-      color: var(--accent-2); text-decoration: none; font-size: 13px; font-weight: 600;
-      padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(74,163,124,.24);
-      background: rgba(74,163,124,.08);
-    }
-    .home-link:hover { border-color: rgba(122,90,216,.30); color: var(--violet-2); }
-    .grid { display: grid; gap: 18px; margin-top: 20px; }
-    .g2 { grid-template-columns: 1.2fr .8fr; }
-    .g3 { grid-template-columns: repeat(3, 1fr); }
-    .g4 { grid-template-columns: repeat(4, 1fr); }
-    .panel {
-      background: linear-gradient(180deg, rgba(16,40,37,.96), rgba(13,31,28,.96));
-      border: 1px solid rgba(122,242,223,.14);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 18px;
-    }
-    .panel h2, .panel h3 { margin: 0 0 14px; }
-    .muted { color: var(--muted); }
-    .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .controls-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    label { display:block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-    input, select, textarea, button {
-      width: 100%; border-radius: 12px; border: 1px solid var(--line);
-      background: #0c1b18; color: var(--text); padding: 12px 14px; font-size: 14px;
-      outline: none;
-    }
-    textarea { min-height: 130px; resize: vertical; }
-    button {
-      cursor: pointer; background: linear-gradient(135deg, var(--accent), #28b8a6);
-      color: #04221d; border: none; font-weight: 700;
-      transition: transform .16s ease, filter .16s ease;
-    }
-    button:hover { transform: translateY(-1px); filter: brightness(1.06); }
-    button.secondary {
-      background: #122925; color: var(--text); border: 1px solid rgba(122,242,223,.16);
-    }
-    .kpi {
-      padding: 18px; border-radius: 16px; background: linear-gradient(180deg, rgba(18,41,37,.95), rgba(10,24,21,.95));
-      border: 1px solid rgba(122,242,223,.12);
-    }
-    .kpi .label { color: var(--muted); font-size: 13px; }
-    .kpi .value { font-size: 28px; font-weight: 800; margin-top: 8px; }
-    .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .matrix {
-      display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-    }
-    .cell {
-      min-height: 92px; border-radius: 16px; padding: 12px;
-      border: 1px solid rgba(122,242,223,.12);
-      background: linear-gradient(180deg, rgba(20,51,47,.8), rgba(12,27,24,.8));
-      position: relative; overflow: hidden;
-    }
-    .cell::after {
-      content:""; position:absolute; inset:auto -25% -35% auto; width:110px; height:110px; border-radius:50%;
-      background: radial-gradient(circle, rgba(122,242,223,.14), transparent 65%);
-    }
-    .cell h4 { margin: 0; font-size: 18px; }
-    .cell .big { font-size: 24px; font-weight: 800; margin-top: 10px; }
-    .cell .small { font-size: 12px; color: var(--muted); }
-    .table-wrap { overflow:auto; border-radius: 14px; border: 1px solid rgba(122,242,223,.12); }
-    table { width:100%; border-collapse: collapse; min-width: 1050px; }
-    th, td { padding: 11px 12px; border-bottom: 1px solid rgba(122,90,216,.08); text-align:left; font-size: 13px; }
-    th { position: sticky; top: 0; background: #182231; z-index: 1; }
-    tr:hover td { background: rgba(122,90,216,.04); }
-    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-    .A { background: rgba(126,240,194,.18); color: var(--good); }
-    .B { background: rgba(255,209,107,.16); color: var(--warn); }
-    .C { background: rgba(255,143,143,.16); color: var(--bad); }
-    .toolbar { display:flex; gap:10px; flex-wrap: wrap; align-items: end; }
-    .toolbar > div { flex: 1 1 180px; }
-    .split { display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .footer-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
-    .ok { color: var(--good); }
-    .empty {
-      padding: 26px; text-align:center; color: var(--muted);
-      border: 1px dashed rgba(122,90,216,.22); border-radius: 16px;
-    }
-    @media (max-width: 1120px) {
-      .g2, .g3, .g4, .controls, .split { grid-template-columns: 1fr; }
-      .hero { flex-direction: column; align-items: flex-start; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ABC Analyzer Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#090b10;--bg2:#10131a;--panel:#121821;--panel2:#182231;
+  --line:rgba(122,90,216,.22);--line2:rgba(74,163,124,.16);
+  --text:#eef0ff;--muted:#b8bddc;
+  --accent:#4aa37c;--accent2:#7ad3ac;
+  --vi:#7a5ad8;--vi2:#b19cff;
+  --good:#7ef0c2;--warn:#ffd16b;--bad:#ff8f8f;
+  --shadow:0 16px 36px rgba(0,0,0,.34);--r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,Arial,sans-serif;background:
+  radial-gradient(circle at 14% 18%,rgba(122,90,216,.11),transparent 18%),
+  radial-gradient(circle at 84% 78%,rgba(74,163,124,.10),transparent 24%),
+  linear-gradient(180deg,#07080c,#0c0f16 35%,#131826);
+  color:var(--text);min-height:100vh;padding:20px}
+.shell{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+/* HERO */
+.hero{display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:20px 24px;border:1px solid var(--line);border-radius:22px;
+  background:linear-gradient(135deg,rgba(24,34,49,.96),rgba(15,20,31,.94));
+  box-shadow:var(--shadow);flex-wrap:wrap}
+.hero h1{font-size:24px;color:var(--vi2);letter-spacing:.5px;margin-bottom:5px}
+.hero p{color:var(--muted);font-size:12px;max-width:700px}
+.badge{border:1px solid rgba(122,90,216,.28);color:var(--vi2);
+  padding:8px 14px;border-radius:999px;font-size:12px;background:rgba(122,90,216,.08);white-space:nowrap}
+
+/* PANELS */
+.panel{background:linear-gradient(180deg,rgba(16,40,37,.96),rgba(13,31,28,.96));
+  border:1px solid rgba(122,242,223,.14);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px}
+.panel h2{font-size:15px;color:#d6fffa;margin-bottom:12px}
+.panel h3{font-size:13px;color:#d6fffa;margin-bottom:8px}
+
+/* LAYOUT */
+.row{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+
+/* FORM */
+label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);
+  border-radius:9px;background:#0c1b18;color:var(--text);font-size:13px;outline:none;transition:.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(122,242,223,.12)}
+textarea{min-height:110px;resize:vertical}
+
+/* BUTTONS */
+button{cursor:pointer;border:none;border-radius:9px;padding:9px 14px;font-size:12px;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),#28b8a6);color:#04221d;transition:transform .14s,filter .14s}
+button:hover{transform:translateY(-1px);filter:brightness(1.07)}
+button.sec{background:#122925;color:var(--text);border:1px solid rgba(122,242,223,.18)}
+
+/* KPI */
+.kpi{padding:14px;border-radius:14px;
+  background:linear-gradient(180deg,rgba(18,41,37,.95),rgba(10,24,21,.95));
+  border:1px solid rgba(122,242,223,.12)}
+.kpi .lbl{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.kpi .val{font-size:22px;font-weight:800;margin-top:6px;color:var(--accent2)}
+.kpi .sub{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* MATRIX */
+.matrix{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cell{min-height:80px;border-radius:14px;padding:10px;
+  border:1px solid rgba(122,242,223,.12);
+  background:linear-gradient(180deg,rgba(20,51,47,.8),rgba(12,27,24,.8));position:relative;overflow:hidden}
+.cell h4{margin:0;font-size:14px}
+.cell .big{font-size:20px;font-weight:800;margin-top:6px}
+.cell .small{font-size:10px;color:var(--muted)}
+
+/* COLOR cells by class combo */
+.cell[data-c="AA"]{border-color:rgba(126,240,194,.4);background:linear-gradient(180deg,rgba(20,60,40,.9),rgba(12,35,24,.9))}
+.cell[data-c="CC"]{border-color:rgba(255,143,143,.25);background:linear-gradient(180deg,rgba(50,15,15,.9),rgba(30,10,10,.9))}
+.cell[data-c="AB"],.cell[data-c="BA"]{border-color:rgba(255,209,107,.25)}
+
+/* TABLE */
+.tbl-wrap{overflow:auto;border-radius:12px;border:1px solid rgba(122,242,223,.12);max-height:400px}
+table{width:100%;border-collapse:collapse;min-width:880px}
+th,td{padding:9px 10px;border-bottom:1px solid rgba(122,90,216,.08);text-align:left;font-size:12px}
+th{position:sticky;top:0;background:#182231;z-index:1;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+tr:hover td{background:rgba(122,90,216,.05)}
+.pill{display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700}
+.A{background:rgba(126,240,194,.18);color:var(--good)}
+.B{background:rgba(255,209,107,.16);color:var(--warn)}
+.C{background:rgba(255,143,143,.16);color:var(--bad)}
+.danger{color:var(--bad)}
+.ok{color:var(--good)}
+
+/* PROGRESS BAR */
+.pbar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:4px}
+.pbar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+
+/* THEORY BOX */
+.theory{background:rgba(0,0,0,.3);border:1px dashed rgba(122,242,223,.2);
+  border-radius:10px;padding:12px;font-size:11px;line-height:1.8;color:#c7f5ef}
+.theory b{color:var(--accent2)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.toolbar>div{flex:1;min-width:130px}
+
+/* STATUS */
+#status{font-size:11px;color:var(--muted);margin-top:8px}
+.empty{padding:20px;text-align:center;color:var(--muted);
+  border:1px dashed rgba(122,90,216,.22);border-radius:12px;font-size:12px}
+</style>
 </head>
 <body>
-  <div class="shell">
-    <a class="home-link" href="../../Index.html">← Torna all'indice</a>
-    <section class="hero">
-      <div>
-        <h1>ABC Analyzer Pro</h1>
-        <p>Carica un dataset, scegli due driver e ottieni analisi ABC singole, matrice bidimensionale, KPI, Pareto e dettaglio articoli. Dashboard dark con accenti verde acqua e viola, coerente con la home.</p>
-      </div>
-      <div class="badge">Applicazione · Anno 2 · CSV / XLSX / XLS</div>
-    </section>
+<div class="shell">
 
-    <div class="grid g2">
-      <section class="panel">
-        <h2>Input dati</h2>
-        <div class="controls-2">
-          <div>
-            <label>Carica file</label>
-            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
-          </div>
-          <div>
-            <label>Foglio Excel</label>
-            <select id="sheetSelect"><option value="">—</option></select>
-          </div>
-        </div>
-        <div style="margin-top:12px">
-          <label>Oppure incolla CSV</label>
-          <textarea id="csvText" placeholder="Item,Valore,Movimenti&#10;SKU001,12000,340&#10;SKU002,9000,220"></textarea>
-        </div>
-        <div class="toolbar" style="margin-top:12px">
-          <button id="loadTextBtn" class="secondary">Carica da testo</button>
-          <button id="useDemoBtn" class="secondary">Demo dataset</button>
-        </div>
-        <div class="footer-note" id="status">Nessun dataset caricato.</div>
-      </section>
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <h1>ABC Analyzer Pro</h1>
+    <p>Analisi ABC mono e bidimensionale con classificazione Pareto corretta, matrice 3×3, grafici e export. Carica CSV/XLSX o usa il dataset demo.</p>
+  </div>
+  <div class="badge">ABC · Pareto · Matrice 3×3</div>
+</div>
 
-      <section class="panel">
-        <h2>Configurazione analisi</h2>
-        <div class="controls">
-          <div>
-            <label>Colonna Item</label>
-            <select id="itemCol"></select>
-          </div>
-          <div>
-            <label>Driver 1</label>
-            <select id="driver1Col"></select>
-          </div>
-          <div>
-            <label>Driver 2</label>
-            <select id="driver2Col"></select>
-          </div>
-          <div>
-            <label>Aggregazione</label>
-            <select id="aggMode">
-              <option value="sum">Somma</option>
-              <option value="avg">Media</option>
-            </select>
-          </div>
-        </div>
-        <div class="controls" style="margin-top:12px">
-          <div>
-            <label>Soglia A (%)</label>
-            <input type="number" id="thresholdA" value="80" min="1" max="99" />
-          </div>
-          <div>
-            <label>Soglia B (%)</label>
-            <input type="number" id="thresholdB" value="95" min="1" max="100" />
-          </div>
-          <div>
-            <label>Top n per grafici</label>
-            <input type="number" id="topN" value="25" min="5" max="200" />
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button id="analyzeBtn">Genera analisi</button>
-          </div>
-        </div>
-      </section>
+<!-- INPUT + CONFIG -->
+<div class="row g2">
+  <div class="panel">
+    <h2>Input dati</h2>
+    <div class="row g2" style="margin-bottom:10px">
+      <div><label>Carica file (CSV / XLSX)</label><input type="file" id="fileInput" accept=".csv,.xlsx,.xls"></div>
+      <div><label>Foglio Excel</label><select id="sheetSelect"><option value="">—</option></select></div>
     </div>
-
-    <div class="grid g4" id="kpiGrid">
-      <div class="kpi"><div class="label">Righe dataset</div><div class="value" id="kpiRows">0</div><div class="sub">articoli letti</div></div>
-      <div class="kpi"><div class="label">Item unici</div><div class="value" id="kpiItems">0</div><div class="sub">dopo aggregazione</div></div>
-      <div class="kpi"><div class="label">Copertura classe A driver 1</div><div class="value" id="kpiA1">—</div><div class="sub">valore cumulato</div></div>
-      <div class="kpi"><div class="label">Copertura classe A driver 2</div><div class="value" id="kpiA2">—</div><div class="sub">valore cumulato</div></div>
+    <label>Oppure incolla CSV</label>
+    <textarea id="csvText" placeholder="Item;Fatturato;Movimenti&#10;SKU001;12000;340&#10;SKU002;9000;220"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="sec" onclick="loadFromText()">Carica testo</button>
+      <button class="sec" onclick="loadDemo()">Demo 40 SKU</button>
     </div>
-
-    <div class="grid g2">
-      <section class="panel">
-        <h2>Matrice ABC bidimensionale</h2>
-        <div class="matrix" id="matrix"></div>
-        <div class="footer-note">Ogni cella mostra numero item e quota sul totale aggregato.</div>
-      </section>
-      <section class="panel">
-        <h2>Sintesi manageriale</h2>
-        <div id="summaryBox" class="empty">Carica i dati e genera l’analisi per vedere una sintesi automatica.</div>
-      </section>
-    </div>
-
-    <div class="grid g2">
-      <section class="panel">
-        <h2>Pareto Driver 1</h2>
-        <canvas id="chart1" height="120"></canvas>
-      </section>
-      <section class="panel">
-        <h2>Pareto Driver 2</h2>
-        <canvas id="chart2" height="120"></canvas>
-      </section>
-    </div>
-
-    <section class="panel" style="margin-top:18px">
-      <h2>Dettaglio articoli</h2>
-      <div class="toolbar" style="margin-bottom:12px;">
-        <div>
-          <label>Filtro matrice</label>
-          <select id="matrixFilter">
-            <option value="">Tutte</option>
-            <option>AA</option><option>AB</option><option>AC</option>
-            <option>BA</option><option>BB</option><option>BC</option>
-            <option>CA</option><option>CB</option><option>CC</option>
-          </select>
-        </div>
-        <div>
-          <label>Cerca item</label>
-          <input id="searchInput" placeholder="es. SKU001" />
-        </div>
-        <div>
-          <label>Ordina per</label>
-          <select id="sortBy">
-            <option value="driver1">Driver 1</option>
-            <option value="driver2">Driver 2</option>
-            <option value="matrix">Matrice</option>
-            <option value="item">Item</option>
-          </select>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <button id="exportBtn" class="secondary">Esporta CSV classificato</button>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <button id="printBtn" class="secondary">Stampa / PDF</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Driver 1</th>
-              <th>Classe 1</th>
-              <th>% cum. 1</th>
-              <th>Driver 2</th>
-              <th>Classe 2</th>
-              <th>% cum. 2</th>
-              <th>Matrice</th>
-            </tr>
-          </thead>
-          <tbody id="detailBody"></tbody>
-        </table>
-      </div>
-    </section>
+    <div id="status">Nessun dataset caricato.</div>
   </div>
 
-  <script>
-    let rawRows = [];
-    let workbook = null;
-    let currentData = [];
-    let analysisRows = [];
-    let chart1 = null;
-    let chart2 = null;
+  <div class="panel">
+    <h2>Configurazione</h2>
+    <div class="row g2" style="margin-bottom:10px">
+      <div><label>Colonna Item</label><select id="itemCol"></select></div>
+      <div><label>Aggregazione</label>
+        <select id="aggMode"><option value="sum">Somma</option><option value="avg">Media</option></select>
+      </div>
+      <div><label>Driver 1 (es. Fatturato)</label><select id="d1Col"></select></div>
+      <div><label>Driver 2 (es. Movimenti)</label><select id="d2Col"></select></div>
+    </div>
+    <div class="row g4" style="margin-bottom:10px">
+      <div><label>Soglia A (%)</label><input type="number" id="thA" value="80" min="1" max="99"></div>
+      <div><label>Soglia B (%)</label><input type="number" id="thB" value="95" min="1" max="100"></div>
+      <div><label>Top N Pareto</label><input type="number" id="topN" value="20" min="5" max="200"></div>
+      <div style="display:flex;align-items:flex-end"><button onclick="analyze()" style="width:100%">▶ ANALIZZA</button></div>
+    </div>
+    <div class="theory">
+      <b>Come funziona la classificazione ABC:</b><br>
+      1. Ordina gli articoli per valore driver <b>decrescente</b><br>
+      2. Calcola il <b>cumulato percentuale</b> sul totale<br>
+      3. A = cumulato ≤ soglia A (es. 80%) · B = ≤ soglia B (es. 95%) · C = resto<br>
+      <b>Nota:</b> la classe dipende dalla <i>posizione nel cumulato</i>, non dal valore singolo
+    </div>
+  </div>
+</div>
 
-    const els = {
-      fileInput: document.getElementById('fileInput'),
-      sheetSelect: document.getElementById('sheetSelect'),
-      csvText: document.getElementById('csvText'),
-      loadTextBtn: document.getElementById('loadTextBtn'),
-      useDemoBtn: document.getElementById('useDemoBtn'),
-      status: document.getElementById('status'),
-      itemCol: document.getElementById('itemCol'),
-      driver1Col: document.getElementById('driver1Col'),
-      driver2Col: document.getElementById('driver2Col'),
-      aggMode: document.getElementById('aggMode'),
-      thresholdA: document.getElementById('thresholdA'),
-      thresholdB: document.getElementById('thresholdB'),
-      topN: document.getElementById('topN'),
-      analyzeBtn: document.getElementById('analyzeBtn'),
-      matrix: document.getElementById('matrix'),
-      summaryBox: document.getElementById('summaryBox'),
-      detailBody: document.getElementById('detailBody'),
-      matrixFilter: document.getElementById('matrixFilter'),
-      searchInput: document.getElementById('searchInput'),
-      sortBy: document.getElementById('sortBy'),
-      exportBtn: document.getElementById('exportBtn'),
-      printBtn: document.getElementById('printBtn'),
-      kpiRows: document.getElementById('kpiRows'),
-      kpiItems: document.getElementById('kpiItems'),
-      kpiA1: document.getElementById('kpiA1'),
-      kpiA2: document.getElementById('kpiA2')
-    };
+<!-- KPI -->
+<div class="row g5" id="kpiRow">
+  <div class="kpi"><div class="lbl">Righe dataset</div><div class="val" id="k-rows">—</div></div>
+  <div class="kpi"><div class="lbl">Item unici</div><div class="val" id="k-items">—</div></div>
+  <div class="kpi"><div class="lbl">Classe A · Driver 1</div><div class="val" id="k-a1">—</div><div class="sub" id="k-a1-sub">—</div></div>
+  <div class="kpi"><div class="lbl">Classe A · Driver 2</div><div class="val" id="k-a2">—</div><div class="sub" id="k-a2-sub">—</div></div>
+  <div class="kpi"><div class="lbl">Item AA</div><div class="val" id="k-aa">—</div><div class="sub">critici su entrambi i driver</div></div>
+</div>
 
-    function fmtNum(v) {
-      return Number(v).toLocaleString('it-IT', { maximumFractionDigits: 2 });
-    }
-    function fmtPct(v) {
-      return `${(v * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`;
-    }
-    function cleanNumber(v) {
-      if (typeof v === 'number') return isFinite(v) ? v : 0;
-      if (v === null || v === undefined) return 0;
-      const s = String(v).trim().replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
-      const n = Number(s);
-      return isFinite(n) ? n : 0;
-    }
-    function parseCSV(text) {
-      const rows = [];
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return [];
-      const delimiter = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(delimiter).map(h => h.trim());
-      for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(delimiter);
-        const row = {};
-        headers.forEach((h, idx) => row[h] = (parts[idx] ?? '').trim());
-        rows.push(row);
-      }
-      return rows;
-    }
-    function setColumns(rows) {
-      const cols = rows.length ? Object.keys(rows[0]) : [];
-      [els.itemCol, els.driver1Col, els.driver2Col].forEach(sel => {
-        sel.innerHTML = cols.map(c => `<option value="${c}">${c}</option>`).join('');
-      });
-      if (cols.length >= 3) {
-        els.itemCol.value = cols[0];
-        els.driver1Col.value = cols[1];
-        els.driver2Col.value = cols[2];
-      }
-    }
-    function loadRows(rows, sourceLabel='Dataset caricato') {
-      rawRows = rows;
-      currentData = rows;
-      setColumns(rows);
-      els.status.innerHTML = `<span class="ok">${sourceLabel}</span> · ${rows.length} righe lette`;
-      els.kpiRows.textContent = rows.length;
-    }
-    function readWorkbook(buffer) {
-      workbook = XLSX.read(buffer, { type: 'array' });
-      els.sheetSelect.innerHTML = workbook.SheetNames.map(n => `<option value="${n}">${n}</option>`).join('');
-      loadSheet(workbook.SheetNames[0]);
-    }
-    function loadSheet(name) {
-      if (!workbook || !name) return;
-      const ws = workbook.Sheets[name];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      loadRows(rows, `Foglio <b>${name}</b> caricato`);
-    }
-    function aggregateRows(rows, itemCol, d1, d2, mode) {
-      const map = new Map();
-      for (const r of rows) {
-        const key = String(r[itemCol] ?? '').trim();
-        if (!key) continue;
-        if (!map.has(key)) map.set(key, { item: key, driver1: 0, driver2: 0, count: 0 });
-        const obj = map.get(key);
-        obj.driver1 += cleanNumber(r[d1]);
-        obj.driver2 += cleanNumber(r[d2]);
-        obj.count += 1;
-      }
-      const arr = [...map.values()];
-      if (mode === 'avg') {
-        arr.forEach(x => {
-          x.driver1 = x.count ? x.driver1 / x.count : 0;
-          x.driver2 = x.count ? x.driver2 / x.count : 0;
-        });
-      }
-      return arr;
-    }
-    function classifyABC(data, key, a, b) {
-      const sorted = [...data].sort((x, y) => y[key] - x[key]);
-      const total = sorted.reduce((s, r) => s + r[key], 0) || 1;
-      let cum = 0;
-      for (const r of sorted) {
-        cum += r[key];
-        const pct = cum / total;
-        r[`${key}Cum`] = pct;
-        r[`${key}Class`] = pct <= a ? 'A' : pct <= b ? 'B' : 'C';
-      }
-      return { sorted, total };
-    }
-    function createMatrix(rows) {
-      const combos = ['AA','AB','AC','BA','BB','BC','CA','CB','CC'];
-      const total = rows.length || 1;
-      const stats = Object.fromEntries(combos.map(c => [c, 0]));
-      rows.forEach(r => stats[r.matrix] = (stats[r.matrix] || 0) + 1);
-      els.matrix.innerHTML = combos.map(c => `
-        <div class="cell">
-          <h4>${c}</h4>
-          <div class="big">${stats[c] || 0}</div>
-          <div class="small">${fmtPct((stats[c] || 0) / total)} degli item</div>
+<!-- MATRIX + SUMMARY -->
+<div class="row g2">
+  <div class="panel">
+    <h2>Matrice ABC 3×3</h2>
+    <div style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:center;margin-bottom:8px">
+      <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:var(--muted);text-align:center">DRIVER 2 →</div>
+      <div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:4px">
+          <div style="font-size:9px;color:var(--muted);text-align:center">A</div>
+          <div style="font-size:9px;color:var(--muted);text-align:center">B</div>
+          <div style="font-size:9px;color:var(--muted);text-align:center">C</div>
         </div>
-      `).join('');
-      return stats;
-    }
-    function makeSummary(rows, stats, total1, total2) {
-      const topBuckets = Object.entries(stats).sort((a,b) => b[1] - a[1]).slice(0,3);
-      const aa = stats['AA'] || 0;
-      const cc = stats['CC'] || 0;
-      const valAA1 = rows.filter(r => r.matrix === 'AA').reduce((s,r) => s + r.driver1, 0) / (total1 || 1);
-      const valAA2 = rows.filter(r => r.matrix === 'AA').reduce((s,r) => s + r.driver2, 0) / (total2 || 1);
-      els.summaryBox.innerHTML = `
-        <div style="display:grid; gap:10px;">
-          <div><b>Cluster dominante:</b> ${topBuckets.map(([k,v]) => `${k} (${v})`).join(' · ')}</div>
-          <div><b>Item critici AA:</b> ${aa} articoli, con peso ${fmtPct(valAA1)} su driver 1 e ${fmtPct(valAA2)} su driver 2.</div>
-          <div><b>Coda lunga CC:</b> ${cc} articoli. Tipicamente candidati a revisione di frequenza, politiche scorta o semplificazione portafoglio.</div>
-          <div><b>Lettura pratica:</b> usa AA per focus operativo e priorità; AB/BA per monitoraggio mirato; CC per razionalizzazione.</div>
-        </div>`;
-    }
-    function updateKPIs(rows, total1, total2, a) {
-      els.kpiItems.textContent = rows.length;
-      const a1 = rows.filter(r => r.driver1Class === 'A').reduce((s,r)=> s + r.driver1, 0) / (total1 || 1);
-      const a2 = rows.filter(r => r.driver2Class === 'A').reduce((s,r)=> s + r.driver2, 0) / (total2 || 1);
-      els.kpiA1.textContent = fmtPct(a1);
-      els.kpiA2.textContent = fmtPct(a2);
-    }
-    function drawPareto(canvasId, rows, metric, cumMetric, title, topN) {
-      const subset = [...rows].sort((a,b)=> b[metric] - a[metric]).slice(0, topN);
-      const labels = subset.map(r => r.item);
-      const bars = subset.map(r => r[metric]);
-      const line = subset.map(r => +(r[cumMetric] * 100).toFixed(2));
-      const ctx = document.getElementById(canvasId).getContext('2d');
-      if (canvasId === 'chart1' && chart1) chart1.destroy();
-      if (canvasId === 'chart2' && chart2) chart2.destroy();
-      const chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { type:'bar', label: title, data: bars, yAxisID: 'y' },
-            { type:'line', label: '% cumulata', data: line, yAxisID: 'y1', tension: .2 }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#eafffb' } } },
-          scales: {
-            x: { ticks: { color: '#97c7c0' }, grid: { color: 'rgba(151,199,192,.08)' } },
-            y: { ticks: { color: '#97c7c0' }, grid: { color: 'rgba(151,199,192,.08)' } },
-            y1: { position: 'right', min: 0, max: 100, ticks: { color: '#97c7c0', callback: v => v + '%' }, grid: { drawOnChartArea: false } }
-          }
-        }
-      });
-      if (canvasId === 'chart1') chart1 = chart; else chart2 = chart;
-    }
-    function renderTable() {
-      let rows = [...analysisRows];
-      const mf = els.matrixFilter.value;
-      const q = els.searchInput.value.trim().toLowerCase();
-      const sort = els.sortBy.value;
-      if (mf) rows = rows.filter(r => r.matrix === mf);
-      if (q) rows = rows.filter(r => r.item.toLowerCase().includes(q));
-      rows.sort((a,b) => {
-        if (sort === 'driver1') return b.driver1 - a.driver1;
-        if (sort === 'driver2') return b.driver2 - a.driver2;
-        if (sort === 'matrix') return a.matrix.localeCompare(b.matrix);
-        return a.item.localeCompare(b.item);
-      });
-      els.detailBody.innerHTML = rows.map(r => `
-        <tr>
-          <td>${r.item}</td>
-          <td>${fmtNum(r.driver1)}</td>
-          <td><span class="pill ${r.driver1Class}">${r.driver1Class}</span></td>
-          <td>${fmtPct(r.driver1Cum)}</td>
-          <td>${fmtNum(r.driver2)}</td>
-          <td><span class="pill ${r.driver2Class}">${r.driver2Class}</span></td>
-          <td>${fmtPct(r.driver2Cum)}</td>
-          <td><b>${r.matrix}</b></td>
-        </tr>
-      `).join('') || `<tr><td colspan="8" class="muted">Nessun risultato</td></tr>`;
-    }
-    function exportCSV() {
-      if (!analysisRows.length) return alert('Nessuna analisi disponibile');
-      const headers = ['Item','Driver1','Classe1','PercCum1','Driver2','Classe2','PercCum2','Matrice'];
-      const lines = [headers.join(';')];
-      analysisRows.forEach(r => lines.push([
-        r.item, r.driver1, r.driver1Class, (r.driver1Cum*100).toFixed(2), r.driver2, r.driver2Class, (r.driver2Cum*100).toFixed(2), r.matrix
-      ].join(';')));
-      const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8;' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'abc_classificato.csv';
-      a.click();
-    }
-    function analyze() {
-      if (!currentData.length) return alert('Carica prima un dataset');
-      const itemCol = els.itemCol.value;
-      const d1 = els.driver1Col.value;
-      const d2 = els.driver2Col.value;
-      const a = Number(els.thresholdA.value) / 100;
-      const b = Number(els.thresholdB.value) / 100;
-      const topN = Number(els.topN.value) || 25;
-      if (!(a > 0 && b > a && b <= 1)) return alert('Controlla soglie A e B');
-      const agg = aggregateRows(currentData, itemCol, d1, d2, els.aggMode.value);
-      const baseMap = new Map(agg.map(r => [r.item, { ...r }]));
-      const c1 = classifyABC(agg.map(r => ({ ...r })), 'driver1', a, b);
-      const c2 = classifyABC(agg.map(r => ({ ...r })), 'driver2', a, b);
-      c1.sorted.forEach(r => Object.assign(baseMap.get(r.item), { driver1Cum: r.driver1Cum, driver1Class: r.driver1Class }));
-      c2.sorted.forEach(r => Object.assign(baseMap.get(r.item), { driver2Cum: r.driver2Cum, driver2Class: r.driver2Class }));
-      analysisRows = [...baseMap.values()].map(r => ({ ...r, matrix: `${r.driver1Class}${r.driver2Class}` }));
-      const stats = createMatrix(analysisRows);
-      makeSummary(analysisRows, stats, c1.total, c2.total);
-      updateKPIs(analysisRows, c1.total, c2.total, a);
-      drawPareto('chart1', c1.sorted, 'driver1', 'driver1Cum', d1, topN);
-      drawPareto('chart2', c2.sorted, 'driver2', 'driver2Cum', d2, topN);
-      renderTable();
-    }
+        <div class="matrix" id="matrix"><div class="empty" style="grid-column:1/4">Esegui analisi</div></div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:var(--muted);margin-top:4px;text-align:center">← DRIVER 1</div>
+    <div class="theory" style="margin-top:10px;font-size:10px">
+      <b>AA</b> = massima priorità · <b>CC</b> = candidati razionalizzazione · <b>AB/BA</b> = monitorare
+    </div>
+  </div>
 
-    els.fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const ext = file.name.split('.').pop().toLowerCase();
-      const buffer = await file.arrayBuffer();
-      if (ext === 'csv') {
-        const text = new TextDecoder().decode(buffer);
-        loadRows(parseCSV(text), `<b>${file.name}</b> caricato`);
-      } else {
-        readWorkbook(buffer);
-        els.status.innerHTML = `<span class="ok"><b>${file.name}</b> caricato</span> · seleziona il foglio se necessario`;
+  <div class="panel">
+    <h2>Sintesi manageriale</h2>
+    <div id="summaryBox" class="empty">Esegui l'analisi per vedere la sintesi.</div>
+  </div>
+</div>
+
+<!-- PARETO CHARTS -->
+<div class="row g2">
+  <div class="panel">
+    <h2>Pareto — Driver 1</h2>
+    <canvas id="ch1" height="130"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Pareto — Driver 2</h2>
+    <canvas id="ch2" height="130"></canvas>
+  </div>
+</div>
+
+<!-- DETAIL TABLE -->
+<div class="panel">
+  <h2>Dettaglio articoli</h2>
+  <div class="toolbar">
+    <div><label>Filtro matrice</label>
+      <select id="mFilter">
+        <option value="">Tutte</option>
+        <option>AA</option><option>AB</option><option>AC</option>
+        <option>BA</option><option>BB</option><option>BC</option>
+        <option>CA</option><option>CB</option><option>CC</option>
+      </select>
+    </div>
+    <div><label>Cerca item</label><input id="search" placeholder="SKU..."></div>
+    <div><label>Ordina per</label>
+      <select id="sortBy">
+        <option value="d1">Driver 1 (desc)</option>
+        <option value="d2">Driver 2 (desc)</option>
+        <option value="matrix">Matrice</option>
+        <option value="item">Item</option>
+      </select>
+    </div>
+    <div><button class="sec" onclick="exportCSV()">⬇ Esporta CSV</button></div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Item</th>
+          <th id="th-d1">Driver 1</th><th>Rank</th><th>Classe</th><th>% cum.</th>
+          <th id="th-d2">Driver 2</th><th>Rank</th><th>Classe</th><th>% cum.</th>
+          <th>Matrice</th>
+        </tr>
+      </thead>
+      <tbody id="tBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+let rawRows=[], wb=null, analysisRows=[], ch1=null, ch2=null;
+
+// ── UTILS ─────────────────────────────────────────────────────
+const fmtN=v=>Number(v).toLocaleString('it-IT',{maximumFractionDigits:2});
+const fmtP=v=>(v*100).toLocaleString('it-IT',{maximumFractionDigits:1})+'%';
+function cleanN(v){
+  if(typeof v==='number') return isFinite(v)?v:0;
+  const s=String(v??'').trim().replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,'');
+  const n=Number(s);return isFinite(n)?n:0;
+}
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return [];
+  const delim=lines[0].includes(';')?';':',';
+  const headers=lines[0].split(delim).map(h=>h.trim());
+  return lines.slice(1).map(l=>{
+    const p=l.split(delim);
+    return Object.fromEntries(headers.map((h,i)=>[h,(p[i]??'').trim()]));
+  });
+}
+function setColumns(rows){
+  const cols=rows.length?Object.keys(rows[0]):[];
+  ['itemCol','d1Col','d2Col'].forEach((id,ci)=>{
+    const el=document.getElementById(id);
+    el.innerHTML=cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(cols[ci]) el.value=cols[ci];
+  });
+}
+function loadRows(rows,msg){
+  rawRows=rows;
+  setColumns(rows);
+  document.getElementById('status').innerHTML=`<span class="ok">✓ ${msg}</span> · ${rows.length} righe`;
+  document.getElementById('k-rows').textContent=rows.length;
+}
+function setStatus(msg){document.getElementById('status').innerHTML=msg;}
+
+// ── FILE LOADING ──────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const buf=await file.arrayBuffer();
+  if(ext==='csv'){
+    loadRows(parseCSV(new TextDecoder().decode(buf)),`${file.name}`);
+  } else {
+    wb=XLSX.read(buf,{type:'array'});
+    const sel=document.getElementById('sheetSelect');
+    sel.innerHTML=wb.SheetNames.map(n=>`<option>${n}</option>`).join('');
+    loadSheet(wb.SheetNames[0]);
+    setStatus(`<span class="ok">✓ ${file.name} caricato</span>`);
+  }
+});
+document.getElementById('sheetSelect').addEventListener('change',e=>loadSheet(e.target.value));
+function loadSheet(name){
+  if(!wb||!name)return;
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:''});
+  loadRows(rows,`Foglio "${name}"`);
+}
+function loadFromText(){
+  const rows=parseCSV(document.getElementById('csvText').value);
+  if(!rows.length){alert('CSV non valido.');return;}
+  loadRows(rows,'Testo incollato');
+}
+function loadDemo(){
+  const rows=[];
+  // Realistic distribution: few high-value items, many low-value (Pareto-like)
+  for(let i=1;i<=40;i++){
+    const fat=Math.round(500000/Math.pow(i,.85)*(0.9+Math.random()*.2));
+    const mov=Math.round(800/Math.pow(i,.6)*(0.85+Math.random()*.3));
+    rows.push({Item:`SKU${String(i).padStart(3,'0')}`,Fatturato:fat,Movimenti:mov});
+  }
+  // Shuffle so demo doesn't arrive pre-sorted
+  rows.sort(()=>Math.random()-.5);
+  loadRows(rows,'Demo 40 SKU');
+  document.getElementById('csvText').value='';
+}
+
+// ── AGGREGATION ───────────────────────────────────────────────
+function aggregate(rows,itemCol,d1,d2,mode){
+  const map=new Map();
+  for(const r of rows){
+    const key=String(r[itemCol]??'').trim();
+    if(!key)continue;
+    if(!map.has(key)) map.set(key,{item:key,d1:0,d2:0,n:0});
+    const o=map.get(key);
+    o.d1+=cleanN(r[d1]);o.d2+=cleanN(r[d2]);o.n++;
+  }
+  const arr=[...map.values()];
+  if(mode==='avg') arr.forEach(x=>{x.d1=x.n?x.d1/x.n:0;x.d2=x.n?x.d2/x.n:0;});
+  return arr;
+}
+
+// ── ABC CLASSIFICATION (CORRECT) ──────────────────────────────
+// Sort DESC by value, compute cumulative %, assign class at the ITEM level
+// based on where the item's cumulative % lands relative to thresholds.
+// Key: the class is assigned when the cumulative CROSSES the threshold,
+// meaning items are A until cumsum > thA, etc.
+function classifyABC(items,key,thA,thB){
+  // Sort descending
+  const sorted=[...items].sort((a,b)=>b[key]-a[key]);
+  const total=sorted.reduce((s,r)=>s+r[key],0)||1;
+  let cum=0;
+  sorted.forEach((r,i)=>{
+    cum+=r[key];
+    r[`${key}_cum_abs`]=cum;
+    r[`${key}_cum_pct`]=cum/total;
+    r[`${key}_rank`]=i+1;
+    // Class: item belongs to A if its cumulative % is ≤ thA AFTER adding it
+    // This is the standard Pareto-based ABC
+    const pct=r[`${key}_cum_pct`];
+    r[`${key}_class`]=pct<=thA?'A':pct<=thB?'B':'C';
+  });
+  return{sorted,total};
+}
+
+// ── MAIN ANALYZE ──────────────────────────────────────────────
+function analyze(){
+  if(!rawRows.length){alert('Carica un dataset prima.');return;}
+  const itemCol=document.getElementById('itemCol').value;
+  const d1Name=document.getElementById('d1Col').value;
+  const d2Name=document.getElementById('d2Col').value;
+  const thA=Number(document.getElementById('thA').value)/100;
+  const thB=Number(document.getElementById('thB').value)/100;
+  const topN=Number(document.getElementById('topN').value)||20;
+  const mode=document.getElementById('aggMode').value;
+
+  if(!(thA>0&&thB>thA&&thB<=1)){alert('Controlla le soglie: A < B, entrambe in 1–100.');return;}
+  if(!itemCol||!d1Name||!d2Name){alert('Configura le colonne.');return;}
+
+  // Update table headers
+  document.getElementById('th-d1').textContent=d1Name;
+  document.getElementById('th-d2').textContent=d2Name;
+
+  // Aggregate
+  const agg=aggregate(rawRows,itemCol,d1Name,d2Name,mode);
+
+  // Classify each driver independently
+  const r1=classifyABC(agg.map(r=>({...r})),'d1',thA,thB);
+  const r2=classifyABC(agg.map(r=>({...r})),'d2',thA,thB);
+
+  // Merge back into a single map keyed by item
+  const map=new Map(agg.map(r=>[r.item,{...r}]));
+  r1.sorted.forEach(r=>{
+    const o=map.get(r.item);
+    o.d1_cum=r.d1_cum_pct;o.d1_class=r.d1_class;o.d1_rank=r.d1_rank;
+  });
+  r2.sorted.forEach(r=>{
+    const o=map.get(r.item);
+    o.d2_cum=r.d2_cum_pct;o.d2_class=r.d2_class;o.d2_rank=r.d2_rank;
+  });
+  analysisRows=[...map.values()].map(r=>({...r,matrix:`${r.d1_class}${r.d2_class}`}));
+
+  // KPIs
+  document.getElementById('k-items').textContent=analysisRows.length;
+  const cntA1=analysisRows.filter(r=>r.d1_class==='A').length;
+  const valA1=analysisRows.filter(r=>r.d1_class==='A').reduce((s,r)=>s+r.d1,0)/r1.total;
+  const cntA2=analysisRows.filter(r=>r.d2_class==='A').length;
+  const valA2=analysisRows.filter(r=>r.d2_class==='A').reduce((s,r)=>s+r.d2,0)/r2.total;
+  const cntAA=analysisRows.filter(r=>r.matrix==='AA').length;
+  document.getElementById('k-a1').textContent=`${cntA1} item`;
+  document.getElementById('k-a1-sub').textContent=`${fmtP(valA1)} del valore D1`;
+  document.getElementById('k-a2').textContent=`${cntA2} item`;
+  document.getElementById('k-a2-sub').textContent=`${fmtP(valA2)} del valore D2`;
+  document.getElementById('k-aa').textContent=cntAA;
+
+  renderMatrix(analysisRows,r1.total,r2.total);
+  renderSummary(analysisRows,r1.total,r2.total,cntA1,cntA2,d1Name,d2Name,thA,thB);
+  drawPareto('ch1',r1.sorted,'d1',d1Name,topN,thA,thB);
+  drawPareto('ch2',r2.sorted,'d2',d2Name,topN,thA,thB);
+  renderTable();
+}
+
+// ── MATRIX ────────────────────────────────────────────────────
+function renderMatrix(rows,tot1,tot2){
+  const combos=['AA','AB','AC','BA','BB','BC','CA','CB','CC'];
+  const stats={};
+  combos.forEach(c=>stats[c]={n:0,v1:0,v2:0});
+  rows.forEach(r=>{stats[r.matrix].n++;stats[r.matrix].v1+=r.d1;stats[r.matrix].v2+=r.d2;});
+  const total=rows.length||1;
+
+  // Row order: D1 = A,B,C (columns), D2 = A,B,C (rows) — standard representation
+  // Matrix layout: rows = D1 class (A top → C bottom), cols = D2 class (A left → C right)
+  // Displayed as 3×3 grid row-major: [AA, AB, AC, BA, BB, BC, CA, CB, CC]
+  document.getElementById('matrix').innerHTML=combos.map(c=>{
+    const s=stats[c];
+    const pct=(s.n/total)*100;
+    const pv1=tot1>0?s.v1/tot1:0;
+    return `<div class="cell" data-c="${c}">
+      <h4>${c}</h4>
+      <div class="big">${s.n}</div>
+      <div class="small">${pct.toFixed(1)}% · ${fmtP(pv1)} D1</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────
+function renderSummary(rows,tot1,tot2,cA1,cA2,d1Name,d2Name,thA,thB){
+  const n=rows.length||1;
+  const cntAA=rows.filter(r=>r.matrix==='AA').length;
+  const cntCC=rows.filter(r=>r.matrix==='CC').length;
+  const valAA1=rows.filter(r=>r.matrix==='AA').reduce((s,r)=>s+r.d1,0);
+  const valAA2=rows.filter(r=>r.matrix==='AA').reduce((s,r)=>s+r.d2,0);
+  const topAA=rows.filter(r=>r.matrix==='AA').sort((a,b)=>b.d1-a.d1).slice(0,3).map(r=>r.item).join(', ');
+
+  document.getElementById('summaryBox').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.7">
+      <div><b style="color:var(--accent2)">Soglie:</b>
+        A = top ${(thA*100).toFixed(0)}% del valore ·
+        B = da ${(thA*100).toFixed(0)}% a ${(thB*100).toFixed(0)}% ·
+        C = restante
+      </div>
+      <div><b style="color:var(--good)">Classe AA (${cntAA} item):</b>
+        pesano ${fmtP(tot1>0?valAA1/tot1:0)} su ${d1Name}
+        e ${fmtP(tot2>0?valAA2/tot2:0)} su ${d2Name}.
+        ${topAA?`Item principali: <b>${topAA}</b>.`:''}
+        → Massima priorità operativa e di controllo.
+      </div>
+      <div><b style="color:var(--warn)">Classe A su D1 (${cA1} item):</b>
+        Rappresentano ≤${(thA*100).toFixed(0)}% del valore ${d1Name}.
+        Verificare se anche la frequenza (D2) è alta.
+      </div>
+      <div><b style="color:var(--bad)">Classe CC (${cntCC} item):</b>
+        ${(cntCC/n*100).toFixed(1)}% degli articoli con contributo minimo su entrambi i driver.
+        Candidati a razionalizzazione, revisione frequenza o gestione semplificata.
+      </div>
+      <div><b style="color:var(--vi2)">Regola di Pareto applicata:</b>
+        Ordinamento per valore decrescente → cumulato → soglia.
+        La classe è assegnata in base a dove il cumulato supera la soglia,
+        <i>non</i> al valore assoluto del singolo articolo.
+      </div>
+    </div>`;
+}
+
+// ── PARETO CHART ──────────────────────────────────────────────
+function drawPareto(canvasId,sorted,key,label,topN,thA,thB){
+  const sub=sorted.slice(0,topN);
+  const labels=sub.map(r=>r.item);
+  const bars=sub.map(r=>r[key]);
+  const line=sub.map(r=>+(r[`${key}_cum_pct`]*100).toFixed(2));
+  const colors=sub.map(r=>r[`${key}_class`]==='A'?'rgba(126,240,194,.65)':r[`${key}_class`]==='B'?'rgba(255,209,107,.55)':'rgba(255,143,143,.5)');
+
+  const ctx=document.getElementById(canvasId).getContext('2d');
+  if(canvasId==='ch1'&&ch1)ch1.destroy();
+  if(canvasId==='ch2'&&ch2)ch2.destroy();
+
+  const chart=new Chart(ctx,{
+    data:{
+      labels,
+      datasets:[
+        {type:'bar',label,data:bars,backgroundColor:colors,yAxisID:'y',order:2},
+        {type:'line',label:'% cumulata',data:line,borderColor:'#67c7ff',borderWidth:2,
+          pointRadius:3,pointBackgroundColor:'#67c7ff',tension:.2,yAxisID:'y1',order:1},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#eafffb',font:{size:11}}},
+        // Soglie reference lines via annotation plugin not available — draw manually
+        tooltip:{callbacks:{
+          label:ctx=>ctx.dataset.type==='bar'?`${label}: ${fmtN(ctx.raw)}`:`Cumulato: ${ctx.raw}%`
+        }}
+      },
+      scales:{
+        x:{ticks:{color:'#97c7c0',font:{size:9},maxRotation:45},grid:{color:'rgba(151,199,192,.06)'}},
+        y:{ticks:{color:'#97c7c0',font:{size:10}},grid:{color:'rgba(151,199,192,.07)'},
+          title:{display:true,text:label,color:'#97c7c0',font:{size:10}}},
+        y1:{position:'right',min:0,max:100,
+          ticks:{color:'#97c7c0',font:{size:10},callback:v=>v+'%'},
+          grid:{drawOnChartArea:false},
+          // Annotation lines for thresholds drawn manually below
+        }
       }
-    });
-    els.sheetSelect.addEventListener('change', e => loadSheet(e.target.value));
-    els.loadTextBtn.addEventListener('click', () => {
-      const rows = parseCSV(els.csvText.value);
-      if (!rows.length) return alert('CSV non valido o vuoto');
-      loadRows(rows, 'Dataset da testo caricato');
-    });
-    els.useDemoBtn.addEventListener('click', () => {
-      const demo = [];
-      for (let i = 1; i <= 40; i++) {
-        demo.push({
-          Item: `SKU${String(i).padStart(3,'0')}`,
-          Fatturato: Math.round((42 - i) * 1800 + (i % 5) * 350),
-          Movimenti: Math.round((Math.sin(i / 4) + 1.6) * 95 + (40 - i) * 2)
+    },
+    plugins:[{
+      id:'threshLines',
+      afterDraw(chart){
+        const{ctx,scales:{y1}}=chart;
+        if(!y1)return;
+        [[thA*100,'rgba(126,240,194,.5)','A'],[thB*100,'rgba(255,209,107,.5)','B']].forEach(([pct,col,lbl])=>{
+          const y=y1.getPixelForValue(pct);
+          ctx.save();ctx.beginPath();ctx.setLineDash([5,4]);
+          ctx.strokeStyle=col;ctx.lineWidth=1.2;
+          ctx.moveTo(chart.chartArea.left,y);ctx.lineTo(chart.chartArea.right,y);ctx.stroke();
+          ctx.fillStyle=col;ctx.font='10px system-ui';ctx.textAlign='right';
+          ctx.fillText(`${pct.toFixed(0)}% (→${lbl})`,chart.chartArea.right-4,y-3);
+          ctx.restore();ctx.setLineDash([]);
         });
       }
-      loadRows(demo, 'Demo dataset pronto');
-    });
-    els.analyzeBtn.addEventListener('click', analyze);
-    els.matrixFilter.addEventListener('change', renderTable);
-    els.searchInput.addEventListener('input', renderTable);
-    els.sortBy.addEventListener('change', renderTable);
-    els.exportBtn.addEventListener('click', exportCSV);
-    els.printBtn.addEventListener('click', () => window.print());
-  </script>
+    }]
+  });
+  if(canvasId==='ch1')ch1=chart;else ch2=chart;
+}
+
+// ── TABLE ─────────────────────────────────────────────────────
+function renderTable(){
+  let rows=[...analysisRows];
+  const mf=document.getElementById('mFilter').value;
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const sort=document.getElementById('sortBy').value;
+  if(mf)rows=rows.filter(r=>r.matrix===mf);
+  if(q)rows=rows.filter(r=>r.item.toLowerCase().includes(q));
+  rows.sort((a,b)=>sort==='d1'?b.d1-a.d1:sort==='d2'?b.d2-a.d2:sort==='matrix'?a.matrix.localeCompare(b.matrix):a.item.localeCompare(b.item));
+  document.getElementById('tBody').innerHTML=rows.length?rows.map((r,i)=>`
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><b>${r.item}</b></td>
+      <td>${fmtN(r.d1)}</td>
+      <td style="color:var(--muted)">#${r.d1_rank}</td>
+      <td><span class="pill ${r.d1_class}">${r.d1_class}</span></td>
+      <td>
+        ${fmtP(r.d1_cum)}
+        <div class="pbar"><div class="pbar-fill" style="width:${Math.min(r.d1_cum*100,100)}%;background:${r.d1_class==='A'?'var(--good)':r.d1_class==='B'?'var(--warn)':'var(--bad)'}"></div></div>
+      </td>
+      <td>${fmtN(r.d2)}</td>
+      <td style="color:var(--muted)">#${r.d2_rank}</td>
+      <td><span class="pill ${r.d2_class}">${r.d2_class}</span></td>
+      <td>
+        ${fmtP(r.d2_cum)}
+        <div class="pbar"><div class="pbar-fill" style="width:${Math.min(r.d2_cum*100,100)}%;background:${r.d2_class==='A'?'var(--good)':r.d2_class==='B'?'var(--warn)':'var(--bad)'}"></div></div>
+      </td>
+      <td><b>${r.matrix}</b></td>
+    </tr>`).join('')
+    :`<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px">Nessun risultato</td></tr>`;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportCSV(){
+  if(!analysisRows.length){alert('Esegui prima l\'analisi.');return;}
+  const h=['Item','Driver1','Rank_D1','Classe_D1','CumPct_D1','Driver2','Rank_D2','Classe_D2','CumPct_D2','Matrice'];
+  const lines=[h.join(';')];
+  analysisRows.forEach(r=>lines.push([
+    r.item,r.d1,r.d1_rank,r.d1_class,(r.d1_cum*100).toFixed(2),
+    r.d2,r.d2_rank,r.d2_class,(r.d2_cum*100).toFixed(2),r.matrix
+  ].join(';')));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'}));
+  a.download='abc_classificato.csv';a.click();
+}
+
+// ── EVENTS ───────────────────────────────────────────────────
+document.getElementById('mFilter').addEventListener('change',renderTable);
+document.getElementById('search').addEventListener('input',renderTable);
+document.getElementById('sortBy').addEventListener('change',renderTable);
+</script>
 </body>
 </html>
