@@ -1,736 +1,710 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>APP_DRP</title>
-  <style>
-    :root{
-      --bg:#07161a;
-      --bg2:#0b1f24;
-      --card:#10282e;
-      --card2:#12333a;
-      --line:#1d4b54;
-      --line-soft:#163c44;
-      --text:#e6fffb;
-      --muted:#9cc9c3;
-      --teal:#41d6c3;
-      --teal-2:#2bb8a8;
-      --cyan:#67c7ff;
-      --blue:#63a9ff;
-      --green:#6ee7b7;
-      --red:#ff7f96;
-      --amber:#ffd166;
-      --shadow:0 10px 30px rgba(0,0,0,.28);
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>APP_DRP</title>
+<style>
+:root{
+  --bg:#07161a;--bg2:#0b1f24;--card:#10282e;--line:#1d4b54;--line-soft:#163c44;
+  --text:#e6fffb;--muted:#9cc9c3;--teal:#41d6c3;--teal2:#2bb8a8;
+  --cyan:#67c7ff;--green:#6ee7b7;--red:#ff7f96;--amber:#ffd166;
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{padding:22px;font-family:Arial,Helvetica,sans-serif;
+  background:radial-gradient(circle at top left,#10343a 0%,transparent 28%),
+             radial-gradient(circle at top right,#0c2f39 0%,transparent 24%),
+             linear-gradient(180deg,var(--bg2),var(--bg));
+  color:var(--text);min-height:100vh}
+h1{font-size:28px;color:var(--teal);letter-spacing:.3px;margin-bottom:16px}
+h2{font-size:18px;color:#d6fffa;margin-bottom:12px}
+.card{background:linear-gradient(180deg,rgba(18,51,58,.96),rgba(12,34,39,.96));
+  border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px;
+  box-shadow:var(--shadow)}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+  background:rgba(65,214,195,.1);border:1px solid rgba(65,214,195,.25);color:#cffff8;font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px rgba(65,214,195,.7)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:#c9f5ef}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+  font-size:13px;background:#0a1d22;color:var(--text);outline:none;transition:.2s}
+input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(65,214,195,.13)}
+.btns{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+button{border:none;border-radius:9px;padding:10px 15px;font-size:13px;font-weight:700;
+  cursor:pointer;color:#042b2b;background:linear-gradient(180deg,var(--teal),var(--teal2));
+  box-shadow:0 5px 14px rgba(43,184,168,.22);transition:transform .12s,opacity .2s}
+button:hover{opacity:.94;transform:translateY(-1px)}
+button.sec{color:var(--text);background:linear-gradient(180deg,#1b4952,#143b43);
+  box-shadow:none;border:1px solid #235965}
+button.grn{color:#032321;background:linear-gradient(180deg,#72f0d5,#3bc8b5)}
+.note{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.6}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:10px}
+.kpi{border:1px solid var(--line);border-radius:13px;padding:10px;
+  background:linear-gradient(180deg,rgba(10,29,34,.95),rgba(12,37,43,.95))}
+.kpi .title{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.kpi .value{font-size:19px;font-weight:700;color:var(--teal)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:13px;background:#091b20}
+table{width:100%;border-collapse:collapse;min-width:900px;background:transparent}
+th,td{border:1px solid var(--line-soft);padding:8px 9px;text-align:center;font-size:13px}
+th{background:#123842;color:#d7fffa;position:sticky;top:0}
+td{background:#0d2328;color:var(--text)}
+td.rowhdr{text-align:left;font-weight:700;background:#112d33;min-width:220px;color:#cffff8}
+td.danger{color:var(--red);font-weight:700}
+td.ok{color:var(--green);font-weight:700}
+td.warn{color:var(--amber)}
+.formula{background:linear-gradient(180deg,#0c2126,#0c1c21);border:1px dashed #2d6b76;
+  border-radius:11px;padding:11px;font-size:12px;line-height:1.8;color:#c7f5ef}
+.footer{margin-top:10px;font-size:11px;color:var(--muted)}
 
-    * { box-sizing: border-box; }
+/* Chart tabs */
+.chart-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.ctab{padding:7px 14px;border-radius:7px;border:1px solid #235965;background:transparent;
+  color:var(--muted);font-size:11px;cursor:pointer;transition:all .15s}
+.ctab.on{background:rgba(65,214,195,.12);border-color:var(--teal);color:var(--teal)}
 
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at top left, #10343a 0%, transparent 28%),
-        radial-gradient(circle at top right, #0c2f39 0%, transparent 24%),
-        linear-gradient(180deg, var(--bg2), var(--bg));
-      color: var(--text);
-    }
-
-    h1 {
-      margin: 0 0 18px 0;
-      font-size: 30px;
-      color: var(--teal);
-      letter-spacing: .3px;
-    }
-
-    h2 {
-      margin: 0 0 12px 0;
-      font-size: 20px;
-      color: #d6fffa;
-    }
-
-    .card {
-      background: linear-gradient(180deg, rgba(18,51,58,.96), rgba(12,34,39,.96));
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(4px);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: #c9f5ef;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      font-size: 14px;
-      background: #0a1d22;
-      color: var(--text);
-      outline: none;
-      transition: .2s ease;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--teal);
-      box-shadow: 0 0 0 3px rgba(65,214,195,.15);
-    }
-
-    .btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 11px 16px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      color: #042b2b;
-      background: linear-gradient(180deg, var(--teal), var(--teal-2));
-      box-shadow: 0 6px 16px rgba(43,184,168,.25);
-      transition: transform .12s ease, opacity .2s ease;
-    }
-
-    button:hover {
-      opacity: .96;
-      transform: translateY(-1px);
-    }
-
-    button.secondary {
-      color: var(--text);
-      background: linear-gradient(180deg, #1b4952, #143b43);
-      box-shadow: none;
-      border: 1px solid #235965;
-    }
-
-    button.green {
-      color: #032321;
-      background: linear-gradient(180deg, #72f0d5, #3bc8b5);
-    }
-
-    .note {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 10px;
-      line-height: 1.6;
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .kpi {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 11px;
-      background: linear-gradient(180deg, rgba(10,29,34,.95), rgba(12,37,43,.95));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-    }
-
-    .kpi .title {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-    }
-
-    .kpi .value {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--teal);
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #091b20;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 1000px;
-      background: transparent;
-    }
-
-    th, td {
-      border: 1px solid var(--line-soft);
-      padding: 9px 10px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    th {
-      background: #123842;
-      color: #d7fffa;
-      position: sticky;
-      top: 0;
-    }
-
-    td {
-      background: #0d2328;
-      color: var(--text);
-    }
-
-    td.rowhdr {
-      text-align: left;
-      font-weight: 700;
-      background: #112d33;
-      min-width: 240px;
-      color: #cffff8;
-    }
-
-    .danger {
-      color: var(--red);
-      font-weight: 700;
-    }
-
-    .ok {
-      color: var(--green);
-      font-weight: 700;
-    }
-
-    canvas {
-      width: 100%;
-      max-width: 1200px;
-      height: 360px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: linear-gradient(180deg, #0a1c21, #0c2329);
-      display: block;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-    }
-
-    .formula {
-      background: linear-gradient(180deg, #0c2126, #0c1c21);
-      border: 1px dashed #2d6b76;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 13px;
-      line-height: 1.7;
-      color: #c7f5ef;
-    }
-
-    .footer {
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(65,214,195,.1);
-      border: 1px solid rgba(65,214,195,.25);
-      color: #cffff8;
-      font-size: 13px;
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--teal);
-      box-shadow: 0 0 12px rgba(65,214,195,.7);
-    }
-
-    ::placeholder {
-      color: #7db1ab;
-    }
-
-    @media (max-width: 700px) {
-      body { padding: 11px; }
-      h1 { font-size: 20px; }
-      .kpi .value { font-size: 20px; }
-    }
-  </style>
+#chart{width:100%;height:340px;border:1px solid var(--line);border-radius:13px;
+  background:linear-gradient(180deg,#0a1c21,#0c2329);display:block}
+</style>
 </head>
 <body>
-  <div class="topbar">
-    <h1>APP_DRP</h1>
-    <div class="badge"><span class="dot"></span> Tema scuro verde acqua</div>
-  </div>
 
-  <div class="card">
-    <h2>Parametri generali</h2>
-    <div class="grid">
-      <div>
-        <label for="periods">Numero periodi</label>
-        <input type="number" id="periods" min="1" value="8">
-      </div>
+<div class="topbar">
+  <h1>APP_DRP</h1>
+  <div class="badge"><span class="dot"></span>Distribution Requirements Planning</div>
+</div>
 
-      <div>
-        <label for="initialStock">Giacenza iniziale</label>
-        <input type="number" id="initialStock" min="0" value="120">
-      </div>
-
-      <div>
-        <label for="safetyStock">Scorta di sicurezza</label>
-        <input type="number" id="safetyStock" min="0" value="20">
-      </div>
-
-      <div>
-        <label for="leadTime">Lead time (periodi)</label>
-        <input type="number" id="leadTime" min="0" value="1">
-      </div>
-
-      <div>
-        <label for="lotSize">Lotto fisso</label>
-        <input type="number" id="lotSize" min="1" value="100">
-      </div>
-
-      <div>
-        <label for="unitValue">Valore unitario merce (€)</label>
-        <input type="number" id="unitValue" min="0" step="0.01" value="12.50">
-      </div>
-
-      <div>
-        <label for="holdingRate">Tasso costo mantenimento (%)</label>
-        <input type="number" id="holdingRate" min="0" step="0.01" value="18">
-      </div>
-
-      <div>
-        <label for="orderingCost">Costo per ordine (€)</label>
-        <input type="number" id="orderingCost" min="0" step="0.01" value="45">
-      </div>
+<!-- PARAMETRI -->
+<div class="card">
+  <h2>Parametri generali</h2>
+  <div class="grid">
+    <div><label>Numero periodi</label><input type="number" id="periods" min="1" value="8"></div>
+    <div><label>Giacenza iniziale</label><input type="number" id="initialStock" min="0" value="120"></div>
+    <div><label>Scorta di sicurezza</label><input type="number" id="safetyStock" min="0" value="20"></div>
+    <div><label>Lead time (periodi)</label><input type="number" id="leadTime" min="0" value="1"></div>
+    <div>
+      <label>Politica di lotto</label>
+      <select id="lotPolicy">
+        <option value="fixed">Lotto fisso</option>
+        <option value="lot4lot">Lotto per lotto</option>
+        <option value="eoq">EOQ (calcolato)</option>
+      </select>
     </div>
-
-    <div class="btns">
-      <button type="button" onclick="generateDemandInputs()">Genera periodi</button>
-      <button type="button" class="green" onclick="calculateDRP()">Calcola DRP</button>
-      <button type="button" class="secondary" onclick="loadExampleData()">Carica esempio</button>
-      <button type="button" class="secondary" onclick="exportCSV()">Esporta CSV</button>
-    </div>
-
-    <div class="note">
-      Se la giacenza proiettata scende sotto la scorta di sicurezza, viene creata una ricezione pianificata DRP arrotondata al lotto fisso.
-    </div>
+    <div><label>Dimensione lotto fisso</label><input type="number" id="lotSize" min="1" value="100"></div>
+    <div><label>Valore unitario (€)</label><input type="number" id="unitValue" min="0" step="0.01" value="12.50"></div>
+    <div><label>Costo mantenimento (%)</label><input type="number" id="holdingRate" min="0" step="0.01" value="18"></div>
+    <div><label>Costo per ordine (€)</label><input type="number" id="orderingCost" min="0" step="0.01" value="45"></div>
   </div>
-
-  <div class="card">
-    <h2>Fabbisogni per periodo</h2>
-    <div id="demandInputs" class="grid"></div>
+  <div class="btns">
+    <button onclick="generateDemandInputs()">Genera periodi</button>
+    <button class="grn" onclick="calculateDRP()">▶ Calcola DRP</button>
+    <button class="sec" onclick="loadExampleData()">Carica esempio</button>
+    <button class="sec" onclick="exportCSV()">Esporta CSV</button>
   </div>
-
-  <div class="card">
-    <h2>Risultati sintetici</h2>
-    <div id="kpis" class="kpi-grid"></div>
-    <div class="note" id="summaryText"></div>
+  <div class="note">
+    La giacenza proiettata è calcolata considerando la scorta di sicurezza come livello minimo vincolante.
+    Con lead time > 0 gli ordini vengono anticipati di conseguenza.
   </div>
+</div>
 
-  <div class="card">
-    <h2>Tabella planning DRP</h2>
-    <div class="table-wrap">
-      <div id="tableContainer"></div>
-    </div>
+<!-- FABBISOGNI -->
+<div class="card">
+  <h2>Fabbisogni per periodo</h2>
+  <div id="demandInputs" class="grid"></div>
+</div>
+
+<!-- KPI -->
+<div class="card">
+  <h2>Risultati sintetici</h2>
+  <div id="kpis" class="kpi-grid"></div>
+  <div class="note" id="summaryText"></div>
+</div>
+
+<!-- TABELLA -->
+<div class="card">
+  <h2>Tabella planning DRP</h2>
+  <div class="table-wrap"><div id="tableContainer"></div></div>
+</div>
+
+<!-- GRAFICO -->
+<div class="card">
+  <h2>Grafico</h2>
+  <div class="chart-tabs">
+    <button class="ctab on" data-t="sawtooth" onclick="switchChart(this)">Dente di sega</button>
+    <button class="ctab" data-t="bars" onclick="switchChart(this)">Barre ordini</button>
+    <button class="ctab" data-t="costs" onclick="switchChart(this)">Costi periodo</button>
   </div>
+  <canvas id="chart" width="1200" height="340"></canvas>
+</div>
 
-  <div class="card">
-    <h2>Grafico</h2>
-    <canvas id="chart" width="1200" height="360"></canvas>
+<!-- FORMULE -->
+<div class="card">
+  <h2>Formule usate</h2>
+  <div class="formula">
+    <b>Giacenza fine periodo t</b> = Giacenza inizio(t) + Arrivi(t) − Fabbisogno(t)<br>
+    <b>Fabbisogno netto(t)</b> = max(0, Fabbisogno(t) + SS − Giacenza inizio(t) − Arrivi(t))<br>
+    <b>EOQ</b> = √(2 × D_tot × Costo_ordine / (Valore_unit × Tasso_mant.))<br>
+    <b>Costo mantenimento</b> = Giacenza media × Valore unitario × Tasso mant.<br>
+    <b>Costo totale logistico</b> = C.mantenimento + N.ordini × Costo/ordine<br>
+    <b>Indice rotazione</b> = Consumo totale / Giacenza media
   </div>
+  <div class="footer">Il dente di sega mostra la giacenza in modo continuo: scende linearmente durante il periodo, salta in su all'arrivo dell'ordine.</div>
+</div>
 
-  <div class="card">
-    <h2>Formule usate</h2>
-    <div class="formula">
-      <strong>Giacenza media</strong> = media delle giacenze proiettate di fine periodo<br>
-      <strong>Costo di mantenimento</strong> = giacenza media × valore unitario × tasso di mantenimento<br>
-      <strong>Costo all'ordine totale</strong> = numero ordini × costo per ordine<br>
-      <strong>Costo totale logistico</strong> = costo di mantenimento + costo all'ordine totale<br>
-      <strong>Indice di rotazione</strong> = consumo totale / giacenza media
-    </div>
-    <div class="footer">
-      Il tasso di mantenimento va letto sullo stesso orizzonte temporale del planning.
-    </div>
-  </div>
+<script>
+let lastCalc=null;
+let chartType='sawtooth';
 
-  <script>
-    let lastCalculation = null;
+// ── DEMAND INPUTS ─────────────────────────────────────────────
+function generateDemandInputs(){
+  const n=Math.max(1,parseInt(document.getElementById('periods').value)||1);
+  const c=document.getElementById('demandInputs');
+  c.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const d=document.createElement('div');
+    d.innerHTML=`<label>P${i} — Fabbisogno lordo</label><input type="number" id="d_${i}" min="0" value="0">`;
+    c.appendChild(d);
+  }
+}
 
-    function generateDemandInputs() {
-      const periods = Math.max(1, parseInt(document.getElementById("periods").value) || 1);
-      const container = document.getElementById("demandInputs");
-      container.innerHTML = "";
+function loadExampleData(){
+  document.getElementById('periods').value=8;
+  document.getElementById('initialStock').value=120;
+  document.getElementById('safetyStock').value=20;
+  document.getElementById('leadTime').value=1;
+  document.getElementById('lotPolicy').value='fixed';
+  document.getElementById('lotSize').value=100;
+  document.getElementById('unitValue').value=12.5;
+  document.getElementById('holdingRate').value=18;
+  document.getElementById('orderingCost').value=45;
+  generateDemandInputs();
+  [40,60,35,80,50,70,30,60].forEach((v,i)=>{
+    const el=document.getElementById(`d_${i+1}`);if(el)el.value=v;
+  });
+  calculateDRP();
+}
 
-      for (let i = 1; i <= periods; i++) {
-        const box = document.createElement("div");
-        box.innerHTML = `
-          <label for="demand_${i}">Periodo ${i} - Fabbisogno lordo</label>
-          <input type="number" id="demand_${i}" min="0" value="0">
-        `;
-        container.appendChild(box);
-      }
+function ceilToLot(qty,lot){
+  if(qty<=0)return 0;
+  return Math.ceil(qty/lot)*lot;
+}
+
+// ── MAIN CALCULATE ────────────────────────────────────────────
+// Logic: look-ahead DRP.
+// For each period t, simulate the projected stock t..t+lt.
+// If at any future period t+k the projected stock would fall below SS,
+// release an order NOW (at t) so it arrives exactly at t+lt (or earlier if needed).
+// This prevents stock from ever going negative.
+function calculateDRP(){
+  const n=Math.max(1,parseInt(document.getElementById('periods').value)||1);
+  const initStock=parseFloat(document.getElementById('initialStock').value)||0;
+  const ss=parseFloat(document.getElementById('safetyStock').value)||0;
+  const lt=Math.max(0,parseInt(document.getElementById('leadTime').value)||0);
+  const policy=document.getElementById('lotPolicy').value;
+  const lotFixed=Math.max(1,parseFloat(document.getElementById('lotSize').value)||1);
+  const unitVal=parseFloat(document.getElementById('unitValue').value)||0;
+  const hr=(parseFloat(document.getElementById('holdingRate').value)||0)/100;
+  const oc=parseFloat(document.getElementById('orderingCost').value)||0;
+
+  const dem=[];
+  for(let i=0;i<n;i++) dem.push(parseFloat(document.getElementById(`d_${i+1}`)?.value)||0);
+
+  const totalDem=dem.reduce((a,b)=>a+b,0);
+
+  let lot=lotFixed;
+  if(policy==='eoq'){
+    lot=unitVal>0&&hr>0?Math.ceil(Math.sqrt(2*totalDem*oc/(unitVal*hr))):lotFixed;
+    lot=Math.max(1,lot);
+  }
+
+  const openStock  = new Array(n).fill(0);
+  const arrivals   = new Array(n).fill(0);
+  const releases   = new Array(n).fill(0);
+  const netReq     = new Array(n).fill(0);
+  const closeStock = new Array(n).fill(0);
+  const triggered  = new Array(n).fill(0); // which future period triggered each order
+  let beyondHorizon= 0;
+
+  // ── LOOK-AHEAD PASS ──────────────────────────────────────────
+  // We simulate forward. At each period t we:
+  // 1. Compute openStock[t] = closeStock[t-1]
+  // 2. Add any arrivals already scheduled
+  // 3. Check if the projected stock will breach SS within the next lt periods
+  //    (i.e. simulate t .. t+lt without any new orders)
+  //    If it will, compute the shortage at the WORST future period, release
+  //    an order now that arrives at t+lt (or t if lt=0).
+  // 4. Consume demand → closeStock[t]
+
+  let prev=initStock;
+
+  for(let t=0;t<n;t++){
+    openStock[t]=prev;
+
+    // ── Look-ahead: project stock t → t+lt without further orders ──
+    // We look at period t+lt (the first period that would receive an order released now)
+    // Project the stock at period (t + lt), assuming no new releases between t and t+lt-1.
+    // If that projected stock < SS → release order now.
+
+    const arrivalTarget = t + lt; // order released at t arrives at arrivalTarget
+
+    // Simulate stock from t to arrivalTarget (inclusive) using already-scheduled arrivals
+    let projStock = openStock[t] + arrivals[t]; // stock at start of t after today's arrivals
+    let worstShortage = 0;
+
+    for(let k=0; k<=lt; k++){
+      const futT = t + k;
+      if(futT >= n) break;
+      // arrivals already scheduled at futT (except today which is already in projStock above)
+      const futArr = k===0 ? 0 : arrivals[futT];
+      projStock = projStock + futArr - dem[futT];
+      const shortfall = ss - projStock; // positive = breach
+      if(shortfall > worstShortage) worstShortage = shortfall;
     }
 
-    function loadExampleData() {
-      document.getElementById("periods").value = 8;
-      document.getElementById("initialStock").value = 120;
-      document.getElementById("safetyStock").value = 20;
-      document.getElementById("leadTime").value = 1;
-      document.getElementById("lotSize").value = 100;
-      document.getElementById("unitValue").value = 12.5;
-      document.getElementById("holdingRate").value = 18;
-      document.getElementById("orderingCost").value = 45;
-
-      generateDemandInputs();
-
-      const sample = [40, 60, 35, 80, 50, 70, 30, 60];
-      sample.forEach((v, i) => {
-        const el = document.getElementById(`demand_${i + 1}`);
-        if (el) el.value = v;
-      });
-
-      calculateDRP();
+    if(worstShortage > 0){
+      const qty = policy==='lot4lot' ? worstShortage : ceilToLot(worstShortage, lot);
+      releases[t] += qty;
+      netReq[t]   += worstShortage;
+      if(arrivalTarget < n){
+        arrivals[arrivalTarget] += qty;
+      } else {
+        beyondHorizon += qty;
+      }
+      triggered[t] = arrivalTarget;
     }
 
-    function ceilToLot(qty, lot) {
-      if (qty <= 0) return 0;
-      return Math.ceil(qty / lot) * lot;
+    closeStock[t] = openStock[t] + arrivals[t] - dem[t];
+    prev = closeStock[t];
+  }
+
+  // ── Stats ────────────────────────────────────────────────────
+  const avgStockArr = openStock.map((o,i)=>(o+closeStock[i])/2);
+  const avgStock    = avgStockArr.reduce((a,b)=>a+b,0)/n;
+  const holdCost    = avgStock*unitVal*hr;
+  const orderCount  = releases.filter(v=>v>0).length;
+  const totalOC     = orderCount*oc;
+  const totalCost   = holdCost+totalOC;
+  const rotation    = avgStock>0?totalDem/avgStock:0;
+  const coverage    = rotation>0?n/rotation:0;
+  const minStock    = Math.min(...closeStock);
+  const breaches    = closeStock.filter(v=>v<ss).length;
+
+  lastCalc={n,dem,openStock,arrivals,releases,netReq,closeStock,avgStockArr,triggered,
+    initStock,ss,lt,lot,policy,unitVal,hr,oc,
+    totalDem,avgStock,holdCost,orderCount,totalOC,totalCost,rotation,coverage,
+    beyondHorizon,minStock,breaches};
+
+  renderKPIs(lastCalc);
+  renderTable(lastCalc);
+  drawChart();
+}
+
+// ── KPI ───────────────────────────────────────────────────────
+function renderKPIs(d){
+  const kpis=[
+    {t:'Consumo totale',v:fmt(d.totalDem)+' u.'},
+    {t:'Giacenza media',v:fmt(d.avgStock)+' u.'},
+    {t:'Numero ordini',v:d.orderCount},
+    {t:'Costo logistico totale',v:'€ '+fmt(d.totalCost)},
+    {t:'Indice di rotazione',v:fmt(d.rotation)},
+    {t:'Copertura media',v:fmt(d.coverage)+' per.'},
+    {t:'Lotto usato',v:d.policy==='lot4lot'?'L4L':fmt(d.lot)+' u.'},
+    {t:'EOQ indicativo',v:d.unitVal>0&&d.hr>0?fmt(Math.sqrt(2*d.totalDem*d.oc/(d.unitVal*d.hr)))+' u.':'—'},
+    {t:'Scorte < SS',v:d.breaches===0?'✓ Mai':d.breaches+' periodi',c:d.breaches===0?'var(--green)':'var(--red)'},
+    {t:'Giacenza minima',v:fmt(d.minStock)+' u.',c:d.minStock>=d.ss?'var(--green)':'var(--red)'},
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(k=>`
+    <div class="kpi"><div class="title">${k.t}</div>
+    <div class="value" style="color:${k.c||'var(--teal)'}">${k.v}</div></div>`).join('');
+
+  const extra=d.beyondHorizon>0
+    ?` <b>${fmt(d.beyondHorizon)} u.</b> ordinate con arrivo oltre l'orizzonte.`:'';
+  const breachMsg=d.breaches>0
+    ?`<span style="color:var(--red)"> ⚠ ${d.breaches} periodo/i sotto SS (giacenza min: ${fmt(d.minStock)})</span>`
+    :`<span style="color:var(--green)"> ✓ Giacenza sempre ≥ SS (min: ${fmt(d.minStock)})</span>`;
+  document.getElementById('summaryText').innerHTML=
+    `Look-ahead DRP: l'ordine viene rilasciato <b>${d.lt} periodi prima</b> che la giacenza scenda sotto SS, in modo da riceverlo esattamente quando serve.`
+    +extra+`<br>`+breachMsg;
+}
+
+// ── TABLE ─────────────────────────────────────────────────────
+function renderTable(d){
+  const heads=Array.from({length:d.n},(_,i)=>`<th>P${i+1}</th>`).join('');
+  const row=(name,arr,cls)=>`<tr><td class="rowhdr">${name}</td>${arr.map(v=>`<td class="${cls||''}">${fmt(v)}</td>`).join('')}</tr>`;
+  // Add triggered column info
+  const releaseRow=`<tr><td class="rowhdr">Rilascio ordine (out) [→ arrivo P+${d.lt}]</td>${d.releases.map((v,i)=>{
+    const trig=d.triggered[i]>0?` <span style="font-size:9px;color:#9ec9c4">→P${d.triggered[i]+1}</span>`:'';
+    return `<td class="${v>0?'ok':''}">${v>0?fmt(v)+trig:'—'}</td>`;
+  }).join('')}</tr>`;
+
+  document.getElementById('tableContainer').innerHTML=`<table>
+    <thead><tr><th>Voce</th>${heads}</tr></thead>
+    <tbody>
+      ${row('Giacenza inizio periodo',d.openStock)}
+      ${row('Fabbisogno lordo',d.dem)}
+      ${row('Ordini in arrivo',d.arrivals,'ok')}
+      ${row('Fabbisogno netto (shortage vs SS)',d.netReq,'warn')}
+      ${releaseRow}
+      ${d.closeStock.map((v,i)=>v<d.ss?`<td class="danger">${fmt(v)} ⚠</td>`:`<td>${fmt(v)}</td>`).join('') |
+        `<tr><td class="rowhdr">Giacenza fine periodo</td>${d.closeStock.map((v)=>`<td class="${v<d.ss?'danger':''}">${fmt(v)}${v<d.ss?' ⚠':''}</td>`).join('')}</tr>`}
+      ${row('Giacenza media periodo',d.avgStockArr)}
+    </tbody>
+  </table>`;
+}
+
+// ── CHART ─────────────────────────────────────────────────────
+function switchChart(btn){
+  chartType=btn.dataset.t;
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  drawChart();
+}
+
+function drawChart(){
+  if(!lastCalc) return;
+  const cv=document.getElementById('chart');
+  // Actual pixel size
+  cv.width=cv.clientWidth*window.devicePixelRatio||1200;
+  cv.height=cv.clientHeight*window.devicePixelRatio||340;
+  const ctx=cv.getContext('2d');
+  ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  const W=cv.clientWidth,H=cv.clientHeight;
+
+  if(chartType==='sawtooth') drawSawtooth(ctx,W,H);
+  else if(chartType==='bars') drawBars(ctx,W,H);
+  else drawCosts(ctx,W,H);
+}
+
+function chartMargins(){return{top:34,right:24,bottom:46,left:62};}
+
+function scaleSetup(W,H,margin,yMin,yMax){
+  const cW=W-margin.left-margin.right;
+  const cH=H-margin.top-margin.bottom;
+  const yRange=Math.max(1,yMax-yMin);
+  const gx=(i,f=0)=>margin.left+i*cW+f*cW; // i in [0,1]
+  const gy=v=>margin.top+cH*(1-(v-yMin)/yRange);
+  return{cW,cH,gx,gy,yMin,yMax,yRange};
+}
+
+function drawAxesGrid(ctx,W,H,sc,margin,yMin,yMax,xLabels){
+  ctx.strokeStyle='#23545d';ctx.lineWidth=1;
+  const steps=5;
+  for(let i=0;i<=steps;i++){
+    const v=yMin+(yMax-yMin)*i/steps;
+    const y=sc.gy(v);
+    ctx.beginPath();ctx.moveTo(margin.left,y);ctx.lineTo(W-margin.right,y);ctx.stroke();
+    ctx.fillStyle='#9ec9c4';ctx.font=`${Math.round(11/1)}px Arial`;ctx.textAlign='right';
+    ctx.fillText(fmtShort(v),margin.left-6,y+4);
+  }
+  // zero line
+  if(yMin<0){
+    const z=sc.gy(0);
+    ctx.beginPath();ctx.setLineDash([5,4]);ctx.strokeStyle='#7b8794';
+    ctx.moveTo(margin.left,z);ctx.lineTo(W-margin.right,z);ctx.stroke();ctx.setLineDash([]);
+  }
+  // Axes
+  ctx.beginPath();ctx.strokeStyle='#3a7e88';ctx.lineWidth=1.5;
+  ctx.moveTo(margin.left,margin.top);ctx.lineTo(margin.left,H-margin.bottom);
+  ctx.lineTo(W-margin.right,H-margin.bottom);ctx.stroke();
+  // X labels
+  xLabels.forEach((lbl,i)=>{
+    const x=sc.gx(i/(xLabels.length-1|1));
+    ctx.fillStyle='#c8f7f1';ctx.font='11px Arial';ctx.textAlign='center';
+    ctx.fillText(lbl,x,H-margin.bottom+16);
+    // vertical tick
+    ctx.beginPath();ctx.strokeStyle='#235965';ctx.lineWidth=.7;
+    ctx.moveTo(x,H-margin.bottom);ctx.lineTo(x,H-margin.bottom+5);ctx.stroke();
+  });
+}
+
+// ── DENTE DI SEGA ─────────────────────────────────────────────
+// True sawtooth: within each period stock falls linearly from open to close.
+// At period boundary where an arrival occurs, stock jumps up first, then falls.
+// X axis: period boundaries 0..n  (n+1 points)
+function drawSawtooth(ctx,W,H){
+  const d=lastCalc;
+  const m=chartMargins();
+  const n=d.n;
+
+  // Build the exact staircase/sawtooth polyline
+  // For each period t:
+  //   x_start = t, x_end = t+1 (in period units)
+  //   At x_start: stock = openStock[t]   (after arrivals already applied)
+  //   At x_end:   stock = closeStock[t]
+  // SS horizontal line
+
+  const allY=[...d.openStock,...d.closeStock,d.ss,0];
+  const yMax=Math.max(...allY)*1.12+10;
+  const yMin=Math.min(0,Math.min(...d.closeStock)-10);
+
+  const xLabels=Array.from({length:n+1},(_,i)=>i===0?'Inizio':`P${i}`);
+  const sc=scaleSetup(W,H,m,yMin,yMax);
+  // Override gx for period-based: 0..n on x axis
+  const gx=t=>m.left+t*(sc.cW/n);
+
+  ctx.clearRect(0,0,W,H);
+
+  // Background fill under sawtooth
+  ctx.beginPath();
+  ctx.moveTo(gx(0),sc.gy(d.openStock[0]));
+  for(let t=0;t<n;t++){
+    ctx.lineTo(gx(t),sc.gy(d.openStock[t]));
+    ctx.lineTo(gx(t+1),sc.gy(d.closeStock[t]));
+  }
+  ctx.lineTo(gx(n),sc.gy(yMin));
+  ctx.lineTo(gx(0),sc.gy(yMin));
+  ctx.closePath();
+  ctx.fillStyle='rgba(65,214,195,.07)';ctx.fill();
+
+  // SS band
+  const ssY=sc.gy(d.ss);
+  ctx.beginPath();
+  ctx.fillStyle='rgba(255,127,150,.06)';
+  ctx.fillRect(m.left,ssY,sc.cW,sc.gy(yMin)-ssY);
+  // SS dashed line
+  ctx.beginPath();ctx.setLineDash([6,5]);
+  ctx.strokeStyle='rgba(255,127,150,.5)';ctx.lineWidth=1.3;
+  ctx.moveTo(m.left,ssY);ctx.lineTo(W-m.right,ssY);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,127,150,.7)';ctx.font='10px Arial';ctx.textAlign='left';
+  ctx.fillText(`SS = ${fmtShort(d.ss)}`,m.left+4,ssY-4);
+
+  // Draw axes/grid
+  drawAxesGrid(ctx,W,H,{...sc,gy:sc.gy},m,yMin,yMax,xLabels);
+
+  // Arrivals: vertical jump lines at period start (t=0..n-1)
+  for(let t=0;t<n;t++){
+    if(d.arrivals[t]>0){
+      // at the start of period t, stock jumps from prevClose to openStock[t]
+      const prevClose=t===0?d.initStock:d.closeStock[t-1];
+      const x=gx(t);
+      ctx.beginPath();ctx.strokeStyle='rgba(110,231,183,.8)';ctx.lineWidth=1.8;ctx.setLineDash([3,3]);
+      ctx.moveTo(x,sc.gy(prevClose));ctx.lineTo(x,sc.gy(d.openStock[t]));ctx.stroke();ctx.setLineDash([]);
+      // arrow up
+      const ay=sc.gy(d.openStock[t]);
+      ctx.beginPath();ctx.fillStyle='rgba(110,231,183,.9)';
+      ctx.moveTo(x,ay-2);ctx.lineTo(x-5,ay+7);ctx.lineTo(x+5,ay+7);ctx.closePath();ctx.fill();
+      // label
+      ctx.fillStyle='#6ee7b7';ctx.font='9px Arial';ctx.textAlign='center';
+      ctx.fillText('+'+fmtShort(d.arrivals[t]),x,ay-8);
     }
+  }
 
-
-    function calculateDRP() {
-      const periods = Math.max(1, parseInt(document.getElementById("periods").value) || 1);
-      const initialStock = parseFloat(document.getElementById("initialStock").value) || 0;
-      const safetyStock = parseFloat(document.getElementById("safetyStock").value) || 0;
-      const leadTime = Math.max(0, parseInt(document.getElementById("leadTime").value) || 0);
-      const lotSize = Math.max(1, parseFloat(document.getElementById("lotSize").value) || 1);
-      const unitValue = parseFloat(document.getElementById("unitValue").value) || 0;
-      const holdingRate = (parseFloat(document.getElementById("holdingRate").value) || 0) / 100;
-      const orderingCost = parseFloat(document.getElementById("orderingCost").value) || 0;
-
-      const grossReq = [];
-      for (let i = 0; i < periods; i++) {
-        grossReq.push(parseFloat(document.getElementById(`demand_${i + 1}`)?.value) || 0);
-      }
-
-      const orderArrivals = new Array(periods).fill(0);
-      const orderReleases = new Array(periods).fill(0);
-      const openingStock = new Array(periods).fill(0);
-      const netReq = new Array(periods).fill(0);
-      const projectedStock = new Array(periods).fill(0);
-      const avgStockPeriod = new Array(periods).fill(0);
-      let arrivalsBeyondHorizon = 0;
-
-      let prevStock = initialStock;
-
-      for (let t = 0; t < periods; t++) {
-        openingStock[t] = prevStock;
-
-        const availableBeforeNewOrder = openingStock[t] + orderArrivals[t];
-        const shortageVsTarget = grossReq[t] + safetyStock - availableBeforeNewOrder;
-
-        if (shortageVsTarget > 0) {
-          const qty = ceilToLot(shortageVsTarget, lotSize);
-          netReq[t] = shortageVsTarget;
-          orderReleases[t] = qty;
-
-          const arrivalPeriod = t + leadTime;
-          if (arrivalPeriod < periods) {
-            orderArrivals[arrivalPeriod] += qty;
-          } else {
-            arrivalsBeyondHorizon += qty;
-          }
-        }
-
-        const closing = openingStock[t] + orderArrivals[t] - grossReq[t];
-        projectedStock[t] = closing;
-        avgStockPeriod[t] = (openingStock[t] + closing) / 2;
-        prevStock = closing;
-      }
-
-      const totalDemand = grossReq.reduce((a, b) => a + b, 0);
-      const avgStock = avgStockPeriod.reduce((a, b) => a + b, 0) / periods;
-      const holdingCost = avgStock * unitValue * holdingRate;
-      const orderCount = orderReleases.filter(v => v > 0).length;
-      const totalOrderingCost = orderCount * orderingCost;
-      const totalCost = holdingCost + totalOrderingCost;
-      const rotationIndex = avgStock > 0 ? totalDemand / avgStock : 0;
-      const coverage = rotationIndex > 0 ? periods / rotationIndex : 0;
-
-      lastCalculation = {
-        periods,
-        params: {
-          initialStock, safetyStock, leadTime, lotSize, unitValue, holdingRate, orderingCost
-        },
-        grossReq,
-        orderArrivals,
-        orderReleases,
-        openingStock,
-        netReq,
-        projectedStock,
-        avgStockPeriod,
-        arrivalsBeyondHorizon,
-        totalDemand,
-        avgStock,
-        holdingCost,
-        orderCount,
-        totalOrderingCost,
-        totalCost,
-        rotationIndex,
-        coverage
-      };
-
-      renderKPIs(lastCalculation);
-      renderTable(lastCalculation);
-      drawChart(lastCalculation);
+  // Main sawtooth line
+  ctx.beginPath();
+  ctx.strokeStyle='#41d6c3';ctx.lineWidth=2.2;ctx.setLineDash([]);
+  ctx.moveTo(gx(0),sc.gy(d.openStock[0]));
+  for(let t=0;t<n;t++){
+    if(t>0&&d.arrivals[t]>0){
+      // jump from closeStock[t-1] to openStock[t] (vertical)
+      ctx.lineTo(gx(t),sc.gy(d.closeStock[t-1]));
+      ctx.lineTo(gx(t),sc.gy(d.openStock[t]));
+    } else if(t>0){
+      ctx.lineTo(gx(t),sc.gy(d.openStock[t]));
     }
+    ctx.lineTo(gx(t+1),sc.gy(d.closeStock[t]));
+  }
+  ctx.stroke();
 
-    function renderKPIs(data) {
-      const kpis = [
-        { title: "Consumo totale", value: formatNum(data.totalDemand) + " u." },
-        { title: "Giacenza media", value: formatNum(data.avgStock) + " u." },
-        { title: "Numero ordini", value: formatNum(data.orderCount) },
-        { title: "Costo totale logistico", value: "€ " + formatNum(data.totalCost) },
-        { title: "Indice di rotazione", value: formatNum(data.rotationIndex) },
-        { title: "Copertura media", value: formatNum(data.coverage) + " periodi" }
-      ];
-
-      document.getElementById("kpis").innerHTML = kpis.map(k => `
-        <div class="kpi">
-          <div class="title">${k.title}</div>
-          <div class="value">${k.value}</div>
-        </div>
-      `).join("");
-
-      const extra = data.arrivalsBeyondHorizon > 0
-        ? ` Sono presenti ${formatNum(data.arrivalsBeyondHorizon)} u. ordinate ma con arrivo oltre l'orizzonte considerato.`
-        : "";
-
-      document.getElementById("summaryText").innerHTML =
-        `Il lead time sposta l'arrivo dell'ordine in avanti di ${data.params.leadTime} periodi: l'ordine esce oggi e arriva tutto insieme alla data prevista.` + extra;
+  // Release markers (order going out = triangle below) + triggered arrows
+  for(let t=0;t<n;t++){
+    if(d.releases[t]>0){
+      const x=gx(t+0.5);
+      const y=sc.gy(d.closeStock[t])+16;
+      ctx.beginPath();ctx.fillStyle='rgba(255,209,102,.85)';
+      ctx.moveTo(x,y+8);ctx.lineTo(x-5,y);ctx.lineTo(x+5,y);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#ffd166';ctx.font='9px Arial';ctx.textAlign='center';
+      ctx.fillText('▼'+fmtShort(d.releases[t]),x,y+18);
     }
+  }
 
-    function renderTable(data) {
-      const cols = Array.from({ length: data.periods }, (_, i) => `<th>P${i + 1}</th>`).join("");
-
-      const row = (name, arr, cls = "") => `
-        <tr>
-          <td class="rowhdr">${name}</td>
-          ${arr.map(v => `<td class="${cls}">${formatNum(v)}</td>`).join("")}
-        </tr>
-      `;
-
-      const table = `
-        <table>
-          <thead>
-            <tr>
-              <th>Voce</th>
-              ${cols}
-            </tr>
-          </thead>
-          <tbody>
-            ${row("Giacenza inizio periodo", data.openingStock)}
-            ${row("Fabbisogno lordo", data.grossReq)}
-            ${row("Fabbisogno netto", data.netReq, "warn")}
-            ${row("Ordini in arrivo", data.orderArrivals, "ok")}
-            ${row("Ordini in uscita", data.orderReleases, "ok")}
-            ${row("Giacenza fine periodo", data.projectedStock)}
-          </tbody>
-        </table>
-      `;
-
-      document.getElementById("tableContainer").innerHTML = table;
+  // Triggered arrows
+  for(let t=0;t<n;t++){
+    if(d.releases[t]>0 && d.triggered[t]>0 && d.triggered[t]!==t){
+      const xRel=gx(t+0.5), xArr=gx(d.triggered[t]+0.5);
+      const yA=H-m.bottom+30;
+      ctx.beginPath();ctx.strokeStyle='rgba(255,209,102,.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.moveTo(xRel,yA);ctx.lineTo(xArr,yA);ctx.stroke();ctx.setLineDash([]);
+      // arrow tip
+      ctx.beginPath();ctx.fillStyle='rgba(255,209,102,.55)';
+      ctx.moveTo(xArr,yA-1);ctx.lineTo(xArr-4,yA+6);ctx.lineTo(xArr+4,yA+6);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,209,102,.5)';ctx.font='8px Arial';ctx.textAlign='center';
+      ctx.fillText(`LT=${d.lt}`,(xRel+xArr)/2,yA-4);
     }
+  }
 
-    function drawChart(data) {
-      const canvas = document.getElementById("chart");
-      const ctx = canvas.getContext("2d");
-      const W = canvas.width;
-      const H = canvas.height;
-      ctx.clearRect(0, 0, W, H);
+  // Dots at open/close
+  for(let t=0;t<n;t++){
+    [[gx(t),d.openStock[t],'#41d6c3'],[gx(t+1),d.closeStock[t],'#67c7ff']].forEach(([x,v,c])=>{
+      ctx.beginPath();ctx.arc(x,sc.gy(v),3.5,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
+    });
+  }
 
-      const margin = { top: 30, right: 20, bottom: 50, left: 55 };
-      const chartW = W - margin.left - margin.right;
-      const chartH = H - margin.top - margin.bottom;
+  // Legend
+  legend(ctx,W,m,[
+    {c:'#41d6c3',l:'Giacenza (dente di sega)'},
+    {c:'#6ee7b7',l:'↑ Arrivo ordine'},
+    {c:'#ffd166',l:'▼ Rilascio ordine'},
+    {c:'rgba(255,127,150,.7)',l:`Scorta sicurezza (${fmtShort(d.ss)})`},
+  ]);
+}
 
-      const series = [
-        { name: "Fabbisogno", values: data.grossReq, color: "#b794f4" },
-        { name: "Giacenza finale", values: data.projectedStock, color: "#67c7ff" }
-      ];
+// ── BARS ──────────────────────────────────────────────────────
+function drawBars(ctx,W,H){
+  const d=lastCalc;
+  const m=chartMargins();
+  const n=d.n;
+  const xLabels=Array.from({length:n},(_,i)=>`P${i+1}`);
 
-      const maxVal = Math.max(
-        10,
-        ...data.grossReq,
-        ...data.projectedStock,
-        ...data.orderArrivals,
-        ...data.openingStock
-      );
-      const minVal = Math.min(0, ...data.projectedStock);
-      const valueRange = Math.max(10, maxVal - minVal);
+  const yMax=Math.max(10,...d.openStock,...d.closeStock,...d.releases,...d.arrivals)*1.12;
+  const sc=scaleSetup(W,H,m,0,yMax);
+  const barW=sc.cW/n;
+  const gx=i=>m.left+i*barW;
 
-      const xStep = data.periods > 1 ? chartW / (data.periods - 1) : chartW;
+  ctx.clearRect(0,0,W,H);
+  drawAxesGrid(ctx,W,H,sc,m,0,yMax,xLabels.map((_,i)=>m.left+(i+.5)*barW-(m.left)));
 
-      function getX(i) {
-        return margin.left + i * xStep;
-      }
+  // Actually draw
+  drawAxesGrid(ctx,W,H,sc,m,0,yMax,xLabels);
 
-      function getY(v) {
-        return margin.top + chartH - ((v - minVal) / valueRange) * chartH;
-      }
-
-      ctx.strokeStyle = "#23545d";
-      ctx.lineWidth = 1;
-
-      for (let i = 0; i <= 5; i++) {
-        const value = minVal + (valueRange / 5) * i;
-        const y = getY(value);
-        ctx.beginPath();
-        ctx.moveTo(margin.left, y);
-        ctx.lineTo(W - margin.right, y);
-        ctx.stroke();
-
-        ctx.fillStyle = "#9ec9c4";
-        ctx.font = "12px Arial";
-        ctx.fillText(formatNum(value), 8, y + 4);
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(margin.left, margin.top);
-      ctx.lineTo(margin.left, H - margin.bottom);
-      ctx.lineTo(W - margin.right, H - margin.bottom);
-      ctx.strokeStyle = "#3a7e88";
-      ctx.stroke();
-
-      if (minVal < 0) {
-        const zeroY = getY(0);
-        ctx.beginPath();
-        ctx.setLineDash([6, 4]);
-        ctx.strokeStyle = "#7b8794";
-        ctx.moveTo(margin.left, zeroY);
-        ctx.lineTo(W - margin.right, zeroY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      series.forEach(s => {
-        ctx.beginPath();
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 2.4;
-
-        s.values.forEach((v, i) => {
-          const x = getX(i);
-          const y = getY(v);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-
-        ctx.stroke();
-
-        s.values.forEach((v, i) => {
-          const x = getX(i);
-          const y = getY(v);
-          ctx.beginPath();
-          ctx.fillStyle = s.color;
-          ctx.arc(x, y, 4, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      });
-
-      for (let i = 0; i < data.periods; i++) {
-        const x = getX(i);
-        ctx.fillStyle = "#c8f7f1";
-        ctx.font = "12px Arial";
-        ctx.fillText("P" + (i + 1), x - 8, H - 20);
-      }
-
-      const legendX = W - 220;
-      const legendY = 18;
-      series.forEach((s, i) => {
-        const y = legendY + i * 22;
-        ctx.fillStyle = s.color;
-        ctx.fillRect(legendX, y, 14, 14);
-        ctx.fillStyle = "#e6fffb";
-        ctx.font = "13px Arial";
-        ctx.fillText(s.name, legendX + 22, y + 12);
-      });
+  for(let t=0;t<n;t++){
+    const x=m.left+t*barW;
+    // Giacenza fine (background)
+    const bh=sc.gy(0)-sc.gy(d.closeStock[t]);
+    if(bh>0){
+      ctx.fillStyle='rgba(65,214,195,.22)';
+      ctx.fillRect(x+barW*.15,sc.gy(d.closeStock[t]),barW*.35,bh);
     }
-
-    function exportCSV() {
-      if (!lastCalculation) {
-        alert("Esegui prima il calcolo DRP.");
-        return;
-      }
-
-      const d = lastCalculation;
-      const rows = [
-        ["Voce", ...Array.from({ length: d.periods }, (_, i) => `P${i + 1}`)],
-        ["Giacenza inizio periodo", ...d.openingStock],
-        ["Fabbisogno lordo", ...d.grossReq],
-        ["Fabbisogno netto", ...d.netReq],
-        ["Ordini in arrivo", ...d.orderArrivals],
-        ["Ordini in uscita", ...d.orderReleases],
-        ["Giacenza fine periodo", ...d.projectedStock],
-        [],
-        ["Consumo totale", d.totalDemand],
-        ["Giacenza media", d.avgStock],
-        ["Costo mantenimento", d.holdingCost],
-        ["Numero ordini", d.orderCount],
-        ["Costo all'ordine totale", d.totalOrderingCost],
-        ["Costo totale logistico", d.totalCost],
-        ["Indice di rotazione", d.rotationIndex],
-        ["Copertura media", d.coverage],
-        ["Ordini oltre orizzonte", d.arrivalsBeyondHorizon]
-      ];
-
-      const csv = rows.map(r => r.join(";")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "APP_DRP.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    // Rilascio
+    const rh=sc.gy(0)-sc.gy(d.releases[t]);
+    if(rh>0){
+      ctx.fillStyle='rgba(255,209,102,.55)';
+      ctx.fillRect(x+barW*.55,sc.gy(d.releases[t]),barW*.3,rh);
     }
-
-    function formatNum(n) {
-      return Number(n).toLocaleString("it-IT", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+    // Labels
+    if(d.releases[t]>0){
+      ctx.fillStyle='#ffd166';ctx.font='9px Arial';ctx.textAlign='center';
+      ctx.fillText(fmtShort(d.releases[t]),x+barW*.7,sc.gy(d.releases[t])-4);
     }
+  }
 
-    generateDemandInputs();
-  </script>
+  // Stock line on top
+  ctx.beginPath();ctx.strokeStyle='#41d6c3';ctx.lineWidth=2;
+  d.closeStock.forEach((v,i)=>{
+    const x=m.left+(i+.5)*barW, y=sc.gy(v);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });ctx.stroke();
+
+  legend(ctx,W,m,[
+    {c:'rgba(65,214,195,.5)',l:'Giacenza fine periodo'},
+    {c:'rgba(255,209,102,.7)',l:'Rilascio ordine'},
+    {c:'#41d6c3',l:'Andamento giacenza'},
+  ]);
+}
+
+// ── COSTS ─────────────────────────────────────────────────────
+function drawCosts(ctx,W,H){
+  const d=lastCalc;
+  const m=chartMargins();
+  const n=d.n;
+  const xLabels=Array.from({length:n},(_,i)=>`P${i+1}`);
+
+  const holdPerP=d.avgStockArr.map(a=>a*d.unitVal*d.hr);
+  const orderPerP=d.releases.map(v=>v>0?d.oc:0);
+  const totPerP=holdPerP.map((h,i)=>h+orderPerP[i]);
+  const yMax=Math.max(10,...totPerP)*1.15;
+  const sc=scaleSetup(W,H,m,0,yMax);
+  const barW=sc.cW/n;
+
+  ctx.clearRect(0,0,W,H);
+  drawAxesGrid(ctx,W,H,sc,m,0,yMax,xLabels);
+
+  for(let t=0;t<n;t++){
+    const x=m.left+t*barW+barW*.1;
+    const bw=barW*.8;
+    // Holding
+    const hh=sc.gy(0)-sc.gy(holdPerP[t]);
+    if(hh>0){ctx.fillStyle='rgba(65,214,195,.55)';ctx.fillRect(x,sc.gy(holdPerP[t]),bw,hh);}
+    // Ordering on top
+    const oh=sc.gy(0)-sc.gy(orderPerP[t]);
+    if(oh>0){ctx.fillStyle='rgba(255,127,150,.55)';ctx.fillRect(x,sc.gy(holdPerP[t]+orderPerP[t]),bw,oh);}
+    // Total label
+    ctx.fillStyle='#c8f7f1';ctx.font='9px Arial';ctx.textAlign='center';
+    ctx.fillText('€'+fmtShort(totPerP[t]),x+bw/2,sc.gy(totPerP[t])-5);
+  }
+
+  // Cumulative cost line
+  let cum=0;
+  const cumY=totPerP.map(v=>{cum+=v;return cum;});
+  const yMax2=Math.max(...cumY)*1.05;
+  const scale2=v=>m.top+sc.cH*(1-v/yMax2);
+  ctx.beginPath();ctx.strokeStyle='#ffd166';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+  cumY.forEach((v,i)=>{const x=m.left+(i+.5)*barW;i===0?ctx.moveTo(x,scale2(v)):ctx.lineTo(x,scale2(v));});
+  ctx.stroke();ctx.setLineDash([]);
+
+  legend(ctx,W,m,[
+    {c:'rgba(65,214,195,.7)',l:'Costo mantenimento'},
+    {c:'rgba(255,127,150,.7)',l:'Costo ordine'},
+    {c:'#ffd166',l:'Costo cumulato (scala destra)'},
+  ]);
+}
+
+// ── LEGEND ────────────────────────────────────────────────────
+function legend(ctx,W,m,items){
+  const lx=W-m.right-10,ly=m.top+6;
+  const pw=items.reduce((max,it)=>Math.max(max,it.l.length*6.5+20),0);
+  ctx.fillStyle='rgba(7,22,26,.8)';ctx.fillRect(lx-pw-8,ly-4,pw+12,items.length*18+6);
+  ctx.strokeStyle='#1d4b54';ctx.lineWidth=.8;ctx.strokeRect(lx-pw-8,ly-4,pw+12,items.length*18+6);
+  items.forEach((it,i)=>{
+    const y=ly+i*18;
+    ctx.fillStyle=it.c;ctx.fillRect(lx-pw,y,13,11);
+    ctx.fillStyle='#e6fffb';ctx.font='10px Arial';ctx.textAlign='left';
+    ctx.fillText(it.l,lx-pw+17,y+9);
+  });
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────
+function exportCSV(){
+  if(!lastCalc){alert('Calcola prima il DRP.');return;}
+  const d=lastCalc;
+  const rows=[
+    ['Voce',...Array.from({length:d.n},(_,i)=>`P${i+1}`)],
+    ['Giacenza inizio',...d.openStock],
+    ['Fabbisogno lordo',...d.dem],
+    ['Ordini in arrivo',...d.arrivals],
+    ['Fabbisogno netto',...d.netReq],
+    ['Rilascio ordine',...d.releases],
+    ['Giacenza fine',...d.closeStock],
+    ['Giacenza media',...d.avgStockArr],
+    [],
+    ['Consumo totale',d.totalDem],
+    ['Giacenza media globale',d.avgStock],
+    ['Costo mantenimento',d.holdCost],
+    ['Numero ordini',d.orderCount],
+    ['Costo ordini totale',d.totalOC],
+    ['Costo logistico totale',d.totalCost],
+    ['Indice rotazione',d.rotation],
+    ['Copertura media',d.coverage],
+    ['Lotto usato',d.lot],
+    ['Ordini oltre orizzonte',d.beyondHorizon],
+  ];
+  const csv=rows.map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='APP_DRP.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmt(n){return Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtShort(n){
+  n=Number(n);
+  if(Math.abs(n)>=1000)return (n/1000).toFixed(1)+'k';
+  return n.toFixed(n%1===0?0:1);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{if(lastCalc)drawChart();});
+generateDemandInputs();
+</script>
 </body>
 </html>
