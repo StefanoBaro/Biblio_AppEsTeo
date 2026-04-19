@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biblioteca Digitale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@300;400;600;800&display=swap');
+
+:root {
+  --bg: #03050e;
+  --cyan: #22d3ee;
+  --violet: #8b5cf6;
+  --gold: #f0c060;
+  --dim: rgba(255,255,255,0.55);
+  --line: rgba(255,255,255,0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); overflow-x: hidden; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+}
+
+/* ── Static starfield ── */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Layout ── */
+.interface {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  padding: 40px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.phi {
+  font-family: 'Cinzel', serif;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--cyan);
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #e8f8ff;
+}
+
+.logo {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  width: 130px;
+  height: auto;
+  opacity: 0.88;
+  z-index: 10;
+}
+
+/* ── Map ── */
+.star-map {
+  position: relative;
+  flex-grow: 1;
+  width: 100%;
+  min-height: 760px;
+}
+
+#mapSvg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Nodes ── */
+.node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.node:hover {
+  transform: translate(-50%, -50%) scale(1.13);
+}
+
+/* Regular satellite nodes */
+.node-sat {
+  width: 76px;
+  height: 76px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.035);
+}
+
+.node-sat:hover {
+  border-color: rgba(255,255,255,0.7);
+  box-shadow: 0 0 18px rgba(255,255,255,0.14);
+}
+
+.node-sat span {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255,255,255,0.75);
+  padding: 0 4px;
+  line-height: 1.15;
+  pointer-events: none;
+}
+
+.node-sat:hover span { color: #fff; }
+
+/* Colored accent ring per node */
+.node-sat::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--accent, transparent);
+  opacity: 0.5;
+  transition: opacity 0.35s;
+}
+.node-sat:hover::before { opacity: 1; }
+
+/* Core nodes */
+.core-pair {
+  position: absolute;
+  width: 200px;
+  height: 100px;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.core-bridge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  opacity: 0.35;
+}
+
+.node-core {
+  position: absolute;
+  top: 50%;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cyan);
+  background: rgba(34,211,238,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.node-core.left  { left: 0;   transform: translateY(-50%); }
+.node-core.right { right: 0;  transform: translateY(-50%); }
+
+.node-core:hover {
+  box-shadow: 0 0 22px rgba(34,211,238,0.22);
+}
+.node-core.left:hover  { transform: translateY(-50%) scale(1.08); }
+.node-core.right:hover { transform: translateY(-50%) scale(1.08); }
+
+.node-core span {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255,255,255,0.9);
+  padding: 0 6px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+/* ── Tiny dot at center of each node (decorative) ── */
+.node-sat::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent, rgba(255,255,255,0.4));
+  opacity: 0.7;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .header { padding-top: 22px; }
+  .phi { font-size: 2rem; }
+  .header h1 { font-size: 1.3rem; letter-spacing: 0.22em; }
+  .logo { width: 96px; top: 14px; right: 12px; }
+  .star-map { min-height: 900px; }
+  .node-sat { width: 64px; height: 64px; }
+  .node-sat span { font-size: 0.5rem; }
+  .core-pair { width: 160px; height: 82px; }
+  .node-core { width: 72px; height: 72px; }
+  .node-core span { font-size: 0.58rem; }
+  .core-bridge { width: 36px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Static SVG starfield: zero JS, zero repaints -->
+<svg class="starfield" xmlns="http://www.w3.org/2000/svg" id="bgStars"></svg>
+
+<div class="interface">
+  <div class="header">
+    <div class="header-inner">
+      <span class="phi">Φ</span>
+      <h1>Biblioteca</h1>
+    </div>
+  </div>
+
+  <img class="logo" src="logo.png" alt="Logo" />
+
+  <section class="star-map" id="map">
+    <!-- SVG for connector lines only -->
+    <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <div class="core-pair" id="corePair">
+      <div class="core-bridge"></div>
+      <a class="node-core left"  href="INDICE MATERIE/Storia.html"><span>Storia</span></a>
+      <a class="node-core right" href="INDICE MATERIE/Natura.html"><span>Natura</span></a>
+    </div>
+
+    <a class="node node-sat" style="--accent:#ffffff" data-id="LOGISTICA"         href="INDICE MATERIE/Logistica.html"><span>Logistica</span></a>
+    <a class="node node-sat" style="--accent:#60a5fa" data-id="MECCANICA"         href="INDICE MATERIE/Meccanica.html"><span>Meccanica</span></a>
+    <a class="node node-sat" style="--accent:#fb923c" data-id="MATEMATICA"        href="INDICE MATERIE/Matematica.html"><span>Matematica</span></a>
+    <a class="node node-sat" style="--accent:#a78bfa" data-id="ELETTROTECNICA"    href="INDICE MATERIE/Elettrotecnica.html"><span>Elettrotecnica</span></a>
+    <a class="node node-sat" style="--accent:#facc15" data-id="FISICA"            href="INDICE MATERIE/Fisica.html"><span>Fisica</span></a>
+    <a class="node node-sat" style="--accent:#f87171" data-id="BIOLOGIA"          href="INDICE MATERIE/Biologia.html"><span>Biologia</span></a>
+    <a class="node node-sat" style="--accent:#f472b6" data-id="ARTE"              href="INDICE MATERIE/Arte.html"><span>Arte</span></a>
+    <a class="node node-sat" style="--accent:#2dd4bf" data-id="MUSICA"            href="INDICE MATERIE/Musica.html"><span>Musica</span></a>
+    <a class="node node-sat" style="--accent:#4ade80" data-id="SPORT"             href="INDICE MATERIE/Sport.html"><span>Sport</span></a>
+    <a class="node node-sat" style="--accent:#22d3ee" data-id="CHIMICA"           href="INDICE MATERIE/Chimica.html"><span>Chimica</span></a>
+    <a class="node node-sat" style="--accent:#34d399" data-id="INFORMATICA"       href="INDICE MATERIE/Informatica.html"><span>Informatica</span></a>
+    <a class="node node-sat" style="--accent:#c084fc" data-id="AUTOMAZIONE_ROBOTICA" href="INDICE MATERIE/AutomazioneRobotica.html"><span>Automazione<br>&amp;<br>Robotica</span></a>
+  </section>
+</div>
+
+<script>
+/* ── Static starfield (runs once, no rAF) ── */
+(function() {
+  const svg = document.getElementById('bgStars');
+  const W = window.innerWidth, H = window.innerHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+  let s = '';
+  for (let i = 0; i < 220; i++) {
+    const x = (Math.random() * W).toFixed(1);
+    const y = (Math.random() * H).toFixed(1);
+    const r = (Math.random() * 1.2 + 0.3).toFixed(2);
+    const o = (Math.random() * 0.65 + 0.12).toFixed(2);
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="white" opacity="${o}"/>`;
+  }
+  /* A few slightly larger "stars" */
+  for (let i = 0; i < 18; i++) {
+    const x = (Math.random() * W).toFixed(1);
+    const y = (Math.random() * H).toFixed(1);
+    const r = (Math.random() * 1.4 + 1.4).toFixed(2);
+    const o = (Math.random() * 0.35 + 0.08).toFixed(2);
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="white" opacity="${o}"/>`;
+  }
+  svg.innerHTML = s;
+})();
+
+/* ── Layout engine ── */
+const map      = document.getElementById('map');
+const mapSvg   = document.getElementById('mapSvg');
+const nodes    = [...document.querySelectorAll('.node-sat')];
+const corePair = document.getElementById('corePair');
+
+const colors = {
+  MATEMATICA: '#fb923c', LOGISTICA: '#ffffff', ELETTROTECNICA: '#a78bfa',
+  AUTOMAZIONE_ROBOTICA: '#c084fc', MECCANICA: '#60a5fa', BIOLOGIA: '#f87171',
+  INFORMATICA: '#34d399', CHIMICA: '#22d3ee', FISICA: '#facc15',
+  ARTE: '#f472b6', SPORT: '#4ade80', MUSICA: '#2dd4bf'
+};
+
+/* Cubic bezier organica: due punti di controllo con rotazione e asimmetria */
+function organicPath(x1, y1, x2, y2, twist) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  /* versore perpendicolare */
+  const nx = -dy / len, ny = dx / len;
+  /* angolo radiale per variare la forma in base alla direzione */
+  const angle = Math.atan2(dy, dx);
+  const t = twist || 0;
+  /* cp1: vicino al centro, spostato lateralmente e in avanti */
+  const cp1x = x1 + dx * 0.28 + nx * len * (0.22 + t * 0.08) + Math.cos(angle) * len * 0.04;
+  const cp1y = y1 + dy * 0.28 + ny * len * (0.22 + t * 0.08) + Math.sin(angle) * len * 0.04;
+  /* cp2: vicino al satellite, curva che "sboccia" verso l'esterno */
+  const cp2x = x2 - dx * 0.18 + nx * len * (0.14 + t * 0.05);
+  const cp2y = y2 - dy * 0.18 + ny * len * (0.14 + t * 0.05);
+  return `M${x1},${y1} C${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+}
+
+function updateLayout() {
+  const w = map.offsetWidth, h = map.offsetHeight;
+  const cx = w / 2, cy = h / 2;
+  const small = window.innerWidth <= 860;
+  const rx = w * (small ? 0.34 : 0.37);
+  const ry = h * (small ? 0.27 : 0.30);
+
+  corePair.style.left = `${cx}px`;
+  corePair.style.top  = `${cy}px`;
+
+  const pos = {
+    MATEMATICA:          { x: cx,            y: cy - ry * 1.14 },
+    LOGISTICA:           { x: cx - rx,        y: cy - ry * 0.64 },
+    ELETTROTECNICA:      { x: cx + rx,        y: cy - ry * 0.64 },
+    AUTOMAZIONE_ROBOTICA:{ x: cx + rx * 1.08, y: cy - ry * 0.03 },
+    MECCANICA:           { x: cx - rx * 1.08, y: cy + ry * 0.03 },
+    BIOLOGIA:            { x: cx + rx * 1.06, y: cy + ry * 0.50 },
+    INFORMATICA:         { x: cx - rx * 1.06, y: cy + ry * 0.50 },
+    CHIMICA:             { x: cx - rx * 0.82, y: cy + ry * 1.04 },
+    FISICA:              { x: cx + rx * 0.82, y: cy + ry * 1.04 },
+    ARTE:                { x: cx - rx * 0.25, y: cy + ry * 1.22 },
+    SPORT:               { x: cx,             y: cy + ry * 1.38 },
+    MUSICA:              { x: cx + rx * 0.25, y: cy + ry * 1.22 }
+  };
+
+  nodes.forEach(n => {
+    const p = pos[n.dataset.id];
+    if (!p) return;
+    n.style.left = `${p.x}px`;
+    n.style.top  = `${p.y}px`;
+  });
+
+  /* twist: negativo = curva a sinistra, positivo = destra; valori asimmetrici per varietà */
+  const twists = {
+    MATEMATICA: -0.6, LOGISTICA: 1.1, ELETTROTECNICA: -1.0,
+    AUTOMAZIONE_ROBOTICA: -1.3, MECCANICA: 1.3, BIOLOGIA: -1.1,
+    INFORMATICA: 1.2, CHIMICA: 0.9, FISICA: -0.9,
+    ARTE: 0.5, SPORT: -0.3, MUSICA: -0.6
+  };
+
+  mapSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  let inner = '';
+
+  Object.entries(pos).forEach(([key, p]) => {
+    const col = colors[key] || '#ffffff';
+    const t   = twists[key] ?? 0;
+    const d   = organicPath(cx, cy, p.x, p.y, t);
+    /* linea principale sottile */
+    inner += `<path d="${d}" fill="none" stroke="${col}" stroke-width="0.9" opacity="0.22"/>`;
+    /* linea ghost parallela leggermente offset per dare profondità */
+    const d2 = organicPath(cx, cy, p.x + 2, p.y + 2, t * 0.7);
+    inner += `<path d="${d2}" fill="none" stroke="${col}" stroke-width="0.4" opacity="0.09"/>`;
+    /* piccolo cerchio puntato al satellite */
+    inner += `<circle cx="${p.x}" cy="${p.y}" r="2.8" fill="none" stroke="${col}" stroke-width="0.9" opacity="0.45"/>`;
+    inner += `<circle cx="${p.x}" cy="${p.y}" r="1.0" fill="${col}" opacity="0.35"/>`;
+  });
+
+  /* Subtle radial rings around center */
+  [ry * 0.55, ry * 1.0, ry * 1.3].forEach(r => {
+    inner += `<ellipse cx="${cx}" cy="${cy}" rx="${r * 1.28}" ry="${r}"
+              fill="none" stroke="rgba(255,255,255,0.045)" stroke-width="0.7"/>`;
+  });
+
+  mapSvg.innerHTML = inner;
+}
+
+window.addEventListener('resize', updateLayout);
+setTimeout(updateLayout, 30);
+</script>
+</body>
+</html>
