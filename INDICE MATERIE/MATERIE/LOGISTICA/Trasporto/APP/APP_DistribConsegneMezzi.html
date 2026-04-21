@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DistribCalc — Distribuzione Locale Firenze</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:    #0f0e0c;
+  --paper:  #f5f0e8;
+  --card:   #ffffff;
+  --accent: #c84b2f;
+  --blue:   #2f5dc8;
+  --green:  #2a7a4b;
+  --amber:  #b07a10;
+  --muted:  #8a8278;
+  --line:   #d8d0c4;
+  --lineli: #ece7de;
+  --serif:  'Fraunces', serif;
+  --mono:   'DM Mono', monospace;
+  --r: 4px;
+  /* vehicle colors */
+  --c-auto:    #c84b2f;
+  --c-minivan: #2f5dc8;
+  --c-furgone: #2a7a4b;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:13px;}
+body{background:var(--paper);color:var(--ink);font-family:var(--mono);min-height:100vh;}
+
+/* ─── HEADER ─── */
+.header{background:var(--ink);color:var(--paper);padding:0 36px;height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--accent);position:sticky;top:0;z-index:200;}
+.logo{font-family:var(--serif);font-size:26px;font-weight:900;letter-spacing:-1px;display:flex;align-items:baseline;gap:8px;}
+.logo-sub{font-family:var(--mono);font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;}
+.nav{display:flex;gap:2px;}
+.nav-btn{background:transparent;border:none;color:#888;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 16px;cursor:pointer;border-radius:2px;transition:all .15s;}
+.nav-btn:hover{color:var(--paper);background:#1e1d1b;}
+.nav-btn.active{color:var(--accent);background:rgba(200,75,47,.12);}
+
+/* ─── PAGES ─── */
+.page{display:none;}
+.page.active{display:block;animation:rise .2s ease;}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ─── SHARED LAYOUT ─── */
+.wrap{max-width:1160px;margin:0 auto;padding:36px 36px 60px;}
+.sec-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--line);}
+.blk{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px;overflow:hidden;}
+.blk-head{padding:12px 20px;border-bottom:1px solid var(--lineli);display:flex;align-items:center;gap:10px;background:var(--paper);}
+.blk-icon{font-size:15px;}
+.blk-label{font-family:var(--serif);font-size:16px;font-weight:700;flex:1;}
+.blk-sub{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.blk-body{padding:22px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:500;}
+.fi{position:relative;}
+.fi input,.fi select{width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:13px;padding:8px 10px;border-radius:var(--r);outline:none;transition:border-color .15s;-moz-appearance:textfield;appearance:none;}
+.fi input::-webkit-outer-spin-button,.fi input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.fi input:focus,.fi select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(200,75,47,.1);}
+.fi .sfx{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted);pointer-events:none;letter-spacing:1px;}
+.fi input.sp{padding-right:42px;}
+.fi select{cursor:pointer;padding-right:22px;}
+.fi .arr{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted);pointer-events:none;}
+.hint-line{font-size:10px;color:var(--muted);margin-top:8px;}
+.hint-line strong{color:var(--ink);}
+.divider{height:1px;background:var(--lineli);margin:18px 0;}
+.calc-wrap{display:flex;justify-content:flex-end;padding:20px 0 4px;}
+.calc-btn{background:var(--ink);color:var(--paper);border:none;font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:1px;padding:13px 44px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.calc-btn::after{content:' ▶';font-size:12px;}
+.calc-btn:hover{background:var(--accent);transform:translateY(-1px);}
+.back-btn{background:transparent;border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;border-radius:var(--r);cursor:pointer;transition:all .15s;display:inline-block;margin-bottom:28px;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ─── KPI ROW ─── */
+.kpi-row{display:grid;gap:14px;margin-bottom:20px;}
+.kpi-row-4{grid-template-columns:repeat(4,1fr);}
+.kpi-row-3{grid-template-columns:repeat(3,1fr);}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.kpi.ka::before{background:var(--accent);}
+.kpi.kb::before{background:var(--blue);}
+.kpi.kg::before{background:var(--green);}
+.kpi.km::before{background:var(--muted);}
+.kpi.kd::before{background:var(--amber);}
+.kpi-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.kpi-val{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1;}
+.kpi-val.ka{color:var(--accent);}
+.kpi-val.kb{color:var(--blue);}
+.kpi-val.kg{color:var(--green);}
+.kpi-val.kd{color:var(--amber);}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;}
+.kpi-formula{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;border-top:1px solid var(--lineli);padding-top:6px;}
+.kpi-formula .hl{color:var(--accent);font-weight:500;}
+
+/* ─── VEHICLE CARDS ─── */
+.veh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;}
+.veh-card{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.veh-card-head{padding:14px 18px;border-bottom:1px solid var(--lineli);display:flex;align-items:center;gap:10px;}
+.veh-card-head.auto    {border-left:4px solid var(--c-auto);}
+.veh-card-head.minivan {border-left:4px solid var(--c-minivan);}
+.veh-card-head.furgone {border-left:4px solid var(--c-furgone);}
+.veh-card-icon{font-size:24px;}
+.veh-card-name{font-family:var(--serif);font-size:17px;font-weight:700;flex:1;}
+.veh-card-name.auto    {color:var(--c-auto);}
+.veh-card-name.minivan {color:var(--c-minivan);}
+.veh-card-name.furgone {color:var(--c-furgone);}
+.veh-card-body{padding:16px 18px;background:var(--card);}
+.veh-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--lineli);font-size:12px;}
+.veh-row:last-child{border-bottom:none;}
+.veh-row-lbl{color:var(--muted);}
+.veh-row-val{font-weight:500;}
+
+/* ─── STEP TABLE ─── */
+.step-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
+.step-table th{text-align:left;padding:7px 10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:2px solid var(--ink);}
+.step-table td{padding:9px 10px;border-bottom:1px solid var(--lineli);vertical-align:top;}
+.step-table tr:last-child td{border-bottom:none;}
+.step-table tr:hover td{background:#faf8f4;}
+.step-num{font-family:var(--serif);font-size:18px;font-weight:900;color:var(--muted);}
+.step-name{font-weight:500;color:var(--ink);}
+.step-formula{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.6;}
+.step-formula .hl{color:var(--accent);font-weight:500;}
+.step-result{font-family:var(--serif);font-size:17px;font-weight:700;text-align:right;}
+.step-result.auto   {color:var(--c-auto);}
+.step-result.minivan{color:var(--c-minivan);}
+.step-result.furgone{color:var(--c-furgone);}
+.step-result.neutral{color:var(--ink);}
+.step-unit{font-size:10px;color:var(--muted);font-family:var(--mono);font-weight:400;display:block;text-align:right;}
+
+/* ─── VEHICLE RESULT CARD ─── */
+.vres-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;}
+.vres-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.vres-card.winner{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
+.vres-head{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--lineli);}
+.vres-head.auto    {border-left:4px solid var(--c-auto);    background:rgba(200,75,47,.04);}
+.vres-head.minivan {border-left:4px solid var(--c-minivan); background:rgba(47,93,200,.04);}
+.vres-head.furgone {border-left:4px solid var(--c-furgone); background:rgba(42,122,75,.04);}
+.vres-icon{font-size:20px;}
+.vres-title{font-family:var(--serif);font-size:15px;font-weight:700;flex:1;}
+.best-badge{background:var(--green);color:#fff;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;font-weight:500;}
+.vres-body{padding:14px 16px;}
+.vres-stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--lineli);font-size:12px;}
+.vres-stat:last-child{border-bottom:none;}
+.vres-stat-lbl{color:var(--muted);}
+.vres-stat-val{font-weight:500;}
+/* volumetric bar */
+.vol-bar-wrap{margin-top:10px;}
+.vol-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px;}
+.vol-bar-track{height:8px;background:var(--lineli);border-radius:4px;overflow:hidden;}
+.vol-bar-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.vol-bar-fill.auto    {background:var(--c-auto);}
+.vol-bar-fill.minivan {background:var(--c-minivan);}
+.vol-bar-fill.furgone {background:var(--c-furgone);}
+
+/* ─── MAP PAGE ─── */
+.mpage{height:calc(100vh - 58px);display:flex;}
+.msb{width:320px;flex-shrink:0;background:var(--ink);color:var(--paper);display:flex;flex-direction:column;border-right:3px solid var(--accent);overflow:hidden;}
+.msb-head{padding:16px 20px;border-bottom:1px solid #222;}
+.msb-title{font-family:var(--serif);font-size:20px;font-weight:900;letter-spacing:-0.5px;}
+.msb-sub{font-size:9px;color:#666;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.msb-body{flex:1;overflow-y:auto;padding:14px;}
+.msb-body::-webkit-scrollbar{width:4px;}
+.msb-body::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+.msb-foot{padding:12px 14px;border-top:1px solid #222;display:flex;flex-direction:column;gap:8px;}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;}
+.stat-box{background:#0c0c0c;border:1px solid #1a1a1a;border-radius:3px;padding:8px 10px;text-align:center;}
+.stat-box-val{font-family:var(--serif);font-size:18px;font-weight:900;line-height:1;}
+.stat-box-lbl{font-size:8px;color:#555;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;}
+.stat-box.v-km  .stat-box-val{color:#aaa;}
+.stat-box.v-cli .stat-box-val{color:var(--accent);}
+.stat-box.v-eur .stat-box-val{color:#f0a500;}
+
+/* zone cards in map sidebar */
+.zone-head{display:flex;align-items:center;gap:8px;background:#0c0c0c;border:1px solid #1a1a1a;border-radius:3px;padding:8px 10px;margin-bottom:6px;}
+.zone-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.zone-name{font-size:11px;font-weight:500;flex:1;}
+.zone-cnt{font-size:10px;color:#666;}
+
+.map-act-btn{background:transparent;border:1px solid #333;color:#888;font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:8px 12px;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase;width:100%;}
+.map-act-btn:hover{border-color:#555;color:var(--paper);}
+.map-act-btn.primary{border-color:var(--accent);color:var(--accent);}
+.map-act-btn.primary:hover{background:var(--accent);color:#000;}
+.map-act-btn.anim-on{border-color:var(--accent);background:rgba(200,75,47,.1);color:var(--accent);}
+.btn-row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.map-legend-strip{display:flex;gap:10px;padding:6px 10px;background:#070707;border-top:1px solid #111;flex-wrap:wrap;}
+.ml-item{display:flex;align-items:center;gap:5px;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;}
+.ml-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+.map-canvas-wrap{flex:1;position:relative;background:#08100a;overflow:hidden;}
+#distCanvas{width:100%;height:100%;display:block;}
+.map-overlay{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;}
+.map-zoom-btn{background:rgba(15,14,12,.85);border:1px solid #333;color:#888;width:32px;height:32px;border-radius:3px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.map-zoom-btn:hover{border-color:#555;color:var(--paper);}
+.tooltip{position:absolute;background:rgba(15,14,12,.92);border:1px solid #333;color:var(--paper);font-family:var(--mono);font-size:10px;padding:6px 10px;border-radius:3px;pointer-events:none;display:none;z-index:50;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">DistribCalc <span class="logo-sub">Distribuzione Locale</span></div>
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-input"   onclick="showPage('input')">① Parametri</button>
+    <button class="nav-btn"        id="nav-results" onclick="showPage('results')">② Risultati</button>
+    <button class="nav-btn"        id="nav-map"     onclick="showPage('map')">③ Mappa Giri</button>
+  </nav>
+</header>
+
+<!-- ══════════ INPUT PAGE ══════════ -->
+<div id="page-input" class="page active">
+<div class="wrap">
+
+  <div class="sec-title">① Parametri Distribuzione</div>
+
+  <!-- RETE CLIENTI -->
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">🏪</span><span class="blk-label">Rete Clienti</span><span class="blk-sub">punti di consegna giornalieri</span></div>
+    <div class="blk-body">
+      <div class="g4">
+        <div class="field"><span class="field-lbl">Punti di consegna</span><div class="fi"><input type="number" id="n-clienti" value="175" min="1" class="sp"><span class="sfx">clienti</span></div></div>
+        <div class="field"><span class="field-lbl">Domanda per cliente / giorno</span><div class="fi"><input type="number" id="dom-cliente" value="4" min="1" class="sp"><span class="sfx">scatole</span></div></div>
+        <div class="field"><span class="field-lbl">Giorni lavorativi / settimana</span><div class="fi"><input type="number" id="giorni-sett" value="5" min="1" max="7" class="sp"><span class="sfx">giorni</span></div></div>
+        <div class="field"><span class="field-lbl">Orario giornaliero autista</span><div class="fi"><input type="number" id="ore-giorno" value="8" min="1" max="24" step="0.5" class="sp"><span class="sfx">h</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPI -->
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">⏱</span><span class="blk-label">Tempi Operativi</span><span class="blk-sub">per ogni giro di consegna</span></div>
+    <div class="blk-body">
+      <div class="g3">
+        <div class="field"><span class="field-lbl">Sosta presso cliente</span><div class="fi"><input type="number" id="t-sosta" value="12" min="1" class="sp"><span class="sfx">min</span></div></div>
+        <div class="field"><span class="field-lbl">Spostamento tra clienti</span><div class="fi"><input type="number" id="t-viaggio" value="9" min="1" class="sp"><span class="sfx">min</span></div></div>
+        <div class="field"><span class="field-lbl">Percorso giro + rientro</span><div class="fi"><input type="number" id="km-giro" value="60" min="1" class="sp"><span class="sfx">km</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCATOLA -->
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">📦</span><span class="blk-label">Unità di Consegna — Scatola</span><span class="blk-sub">dimensioni e peso unitario</span></div>
+    <div class="blk-body">
+      <div class="g4">
+        <div class="field"><span class="field-lbl">Lunghezza</span><div class="fi"><input type="number" id="box-l" value="40" min="1" class="sp"><span class="sfx">cm</span></div></div>
+        <div class="field"><span class="field-lbl">Larghezza</span><div class="fi"><input type="number" id="box-w" value="25" min="1" class="sp"><span class="sfx">cm</span></div></div>
+        <div class="field"><span class="field-lbl">Altezza</span><div class="fi"><input type="number" id="box-h" value="20" min="1" class="sp"><span class="sfx">cm</span></div></div>
+        <div class="field"><span class="field-lbl">Peso</span><div class="fi"><input type="number" id="box-kg" value="3.5" step="0.1" min="0.1" class="sp"><span class="sfx">kg</span></div></div>
+      </div>
+      <p class="hint-line" id="box-hint" style="margin-top:10px">Volume per scatola: <strong id="box-vol">0.020</strong> m³ &nbsp;·&nbsp; Peso: <strong id="box-w-val">3.5</strong> kg</p>
+    </div>
+  </div>
+
+  <!-- VEICOLI -->
+  <div class="sec-title" style="margin-top:28px">② Parco Veicoli</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">🚐</span><span class="blk-label">Caratteristiche dei Mezzi</span><span class="blk-sub">portata · volume · costo/km</span></div>
+    <div class="blk-body">
+      <div class="veh-grid">
+        <!-- AUTO -->
+        <div class="veh-card">
+          <div class="veh-card-head auto">
+            <span class="veh-card-icon">🚗</span>
+            <span class="veh-card-name auto">Derivato Autovettura</span>
+          </div>
+          <div class="veh-card-body">
+            <div class="g3" style="gap:10px">
+              <div class="field"><span class="field-lbl">Portata</span><div class="fi"><input type="number" id="v1-port" value="1.1" step="0.1" class="sp"><span class="sfx">t</span></div></div>
+              <div class="field"><span class="field-lbl">Volume</span><div class="fi"><input type="number" id="v1-vol" value="0.9" step="0.1" class="sp"><span class="sfx">m³</span></div></div>
+              <div class="field"><span class="field-lbl">Costo</span><div class="fi"><input type="number" id="v1-costo" value="0.95" step="0.01" class="sp"><span class="sfx">€/km</span></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- MINIVAN -->
+        <div class="veh-card">
+          <div class="veh-card-head minivan">
+            <span class="veh-card-icon">🚐</span>
+            <span class="veh-card-name minivan">Minivan</span>
+          </div>
+          <div class="veh-card-body">
+            <div class="g3" style="gap:10px">
+              <div class="field"><span class="field-lbl">Portata</span><div class="fi"><input type="number" id="v2-port" value="1.9" step="0.1" class="sp"><span class="sfx">t</span></div></div>
+              <div class="field"><span class="field-lbl">Volume</span><div class="fi"><input type="number" id="v2-vol" value="3.2" step="0.1" class="sp"><span class="sfx">m³</span></div></div>
+              <div class="field"><span class="field-lbl">Costo</span><div class="fi"><input type="number" id="v2-costo" value="1.05" step="0.01" class="sp"><span class="sfx">€/km</span></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- FURGONE -->
+        <div class="veh-card">
+          <div class="veh-card-head furgone">
+            <span class="veh-card-icon">🚚</span>
+            <span class="veh-card-name furgone">Furgone</span>
+          </div>
+          <div class="veh-card-body">
+            <div class="g3" style="gap:10px">
+              <div class="field"><span class="field-lbl">Portata</span><div class="fi"><input type="number" id="v3-port" value="3.4" step="0.1" class="sp"><span class="sfx">t</span></div></div>
+              <div class="field"><span class="field-lbl">Volume</span><div class="fi"><input type="number" id="v3-vol" value="14" step="0.1" class="sp"><span class="sfx">m³</span></div></div>
+              <div class="field"><span class="field-lbl">Costo</span><div class="fi"><input type="number" id="v3-costo" value="1.15" step="0.01" class="sp"><span class="sfx">€/km</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="calc-wrap"><button class="calc-btn" onclick="calculate()">Calcola distribuzione</button></div>
+
+</div></div>
+
+
+<!-- ══════════ RESULTS PAGE ══════════ -->
+<div id="page-results" class="page">
+<div class="wrap">
+  <button class="back-btn" onclick="showPage('input')">← Torna ai parametri</button>
+
+  <!-- STEP 1: tempi -->
+  <div class="sec-title">① Analisi Temporale — Clienti per Giro</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">⏱</span><span class="blk-label">Capacità Operativa Giornaliera</span><span class="blk-sub">uguale per tutti i mezzi</span></div>
+    <div class="blk-body">
+      <div class="kpi-row kpi-row-4" id="res-kpi-time"></div>
+      <div class="divider"></div>
+      <table class="step-table">
+        <thead><tr><th>#</th><th>Passo</th><th>Formula</th><th style="text-align:right">Risultato</th></tr></thead>
+        <tbody id="res-steps-time"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 2: carico per giro -->
+  <div class="sec-title" style="margin-top:28px">② Carico per Giro</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">📦</span><span class="blk-label">Peso e Volume per Giro di Consegna</span></div>
+    <div class="blk-body">
+      <div class="kpi-row kpi-row-4" id="res-kpi-carico"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: flusso settimanale -->
+  <div class="sec-title" style="margin-top:28px">③ Flusso Settimanale</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">📊</span><span class="blk-label">Scatole da Consegnare per Soddisfare i Clienti</span></div>
+    <div class="blk-body">
+      <div class="kpi-row kpi-row-3" id="res-kpi-flusso"></div>
+    </div>
+  </div>
+
+  <!-- STEP 4: veicoli per tipo -->
+  <div class="sec-title" style="margin-top:28px">④ Dimensionamento Flotta per Tipo di Mezzo</div>
+  <div id="res-veh-section"></div>
+
+  <!-- STEP 5: costi -->
+  <div class="sec-title" style="margin-top:28px">⑤ Confronto Costi Giornalieri</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">💶</span><span class="blk-label">Costo Totale Flotta per Soluzione</span><span class="blk-sub">€/giorno · n° veicoli × km × costo unitario</span></div>
+    <div class="blk-body" id="res-costi"></div>
+  </div>
+
+</div></div>
+
+
+<!-- ══════════ MAP PAGE ══════════ -->
+<div id="page-map" class="page">
+<div class="mpage">
+
+  <div class="msb">
+    <div class="msb-head">
+      <div class="msb-title">Giri di Consegna</div>
+      <div class="msb-sub">Firenze — distribuzione locale</div>
+    </div>
+    <div class="msb-body">
+      <div class="stat-strip">
+        <div class="stat-box v-km"><div class="stat-box-val" id="m-giri">—</div><div class="stat-box-lbl">Giri / giorno</div></div>
+        <div class="stat-box v-cli"><div class="stat-box-val" id="m-cli-giro">—</div><div class="stat-box-lbl">Clienti / giro</div></div>
+        <div class="stat-box v-eur"><div class="stat-box-val" id="m-km-tot">—</div><div class="stat-box-lbl">Km totali</div></div>
+      </div>
+
+      <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#555;margin-bottom:8px">Tipo mezzo attivo</p>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="map-act-btn" id="btn-auto"    onclick="setMapVeh('auto')"   style="border-color:rgba(200,75,47,.5);color:#c84b2f;font-size:9px">🚗 Auto</button>
+        <button class="map-act-btn" id="btn-minivan" onclick="setMapVeh('minivan')" style="border-color:rgba(47,93,200,.5);color:#2f5dc8;font-size:9px">🚐 Minivan</button>
+        <button class="map-act-btn" id="btn-furgone" onclick="setMapVeh('furgone')" style="border-color:rgba(42,122,75,.5);color:#2a7a4b;font-size:9px">🚚 Furgone</button>
+      </div>
+
+      <p style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#555;margin-bottom:8px">Zone attive</p>
+      <div id="zone-list"></div>
+
+    </div>
+    <div class="msb-foot">
+      <div class="map-legend-strip">
+        <div class="ml-item"><div class="ml-dot" style="background:#c84b2f"></div>Auto</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#2f5dc8"></div>Minivan</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#2a7a4b"></div>Furgone</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#f0a500"></div>Depot</div>
+      </div>
+      <div class="btn-row2">
+        <button class="map-act-btn" onclick="regenPoints()">↺ Rigenera</button>
+        <button class="map-act-btn primary" id="anim-btn" onclick="toggleAnim()">▶ Simula</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-canvas-wrap" id="map-wrap">
+    <canvas id="distCanvas"></canvas>
+    <div class="map-overlay">
+      <button class="map-zoom-btn" onclick="mapZoom(1.2)">+</button>
+      <button class="map-zoom-btn" onclick="mapZoom(0.83)">−</button>
+      <button class="map-zoom-btn" onclick="mapReset()" style="font-size:12px">⌂</button>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+</div></div>
+
+
+<script>
+/* ════════════════════════════════════
+   CALC ENGINE
+════════════════════════════════════ */
+let calcResult = null;
+
+function gv(id){ return parseFloat(document.getElementById(id).value)||0; }
+function fmt(n,d=2){ return isNaN(n)?'—':n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtI(n){ return isNaN(n)?'—':Math.round(n).toLocaleString('it-IT'); }
+
+function calculate(){
+  // inputs
+  const nCli    = gv('n-clienti');
+  const domCli  = gv('dom-cliente');   // scatole/cliente/giorno
+  const giorniS = gv('giorni-sett');
+  const oreG    = gv('ore-giorno');    // ore/giorno
+  const tSosta  = gv('t-sosta');       // min
+  const tViag   = gv('t-viaggio');     // min
+  const kmGiro  = gv('km-giro');       // km
+  const bL      = gv('box-l')/100;    // m
+  const bW      = gv('box-w')/100;    // m
+  const bH      = gv('box-h')/100;    // m
+  const bKg     = gv('box-kg');       // kg
+  const boxVol  = bL*bW*bH;          // m³
+
+  const veicoli = [
+    {id:'auto',    icon:'🚗', name:'Derivato Autovettura', port:gv('v1-port')*1000, vol:gv('v1-vol'), costo:gv('v1-costo')},
+    {id:'minivan', icon:'🚐', name:'Minivan',              port:gv('v2-port')*1000, vol:gv('v2-vol'), costo:gv('v2-costo')},
+    {id:'furgone', icon:'🚚', name:'Furgone',              port:gv('v3-port')*1000, vol:gv('v3-vol'), costo:gv('v3-costo')},
+  ];
+
+  // ── STEP 1: max clienti per giro (stesso per tutti i mezzi, vincolo temporale) ──
+  const minDisp    = oreG * 60;                        // minuti disponibili
+  const tPerCliente = tSosta + tViag;                  // min/cliente
+  const maxCliGiro  = Math.floor(minDisp / tPerCliente);
+
+  // ── STEP 2: carico per giro ──
+  const scatoleGiro = maxCliGiro * domCli;
+  const pesoGiro    = scatoleGiro * bKg;               // kg
+  const volGiro     = scatoleGiro * boxVol;            // m³
+
+  // ── STEP 3: flusso settimanale ──
+  const scatoleGiorno = nCli * domCli;                // scatole/giorno
+  const scatoleSett   = scatoleGiorno * giorniS;      // scatole/settimana
+
+  // ── STEP 4: veicoli necessari per tipo ──
+  // Per ciascun veicolo, il limite è il minore tra:
+  //   vincolo peso:   floor(portata / pesoGiro)
+  //   vincolo volume: floor(capVol  / volGiro)
+  // → clienti che UN veicolo può servire (già limitati da maxCliGiro)
+  // Numero veicoli = ceil(nCli / maxCliGiro)  ma solo se rispettano peso/vol
+  
+  const giriNecessari = Math.ceil(nCli / maxCliGiro);  // giri totali (= veicoli se 1 giro ciascuno)
+
+  veicoli.forEach(v => {
+    // quante scatole entra per peso?
+    const maxBoxPeso = Math.floor(v.port / bKg);
+    // quante scatole entra per volume?
+    const maxBoxVol  = Math.floor(v.vol  / boxVol);
+    // limite reale del veicolo in scatole
+    v.maxBoxVeicolo  = Math.min(maxBoxPeso, maxBoxVol);
+    // clienti servibili per giro con questo veicolo
+    v.cliPerGiro     = Math.min(maxCliGiro, Math.floor(v.maxBoxVeicolo / domCli));
+    // giri necessari
+    v.nGiri          = Math.ceil(nCli / v.cliPerGiro);
+    // veicoli = giri (1 giro a veicolo)
+    v.nVeicoli       = v.nGiri;
+    // scatole effettive per giro
+    v.scatolePerGiro = v.cliPerGiro * domCli;
+    // peso carico
+    v.pesoCarico     = v.scatolePerGiro * bKg;
+    // volume carico
+    v.volCarico      = v.scatolePerGiro * boxVol;
+    // rendimento volumetrico
+    v.rendVol        = (v.volCarico / v.vol) * 100;
+    // rendimento peso
+    v.rendPeso       = (v.pesoCarico / v.port) * 100;
+    // costo giornaliero flotta
+    v.costoGiorno    = v.nVeicoli * kmGiro * v.costo;
+    // binding vincolo
+    v.vincolo        = maxBoxVol < maxBoxPeso ? 'Volume' : (maxBoxVol > maxBoxPeso ? 'Peso' : 'Entrambi');
+  });
+
+  // best by cost
+  const minCosto = Math.min(...veicoli.map(v=>v.costoGiorno));
+
+  calcResult = {nCli,domCli,giorniS,oreG,tSosta,tViag,kmGiro,bL,bW,bH,bKg,boxVol,
+    minDisp,tPerCliente,maxCliGiro,scatoleGiro,pesoGiro,volGiro,
+    scatoleGiorno,scatoleSett,veicoli,giriNecessari,minCosto};
+
+  renderResults(calcResult);
+  showPage('results');
+}
+
+function renderResults(r){
+  // ── KPI TIME ──
+  document.getElementById('res-kpi-time').innerHTML=`
+    <div class="kpi km"><div class="kpi-lbl">Minuti disponibili</div><div class="kpi-val">${fmtI(r.minDisp)}</div><div class="kpi-sub">${r.oreG} h × 60 min</div></div>
+    <div class="kpi kd"><div class="kpi-lbl">Tempo per cliente</div><div class="kpi-val kd">${r.tPerCliente}</div><div class="kpi-sub">${r.tSosta} sosta + ${r.tViag} viaggio</div></div>
+    <div class="kpi ka"><div class="kpi-lbl">Max clienti / giro</div><div class="kpi-val ka">${r.maxCliGiro}</div><div class="kpi-sub">⌊${r.minDisp} ÷ ${r.tPerCliente}⌋</div></div>
+    <div class="kpi kg"><div class="kpi-lbl">Scatole per giro</div><div class="kpi-val kg">${fmtI(r.scatoleGiro)}</div><div class="kpi-sub">${r.maxCliGiro} clienti × ${r.domCli} scatole</div></div>
+  `;
+
+  // ── STEP TABLE TIME ──
+  document.getElementById('res-steps-time').innerHTML=`
+    <tr><td class="step-num">1</td><td><div class="step-name">Minuti disponibili / giorno</div></td><td class="step-formula">${r.oreG} h × 60 min/h = <span class="hl">${r.minDisp} min</span></td><td><span class="step-result neutral">${r.minDisp}</span><span class="step-unit">min/giorno</span></td></tr>
+    <tr><td class="step-num">2</td><td><div class="step-name">Tempo per cliente</div></td><td class="step-formula">${r.tSosta} min sosta + ${r.tViag} min spostamento = <span class="hl">${r.tPerCliente} min/cliente</span></td><td><span class="step-result neutral">${r.tPerCliente}</span><span class="step-unit">min/cliente</span></td></tr>
+    <tr><td class="step-num">3</td><td><div class="step-name">Max clienti visitabili / giro</div><div class="step-formula" style="margin-top:0">Uguale per tutti i mezzi — vincolo temporale</div></td><td class="step-formula">⌊${r.minDisp} ÷ ${r.tPerCliente}⌋ = <span class="hl">⌊${(r.minDisp/r.tPerCliente).toFixed(2)}⌋ = ${r.maxCliGiro}</span></td><td><span class="step-result neutral">${r.maxCliGiro}</span><span class="step-unit">clienti/giro</span></td></tr>
+  `;
+
+  // ── KPI CARICO ──
+  document.getElementById('res-kpi-carico').innerHTML=`
+    <div class="kpi ka"><div class="kpi-lbl">Scatole per giro</div><div class="kpi-val ka">${fmtI(r.scatoleGiro)}</div><div class="kpi-sub">${r.maxCliGiro} × ${r.domCli}</div><div class="kpi-formula">Volume: ${fmt(r.scatoleGiro)}×${fmt(r.boxVol,4)} = <span class="hl">${fmt(r.volGiro,3)} m³</span><br>Peso: ${fmt(r.scatoleGiro)}×${r.bKg} = <span class="hl">${fmt(r.pesoGiro,1)} kg</span></div></div>
+    <div class="kpi kb"><div class="kpi-lbl">Volume carico giro</div><div class="kpi-val kb">${fmt(r.volGiro,3)}</div><div class="kpi-sub">m³ per giro</div><div class="kpi-formula">Scatola: ${(r.bL*100).toFixed(0)}×${(r.bW*100).toFixed(0)}×${(r.bH*100).toFixed(0)} cm<br>= <span class="hl">${fmt(r.boxVol,4)} m³</span></div></div>
+    <div class="kpi kg"><div class="kpi-lbl">Peso carico giro</div><div class="kpi-val kg">${fmt(r.pesoGiro,1)}</div><div class="kpi-sub">kg per giro</div><div class="kpi-formula">${fmtI(r.scatoleGiro)} scatole × ${r.bKg} kg = <span class="hl">${fmt(r.pesoGiro,1)} kg</span></div></div>
+    <div class="kpi kd"><div class="kpi-lbl">Box volume unitario</div><div class="kpi-val kd">${fmt(r.boxVol*1000,1)}</div><div class="kpi-sub">litri / scatola</div><div class="kpi-formula">${(r.bL*100).toFixed(0)}×${(r.bW*100).toFixed(0)}×${(r.bH*100).toFixed(0)} cm = <span class="hl">${fmt(r.boxVol,4)} m³</span></div></div>
+  `;
+
+  // ── KPI FLUSSO ──
+  document.getElementById('res-kpi-flusso').innerHTML=`
+    <div class="kpi ka"><div class="kpi-lbl">Scatole / giorno</div><div class="kpi-val ka">${fmtI(r.scatoleGiorno)}</div><div class="kpi-sub">${fmtI(r.nCli)} clienti × ${r.domCli} scatole</div></div>
+    <div class="kpi kb"><div class="kpi-lbl">Scatole / settimana</div><div class="kpi-val kb">${fmtI(r.scatoleSett)}</div><div class="kpi-sub">${fmtI(r.scatoleGiorno)}/giorno × ${r.giorniS} giorni</div></div>
+    <div class="kpi kg"><div class="kpi-lbl">Giri necessari / giorno</div><div class="kpi-val kg">${r.giriNecessari}</div><div class="kpi-sub">⌈${r.nCli} ÷ ${r.maxCliGiro}⌉</div></div>
+  `;
+
+  // ── VEH SECTION ──
+  const colors = {auto:'auto',minivan:'minivan',furgone:'furgone'};
+  const cHex   = {auto:'var(--c-auto)',minivan:'var(--c-minivan)',furgone:'var(--c-furgone)'};
+  let html=`<div class="vres-grid">`;
+  r.veicoli.forEach(v=>{
+    const isBest = v.costoGiorno === r.minCosto;
+    html+=`<div class="vres-card ${isBest?'winner':''}">
+      <div class="vres-head ${v.id}">
+        <span class="vres-icon">${v.icon}</span>
+        <span class="vres-title">${v.name}</span>
+        ${isBest?'<span class="best-badge">✓ Più economico</span>':''}
+      </div>
+      <div class="vres-body">
+        <div class="vres-stat"><span class="vres-stat-lbl">Clienti per giro (vincolo ${v.vincolo.toLowerCase()})</span><span class="vres-stat-val">${v.cliPerGiro}</span></div>
+        <div class="vres-stat"><span class="vres-stat-lbl">Scatole per giro</span><span class="vres-stat-val">${fmtI(v.scatolePerGiro)}</span></div>
+        <div class="vres-stat"><span class="vres-stat-lbl">Peso carico / giro</span><span class="vres-stat-val">${fmt(v.pesoCarico,1)} kg / ${fmt(v.port/1000,1)} t</span></div>
+        <div class="vres-stat"><span class="vres-stat-lbl">Volume carico / giro</span><span class="vres-stat-val">${fmt(v.volCarico,3)} m³ / ${fmt(v.vol,1)} m³</span></div>
+        <div class="vres-stat"><span class="vres-stat-lbl">Giri necessari</span><span class="vres-stat-val">${v.nGiri}</span></div>
+        <div class="vres-stat"><span class="vres-stat-lbl">Vincolo limitante</span><span class="vres-stat-val">${v.vincolo}</span></div>
+        <div class="vres-stat" style="border-bottom:none"><span class="vres-stat-lbl">Costo giornaliero flotta</span><span class="vres-stat-val" style="color:${cHex[v.id]}">€ ${fmt(v.costoGiorno)}</span></div>
+
+        <div class="vol-bar-wrap">
+          <div class="vol-bar-label"><span>Rendimento volumetrico</span><span>${fmt(v.rendVol,1)}%</span></div>
+          <div class="vol-bar-track"><div class="vol-bar-fill ${v.id}" style="width:${Math.min(v.rendVol,100).toFixed(1)}%"></div></div>
+        </div>
+        <div class="vol-bar-wrap" style="margin-top:6px">
+          <div class="vol-bar-label"><span>Rendimento peso</span><span>${fmt(v.rendPeso,1)}%</span></div>
+          <div class="vol-bar-track"><div class="vol-bar-fill ${v.id}" style="width:${Math.min(v.rendPeso,100).toFixed(1)}%;opacity:.6"></div></div>
+        </div>
+
+        <div style="background:var(--paper);border:1px solid var(--lineli);border-radius:3px;padding:10px 12px;margin-top:12px;font-size:11px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--ink);font-size:12px;display:block;margin-bottom:4px">${v.nVeicoli} ${v.name.toLowerCase()}${v.nVeicoli>1?'i':'e'} necessari</strong>
+          Massimo scatole per peso: ⌊${fmt(v.port/1000,1)}t÷${v.bKg||r.bKg}kg⌋ = ${Math.floor(v.port/r.bKg)}<br>
+          Massimo scatole per volume: ⌊${fmt(v.vol,1)}÷${fmt(r.boxVol,4)}⌋ = ${Math.floor(v.vol/r.boxVol)}<br>
+          Vincolo attivo: <strong>${v.vincolo}</strong> → ${v.cliPerGiro} cli/giro<br>
+          Veicoli = ⌈${r.nCli}÷${v.cliPerGiro}⌉ = <strong style="color:${cHex[v.id]}">${v.nVeicoli}</strong>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+  document.getElementById('res-veh-section').innerHTML=html;
+
+  // ── COSTI ──
+  const costiHtml=`
+    <table class="step-table">
+      <thead><tr><th>Mezzo</th><th>N° Veicoli</th><th>km/giorno/veicolo</th><th>€/km</th><th style="text-align:right">Costo giornaliero</th></tr></thead>
+      <tbody>
+        ${r.veicoli.map(v=>`<tr>
+          <td><strong>${v.icon} ${v.name}</strong></td>
+          <td>${v.nVeicoli}</td>
+          <td>${fmt(r.kmGiro,0)}</td>
+          <td>${fmt(v.costo,2)}</td>
+          <td style="text-align:right"><span class="step-result ${v.id}" style="font-size:15px">€ ${fmt(v.costoGiorno)}</span>${v.costoGiorno===r.minCosto?'<span class="best-badge" style="margin-left:8px;vertical-align:middle">✓</span>':''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('res-costi').innerHTML=costiHtml;
+
+  // update map stats
+  updateMapStats();
+}
+
+function updateMapStats(){
+  if(!calcResult) return;
+  document.getElementById('m-giri').textContent    = calcResult.giriNecessari;
+  document.getElementById('m-cli-giro').textContent= calcResult.maxCliGiro;
+  document.getElementById('m-km-tot').textContent  = Math.round(calcResult.giriNecessari * calcResult.kmGiro);
+}
+
+/* ════════════════════════════════════
+   MAP ENGINE — distribuzione Firenze
+════════════════════════════════════ */
+const canvas2 = document.getElementById('distCanvas');
+const ctx2    = canvas2.getContext('2d');
+
+// Firenze centro: lat 43.77, lon 11.25
+// Proiettiamo su canvas con offset centrale
+const FI_LAT = 43.77, FI_LON = 11.25;
+let mapScale2=1, camX2=0, camY2=0;
+let isDrag2=false, lmx=0, lmy=0;
+let animRaf2=null, animOn=false;
+let delivPoints=[];
+let mapVeh='auto';
+let animGiro=0, animPoint=0, animProg=0;
+
+const VEH_COLORS={auto:'#c84b2f',minivan:'#2f5dc8',furgone:'#2a7a4b'};
+const VEH_ICONS ={auto:'🚗',minivan:'🚐',furgone:'🚚'};
+
+// zones (approximate Firenze neighborhoods)
+const ZONES=[
+  {name:'Centro Storico', lat:43.773, lon:11.256, r:0.012, count:30, color:'#c84b2f'},
+  {name:'Oltrarno',       lat:43.763, lon:11.248, r:0.010, count:20, color:'#2f5dc8'},
+  {name:'Novoli',         lat:43.791, lon:11.221, r:0.013, count:22, color:'#2a7a4b'},
+  {name:'Campo Marte',    lat:43.780, lon:11.277, r:0.011, count:25, color:'#b07a10'},
+  {name:'Gavinana',       lat:43.752, lon:11.262, r:0.012, count:22, color:'#7830b4'},
+  {name:'Isolotto',       lat:43.762, lon:11.224, r:0.011, count:20, color:'#c84b2f'},
+  {name:'Rifredi',        lat:43.793, lon:11.238, r:0.012, count:16, color:'#2f5dc8'},
+];
+
+// depot = centro
+const DEPOT={lat:43.777, lon:11.248};
+
+function latLon2World(lat,lon){
+  const W=800, H=500; // base world size
+  const x=(lon-FI_LON+0.1)*(W/0.35)+W*0.45;
+  const latRad=lat*Math.PI/180;
+  const mercN=Math.log(Math.tan(Math.PI/4+latRad/2));
+  const fiLatRad=FI_LAT*Math.PI/180;
+  const fiMercN=Math.log(Math.tan(Math.PI/4+fiLatRad/2));
+  const y=H*0.5-(mercN-fiMercN)*(W/0.35)*0.8;
+  return {x,y};
+}
+function w2s2(wx,wy){return{x:wx*mapScale2+camX2, y:wy*mapScale2+camY2};}
+function s2w2(sx,sy){return{x:(sx-camX2)/mapScale2, y:(sy-camY2)/mapScale2};}
+
+function regenPoints(){
+  delivPoints=[];
+  ZONES.forEach(z=>{
+    for(let i=0;i<z.count;i++){
+      const angle=Math.random()*Math.PI*2;
+      const dist=Math.random()*z.r;
+      const lat=z.lat+Math.cos(angle)*dist;
+      const lon=z.lon+Math.sin(angle)*dist*1.4;
+      delivPoints.push({lat,lon,zone:z.name,color:z.color,id:delivPoints.length});
+    }
+  });
+  buildZoneList();
+  drawDist();
+}
+
+function buildZoneList(){
+  document.getElementById('zone-list').innerHTML=ZONES.map(z=>`
+    <div class="zone-head">
+      <div class="zone-dot" style="background:${z.color}"></div>
+      <span class="zone-name">${z.name}</span>
+      <span class="zone-cnt">${z.count} clienti</span>
+    </div>`).join('');
+}
+
+function setMapVeh(v){
+  mapVeh=v;
+  ['auto','minivan','furgone'].forEach(k=>{
+    const btn=document.getElementById('btn-'+k);
+    btn.style.background = k===v ? (k==='auto'?'rgba(200,75,47,.15)':k==='minivan'?'rgba(47,93,200,.15)':'rgba(42,122,75,.15)') : 'transparent';
+  });
+  drawDist();
+}
+
+function drawDist(){
+  const wrap=document.getElementById('map-wrap');
+  if(canvas2.width!==wrap.clientWidth||canvas2.height!==wrap.clientHeight){
+    canvas2.width=wrap.clientWidth; canvas2.height=wrap.clientHeight;
+  }
+  ctx2.clearRect(0,0,canvas2.width,canvas2.height);
+  ctx2.fillStyle='#08100a'; ctx2.fillRect(0,0,canvas2.width,canvas2.height);
+
+  ctx2.save();
+  ctx2.translate(camX2,camY2); ctx2.scale(mapScale2,mapScale2);
+
+  // background city grid (approximate streets)
+  ctx2.strokeStyle='rgba(255,255,255,0.04)'; ctx2.lineWidth=1/mapScale2; ctx2.setLineDash([]);
+  for(let i=0;i<12;i++){
+    const x=50+i*65; ctx2.beginPath(); ctx2.moveTo(x,0); ctx2.lineTo(x,canvas2.height/mapScale2); ctx2.stroke();
+    const y=40+i*45; ctx2.beginPath(); ctx2.moveTo(0,y); ctx2.lineTo(canvas2.width/mapScale2,y); ctx2.stroke();
+  }
+
+  // zone blobs
+  ZONES.forEach(z=>{
+    const p=latLon2World(z.lat,z.lon);
+    const rx=z.r*(canvas2.width/mapScale2)/0.35*0.9;
+    const ry=z.r*(canvas2.height/mapScale2)/0.22*0.5;
+    const grad=ctx2.createRadialGradient(p.x,p.y,0,p.x,p.y,rx);
+    grad.addColorStop(0,z.color+'22'); grad.addColorStop(1,'transparent');
+    ctx2.fillStyle=grad; ctx2.beginPath(); ctx2.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2); ctx2.fill();
+  });
+
+  // delivery points
+  delivPoints.forEach(pt=>{
+    const p=latLon2World(pt.lat,pt.lon);
+    ctx2.beginPath(); ctx2.arc(p.x,p.y,3/mapScale2,0,Math.PI*2);
+    ctx2.fillStyle=pt.color+'cc'; ctx2.fill();
+    ctx2.strokeStyle=pt.color+'66'; ctx2.lineWidth=1/mapScale2; ctx2.stroke();
+  });
+
+  // depot
+  const dep=latLon2World(DEPOT.lat,DEPOT.lon);
+  const dr=8/mapScale2;
+  ctx2.fillStyle='#f0a50033'; ctx2.beginPath(); ctx2.arc(dep.x,dep.y,dr*2,0,Math.PI*2); ctx2.fill();
+  ctx2.fillStyle='#f0a500';   ctx2.beginPath(); ctx2.arc(dep.x,dep.y,dr,  0,Math.PI*2); ctx2.fill();
+  ctx2.fillStyle='#000'; ctx2.font=`bold ${10/mapScale2}px DM Mono, monospace`;
+  ctx2.textAlign='center'; ctx2.textBaseline='middle';
+  ctx2.fillText('D',dep.x,dep.y);
+  ctx2.textAlign='left'; ctx2.textBaseline='alphabetic';
+  ctx2.fillStyle='#f0a500'; ctx2.font=`${10/mapScale2}px DM Mono, monospace`;
+  ctx2.fillText('DEPOT',dep.x+dr*1.4,dep.y+dr*0.5);
+
+  // giri lines: raggruppa per giro e disegna il tour
+  if(calcResult){
+    const cliPerGiro = calcResult.maxCliGiro;
+    const col = VEH_COLORS[mapVeh];
+    const nGiri = Math.ceil(delivPoints.length/cliPerGiro);
+    for(let g=0;g<nGiri;g++){
+      const pts=delivPoints.slice(g*cliPerGiro,(g+1)*cliPerGiro);
+      if(pts.length===0) continue;
+      const alpha=0.15+0.35*(g%3)/2;
+      ctx2.strokeStyle=col+Math.round(alpha*255).toString(16).padStart(2,'0');
+      ctx2.lineWidth=1/mapScale2; ctx2.setLineDash([3/mapScale2,4/mapScale2]);
+      ctx2.beginPath(); ctx2.moveTo(dep.x,dep.y);
+      pts.forEach(pt=>{const p=latLon2World(pt.lat,pt.lon);ctx2.lineTo(p.x,p.y);});
+      ctx2.lineTo(dep.x,dep.y); ctx2.stroke();
+    }
+    ctx2.setLineDash([]);
+  }
+
+  // animated vehicle
+  if(animOn&&calcResult){
+    const cliPerGiro=calcResult.maxCliGiro;
+    const tourPts=[DEPOT,...(delivPoints.slice(animGiro*cliPerGiro,(animGiro+1)*cliPerGiro)),DEPOT];
+    if(animPoint<tourPts.length-1){
+      const p1=latLon2World(tourPts[animPoint].lat,tourPts[animPoint].lon);
+      const p2=latLon2World(tourPts[animPoint+1].lat,tourPts[animPoint+1].lon);
+      const cx=p1.x+(p2.x-p1.x)*animProg;
+      const cy=p1.y+(p2.y-p1.y)*animProg;
+      ctx2.font=`${18/mapScale2}px Arial`; ctx2.textAlign='center'; ctx2.textBaseline='middle';
+      ctx2.shadowBlur=10/mapScale2; ctx2.shadowColor=VEH_COLORS[mapVeh];
+      ctx2.fillText(VEH_ICONS[mapVeh],cx,cy);
+      ctx2.shadowBlur=0; ctx2.textAlign='left'; ctx2.textBaseline='alphabetic';
+    }
+  }
+
+  ctx2.restore();
+}
+
+function animStep2(){
+  if(!animOn)return;
+  animProg+=0.015;
+  if(animProg>=1){
+    animProg=0; animPoint++;
+    const cliPerGiro=calcResult?calcResult.maxCliGiro:22;
+    const tourLen=Math.min(delivPoints.length-animGiro*cliPerGiro,cliPerGiro)+1;
+    if(animPoint>=tourLen){animPoint=0;animGiro=(animGiro+1)%(calcResult?calcResult.giriNecessari:1);}
+  }
+  drawDist();
+  animRaf2=requestAnimationFrame(animStep2);
+}
+function toggleAnim(){
+  const btn=document.getElementById('anim-btn');
+  if(animOn){animOn=false;if(animRaf2)cancelAnimationFrame(animRaf2);btn.textContent='▶ Simula';btn.classList.remove('anim-on');}
+  else{animOn=true;animGiro=0;animPoint=0;animProg=0;btn.textContent='■ Stop';btn.classList.add('anim-on');animStep2();}
+}
+
+/* pan/zoom */
+canvas2.addEventListener('mousedown',e=>{isDrag2=true;const r=canvas2.getBoundingClientRect();lmx=e.clientX-r.left;lmy=e.clientY-r.top;});
+canvas2.addEventListener('mousemove',e=>{
+  const r=canvas2.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top;
+  const tt=document.getElementById('tooltip');
+  if(isDrag2){camX2+=sx-lmx;camY2+=sy-lmy;lmx=sx;lmy=sy;drawDist();tt.style.display='none';return;}
+  const wp=s2w2(sx,sy);
+  let near=null;
+  for(const pt of delivPoints){const p=latLon2World(pt.lat,pt.lon);const sp=w2s2(p.x,p.y);if(Math.hypot(sx-sp.x,sy-sp.y)<8){near=pt;break;}}
+  if(near){tt.style.display='block';tt.style.left=(sx+12)+'px';tt.style.top=(sy-8)+'px';tt.innerHTML=`Cliente #${near.id+1}<br>${near.zone}`;}
+  else{tt.style.display='none';}
+});
+canvas2.addEventListener('mouseup',()=>isDrag2=false);
+canvas2.addEventListener('mouseleave',()=>{isDrag2=false;document.getElementById('tooltip').style.display='none';});
+canvas2.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:0.9;const r=canvas2.getBoundingClientRect();const sx=e.clientX-r.left,sy=e.clientY-r.top;camX2=sx-f*(sx-camX2);camY2=sy-f*(sy-camY2);mapScale2*=f;drawDist();},{passive:false});
+function mapZoom(f){camX2=canvas2.width/2-f*(canvas2.width/2-camX2);camY2=canvas2.height/2-f*(canvas2.height/2-camY2);mapScale2*=f;drawDist();}
+function mapReset(){camX2=0;camY2=0;mapScale2=1;drawDist();}
+
+/* page nav */
+function showPage(p){
+  ['input','results','map'].forEach(k=>{document.getElementById('page-'+k).classList.toggle('active',k===p);document.getElementById('nav-'+k).classList.toggle('active',k===p);});
+  if(p==='map'){setTimeout(()=>{const wrap=document.getElementById('map-wrap');canvas2.width=wrap.clientWidth;canvas2.height=wrap.clientHeight;drawDist();},50);}
+  if(p==='results')window.scrollTo(0,0);
+}
+
+/* init hints */
+function bindBoxHint(){
+  const upd=()=>{
+    const l=gv('box-l')/100,w=gv('box-w')/100,h=gv('box-h')/100;
+    const vol=l*w*h;
+    document.getElementById('box-vol').textContent=fmt(vol,4);
+    document.getElementById('box-w-val').textContent=fmt(gv('box-kg'),1);
+  };
+  ['box-l','box-w','box-h','box-kg'].forEach(id=>document.getElementById(id).addEventListener('input',upd));
+  upd();
+}
+
+window.addEventListener('resize',()=>{if(document.getElementById('page-map').classList.contains('active')){const wrap=document.getElementById('map-wrap');canvas2.width=wrap.clientWidth;canvas2.height=wrap.clientHeight;drawDist();}});
+
+/* boot */
+bindBoxHint();
+regenPoints();
+setMapVeh('auto');
+</script>
+</body>
+</html>

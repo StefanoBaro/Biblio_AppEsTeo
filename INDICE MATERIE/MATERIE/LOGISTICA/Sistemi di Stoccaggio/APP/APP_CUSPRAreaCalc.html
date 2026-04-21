@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Progettazione sistemi di stoccaggio</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --line: #d9deea;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --accent: #214f9c;
+      --good: #0f7b38;
+      --warn: #9a6700;
+      --bad: #b42318;
+      --rack: #c8d7f3;
+      --rack-stroke: #6c8ccc;
+      --aisle: #f5f7fb;
+      --io: #b42318;
+      --path: #214f9c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap { max-width: 1450px; margin: 0 auto; padding: 20px; }
+    h1, h2, h3 { margin: 0 0 10px 0; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+    h3 { font-size: 16px; color: var(--accent); }
+    p, li { line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: 430px 1fr; gap: 18px; align-items: start; }
+    .stack { display: grid; gap: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .subgrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 12px; }
+    .subgrid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px 12px; }
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+    input, select {
+      width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff;
+    }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      border: 1px solid var(--accent); background: var(--accent); color: white; border-radius: 8px; padding: 10px 14px; font-size: 14px; cursor: pointer;
+    }
+    button.secondary { background: white; color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fbfcff; }
+    .kpi .label { font-size: 12px; color: var(--muted); }
+    .kpi .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+    .kpi .unit { font-size: 13px; color: var(--muted); }
+    .steps { display: grid; gap: 12px; }
+    .step { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fff; }
+    .formula {
+      font-family: "Courier New", monospace; background: #f4f6fb; border-radius: 8px; padding: 8px; margin: 8px 0; white-space: pre-wrap; font-size: 13px;
+    }
+    .status { padding: 9px 11px; border-radius: 8px; margin: 8px 0; font-size: 14px; }
+    .ok { background: #ecfdf3; color: var(--good); border: 1px solid #abefc6; }
+    .warn { background: #fffaeb; color: var(--warn); border: 1px solid #fedf89; }
+    .bad { background: #fef3f2; color: var(--bad); border: 1px solid #fecdca; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .report { border: 1px dashed var(--line); border-radius: 10px; padding: 12px; background: #fff; }
+    textarea { width: 100%; min-height: 120px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; }
+    .layout-wrap { display: grid; gap: 10px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 14px; height: 14px; display: inline-block; border-radius: 2px; border: 1px solid #94a3b8; }
+    #plantBox { width: 100%; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: white; }
+    #plantSvg { width: 100%; min-width: 720px; height: 520px; display: block; }
+    @media print {
+      .left, .btnrow, .jsonbox { display: none; }
+      .grid { grid-template-columns: 1fr; }
+      body { background: white; }
+      .card { box-shadow: none; }
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .subgrid, .subgrid3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dashboard — Progettazione di sistemi di stoccaggio</h1>
+  <p class="muted">Versione con layout in pianta per magazzino tradizionale con scaffalature bifronti. Impostata sui passaggi usati nei vostri temi: UDC/vano, cella, campata, livelli, modulo unitario, CUS, potenzialità ricettiva, percorso medio, tempo ciclo, numero mezzi e costo missione.</p>
+
+  <div class="grid">
+    <div class="left stack">
+      <div class="card">
+        <h2>Scenario</h2>
+        <div class="subgrid">
+          <div>
+            <label>Modalità di calcolo layout</label>
+            <select id="layoutMode">
+              <option value="existing">Layout noto (corsie e lunghezza corsia)</option>
+              <option value="optimal">Area/CUS → forma ottimale</option>
+            </select>
+          </div>
+          <div>
+            <label>Punto I/O</label>
+            <select id="ioType">
+              <option value="distributed">Distribuito sul fronte</option>
+              <option value="center">Centrale sul fronte</option>
+              <option value="vertex">Vertice fronte</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>UDC e struttura</h2>
+        <div class="subgrid3" id="udcGrid">
+          <div><label>Lunghezza UDC X [mm]</label><input id="x" type="number" value="1200"></div>
+          <div><label>Profondità UDC Y [mm]</label><input id="y" type="number" value="800"></div>
+          <div><label>Altezza UDC Z [mm]</label><input id="z" type="number" value="1500"></div>
+          <div><label>Peso UDC [kg]</label><input id="peso" type="number" value="1000"></div>
+          <div><label>Debordo lato lungo [%]</label><input id="debordo" type="number" step="0.1" value="3"></div>
+          <div><label>Portata correnti [kg]</label><input id="portata" type="number" value="2200"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Ipotesi geometriche</h2>
+        <div class="subgrid3">
+          <div><label>Luce orizzontale [mm]</label><input id="luceOr" type="number" value="100"></div>
+          <div><label>Distanza UDC nello stesso vano [mm]</label><input id="distVano" type="number" value="100"></div>
+          <div><label>Distanza UDC-montante [mm]</label><input id="distMont" type="number" value="100"></div>
+          <div><label>Spessore montante [mm]</label><input id="spMont" type="number" value="100"></div>
+          <div><label>Luce verticale [mm]</label><input id="luceVert" type="number" value="100"></div>
+          <div><label>Spessore corrente [mm]</label><input id="spCorr" type="number" value="100"></div>
+          <div><label>Distanza in profondità [mm]</label><input id="distProf" type="number" value="100"></div>
+          <div><label>Quota non sfruttabile sottotrave [mm]</label><input id="quotaNon" type="number" value="700"></div>
+          <div><label>Larghezza corridoio Lc [mm]</label><input id="lc" type="number" value="1800"></div>
+        </div>
+      </div>
+
+      <div class="card" id="existingBox">
+        <h2>Layout noto</h2>
+        <div class="subgrid3">
+          <div><label>Numero corridoi</label><input id="nCorridoi" type="number" value="12"></div>
+          <div><label>Numero batterie bifronti</label><input id="nBatterie" type="number" value="12"></div>
+          <div><label>Lunghezza corsia [m]</label><input id="lenCorsia" type="number" step="0.1" value="35"></div>
+        </div>
+        <p class="small muted">Per il disegno in pianta le batterie vengono rappresentate come blocchi scaffalatura separati da corridoi.</p>
+      </div>
+
+      <div class="card" id="optimalBox" style="display:none;">
+        <h2>Area / forma ottimale</h2>
+        <div class="subgrid3">
+          <div><label>PR target [UDC]</label><input id="prTarget" type="number" value="3000"></div>
+          <div><label>CUS noto [UDC/m²]</label><input id="cusKnown" type="number" step="0.01" value="2.00"></div>
+          <div><label>Area disponibile A [m²] (opzionale)</label><input id="areaKnown" type="number" step="0.1" value=""></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Movimentazione</h2>
+        <div class="subgrid3">
+          <div><label>Velocità orizzontale Vo [m/s]</label><input id="vo" type="number" step="0.01" value="3"></div>
+          <div><label>Velocità verticale Vv [m/s]</label><input id="vv" type="number" step="0.01" value="0.45"></div>
+          <div><label>Tempi fissi Tf [s]</label><input id="tf" type="number" step="0.1" value="75"></div>
+          <div><label>Fattore di utilizzazione Fu</label><input id="fu" type="number" step="0.01" value="0.85"></div>
+          <div><label>Potenzialità richiesta [UDC/h]</label><input id="pmReq" type="number" step="0.1" value="120"></div>
+          <div><label>Costo orario [€/h]</label><input id="costoH" type="number" step="0.01" value="24.50"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="btnrow">
+          <button onclick="runCalc()">Calcola</button>
+          <button class="secondary" onclick="resetDefaults()">Ripristina default</button>
+          <button class="secondary" onclick="window.print()">Stampa / PDF</button>
+          <button class="secondary" onclick="exportJSON()">Esporta dati JSON</button>
+        </div>
+      </div>
+
+      <div class="card jsonbox">
+        <h2>Dati esportati</h2>
+        <textarea id="jsonOut" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="right stack">
+      <div class="card">
+        <h2>KPI principali</h2>
+        <div class="kpis" id="kpis"></div>
+        <div id="alerts"></div>
+      </div>
+
+      <div class="card">
+        <h2>Layout in pianta</h2>
+        <div class="layout-wrap">
+          <div class="legend">
+            <span><i class="sw" style="background: var(--rack);"></i> Scaffalatura bifronte</span>
+            <span><i class="sw" style="background: var(--aisle);"></i> Corridoio</span>
+            <span><i class="sw" style="background: var(--io);"></i> Punto I/O</span>
+            <span><svg width="18" height="10"><line x1="1" y1="5" x2="17" y2="5" stroke="var(--path)" stroke-width="2" stroke-dasharray="4 3"/></svg> Percorso medio indicativo</span>
+          </div>
+          <div id="plantBox">
+            <svg id="plantSvg" viewBox="0 0 980 520" xmlns="http://www.w3.org/2000/svg" aria-label="Layout in pianta del magazzino"></svg>
+          </div>
+          <div class="small muted" id="plantNote"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Passi di calcolo</h2>
+        <div class="steps" id="steps"></div>
+      </div>
+
+      <div class="card">
+        <h2>Report sintetico docente</h2>
+        <div class="report" id="report"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const defaults = {
+  layoutMode: 'existing', ioType: 'distributed',
+  x:1200, y:800, z:1500, peso:1000, debordo:3, portata:2200,
+  hSottotrave:12400,
+  luceOr:100, distVano:100, distMont:100, spMont:100, luceVert:100, spCorr:100, distProf:100, quotaNon:700, lc:1800,
+  nCorridoi:12, nBatterie:12, lenCorsia:35,
+  prTarget:3000, cusKnown:2.0, areaKnown:'',
+  vo:3, vv:0.45, tf:75, fu:0.85, pmReq:120, costoH:24.50
+};
+
+function el(id){ return document.getElementById(id); }
+function val(id){ const v = el(id).value; return v === '' ? '' : Number(v); }
+function round(n, d=2){ return Number.isFinite(n) ? Number(n.toFixed(d)) : NaN; }
+function floorSafe(n){ return Number.isFinite(n) ? Math.floor(n) : NaN; }
+function ceilSafe(n){ return Number.isFinite(n) ? Math.ceil(n) : NaN; }
+function fmtMM(mm){ if (!Number.isFinite(mm)) return '—'; return mm >= 1000 ? `${round(mm,0)} mm = ${String(round(mm/1000,2)).replace('.', ',')} m` : `${round(mm,0)} mm`; }
+function fmtM(m){ return Number.isFinite(m) ? `${String(round(m,2)).replace('.', ',')} m` : '—'; }
+function fmtNum(n, d=2){ return Number.isFinite(n) ? String(round(n,d)).replace('.', ',') : '—'; }
+function ratioByIO(type){ return type === 'center' ? 2 : type === 'vertex' ? 1 : 1.5; }
+function percorsoFormula(type, U, V){
+  if (type === 'center') return 2 * (U/4 + V/2);
+  if (type === 'vertex') return 2 * (U/2 + V/2);
+  return 2 * (U/3 + V/2);
+}
+function ioLabel(type){
+  if (type === 'center') return 'centrale sul fronte';
+  if (type === 'vertex') return 'vertice fronte';
+  return 'distribuito sul fronte';
+}
+function getInputs(){
+  return {
+    layoutMode: el('layoutMode').value,
+    ioType: el('ioType').value,
+    x: val('x'), y: val('y'), z: val('z'), peso: val('peso'), debordo: val('debordo'), portata: val('portata'), hSottotrave: val('hSottotrave'),
+    luceOr: val('luceOr'), distVano: val('distVano'), distMont: val('distMont'), spMont: val('spMont'), luceVert: val('luceVert'), spCorr: val('spCorr'), distProf: val('distProf'), quotaNon: val('quotaNon'), lc: val('lc'),
+    nCorridoi: val('nCorridoi'), nBatterie: val('nBatterie'), lenCorsia: val('lenCorsia'),
+    prTarget: val('prTarget'), cusKnown: val('cusKnown'), areaKnown: val('areaKnown'),
+    vo: val('vo'), vv: val('vv'), tf: val('tf'), fu: val('fu'), pmReq: val('pmReq'), costoH: val('costoH')
+  };
+}
+function validate(i){
+  const issues = [];
+  ['x','y','z','peso','portata','hSottotrave','lc','vo','vv'].forEach(k=>{ if (!(i[k] > 0)) issues.push(`Il campo ${k} deve essere > 0.`); });
+  if (!(i.fu > 0 && i.fu <= 1)) issues.push('Il fattore di utilizzazione Fu deve essere compreso tra 0 e 1.');
+  if (i.layoutMode === 'existing') {
+    if (!(i.nBatterie > 0)) issues.push('Numero batterie bifronti deve essere > 0.');
+    if (!(i.nCorridoi > 0)) issues.push('Numero corridoi deve essere > 0.');
+    if (!(i.lenCorsia > 0)) issues.push('Lunghezza corsia deve essere > 0.');
+  } else {
+    if (!(i.prTarget > 0)) issues.push('PR target deve essere > 0.');
+    if (!(i.cusKnown > 0)) issues.push('CUS noto deve essere > 0.');
+  }
+  return issues;
+}
+
+function calculateAll(){
+  const i = getInputs();
+  const validation = validate(i);
+  if (validation.length) return { validation, inputs:i };
+
+  const nUDCvano = floorSafe(i.portata / i.peso);
+  const xEff = i.x * (1 + i.debordo / 100);
+  const lungVano = nUDCvano * xEff + Math.max(0, nUDCvano - 1) * i.distVano + 2 * i.distMont;
+  const lungCampata = lungVano + 2 * i.spMont;
+  const profCella = i.y + i.distProf;
+  const Hdisp = i.hSottotrave - i.quotaNon;
+  const hLiv = i.z + i.luceVert + i.spCorr;
+  const nLivelli = floorSafe(Hdisp / hLiv);
+  const widthModuleM = (2 * profCella + i.lc) / 1000;
+  const modArea = (lungCampata / 1000) * widthModuleM;
+  const postiCampata = nUDCvano * 2 * nLivelli;
+  const cus = postiCampata / modArea;
+  const altezzaSollev = (Math.max(nLivelli - 1, 0) * hLiv + i.z) / 1000;
+
+  let pr, nCampate, area, U, V, percorso, notes = [], nAislesDraw, nBatterieDraw, lenCorsiaDraw;
+  if (i.layoutMode === 'existing') {
+    nCampate = floorSafe(i.lenCorsia / (lungCampata / 1000));
+    pr = i.nBatterie * nCampate * postiCampata;
+    area = i.nBatterie * nCampate * modArea;
+    const r = ratioByIO(i.ioType);
+    U = i.lenCorsia;
+    V = i.nBatterie * widthModuleM;
+    percorso = percorsoFormula(i.ioType, U, V);
+    notes.push('Modalità layout noto: la PR è ottenuta dal conteggio discreto di batterie, campate e livelli.');
+    nAislesDraw = i.nCorridoi;
+    nBatterieDraw = i.nBatterie;
+    lenCorsiaDraw = i.lenCorsia;
+  } else {
+    area = i.areaKnown > 0 ? i.areaKnown : i.prTarget / i.cusKnown;
+    const r = ratioByIO(i.ioType);
+    U = Math.sqrt(area * r);
+    V = Math.sqrt(area / r);
+    percorso = percorsoFormula(i.ioType, U, V);
+    pr = i.prTarget;
+    nCampate = floorSafe(U / (lungCampata / 1000));
+    const batteryPitch = widthModuleM;
+    nBatterieDraw = Math.max(1, floorSafe(V / batteryPitch));
+    nAislesDraw = nBatterieDraw;
+    lenCorsiaDraw = U;
+    notes.push('Modalità area ottimale: l’area è ricavata da A = PR / CUS se non fornita direttamente.');
+  }
+
+  const S = ((Math.max(nLivelli - 1, 0) / 2) * hLiv) / 1000;
+  const tTrasf = percorso / i.vo;
+  const tVert = (2 * S) / i.vv;
+  const tCiclo = tTrasf + tVert + i.tf;
+  const pmCar = (3600 / tCiclo) * i.fu;
+  const nCarrelli = ceilSafe(i.pmReq / pmCar);
+  const pmTot = nCarrelli * pmCar;
+  const costoMissione = i.costoH / pmCar;
+
+  const alerts = [];
+  if (nUDCvano < 1) alerts.push({type:'bad', text:'La portata dei correnti non consente nemmeno 1 UDC per vano.'});
+  if (nLivelli < 1) alerts.push({type:'bad', text:'L’altezza utile non consente nemmeno 1 livello di stoccaggio.'});
+  if (i.layoutMode === 'existing' && nCampate < 1) alerts.push({type:'bad', text:'La lunghezza corsia non consente nemmeno 1 campata.'});
+  if (pmCar < 20) alerts.push({type:'warn', text:'La potenzialità del singolo mezzo è piuttosto bassa: verifica tempi fissi, percorso e alzata.'});
+  if (cus < 1.5) alerts.push({type:'warn', text:'CUS basso: il layout è poco denso o il corridoio è ampio rispetto al modulo.'});
+  if (cus > 4.5) alerts.push({type:'warn', text:'CUS molto alto: verifica la coerenza delle ipotesi geometriche.'});
+  if (!alerts.length) alerts.push({type:'ok', text:'Configurazione coerente con le ipotesi inserite.'});
+
+  return { inputs: i, nUDCvano, xEff, lungVano, lungCampata, profCella, Hdisp, hLiv, nLivelli, widthModuleM,
+    modArea, postiCampata, cus, altezzaSollev, pr, nCampate, area, U, V, percorso, S, tTrasf, tVert, tCiclo, pmCar, nCarrelli, pmTot, costoMissione,
+    alerts, notes, nAislesDraw, nBatterieDraw, lenCorsiaDraw };
+}
+
+function render(result){
+  const kpis = el('kpis'); const steps = el('steps'); const alerts = el('alerts'); const report = el('report');
+  kpis.innerHTML = ''; steps.innerHTML = ''; alerts.innerHTML = ''; report.innerHTML = '';
+
+  if (result.validation) {
+    result.validation.forEach(msg => alerts.innerHTML += `<div class="status bad">${msg}</div>`);
+    drawPlant(null);
+    return;
+  }
+
+  const cards = [
+    ['UDC per vano', result.nUDCvano, 'UDC/vano'],
+    ['Livelli', result.nLivelli, 'livelli'],
+    ['CUS', result.cus, 'UDC/m²'],
+    ['PR', result.pr, 'UDC'],
+    ['Tempo ciclo', result.tCiclo, 's'],
+    ['Potenzialità 1 mezzo', result.pmCar, 'UDC/h'],
+    ['N. carrelli', result.nCarrelli, 'mezzi'],
+    ['Costo missione', result.costoMissione, '€/missione']
+  ];
+  cards.forEach(([label,val,unit]) => {
+    kpis.innerHTML += `<div class="kpi"><div class="label">${label}</div><div class="value">${fmtNum(val, label==='UDC per vano' || label==='Livelli' || label==='N. carrelli' ? 0 : 2)}</div><div class="unit">${unit}</div></div>`;
+  });
+  result.alerts.forEach(a => alerts.innerHTML += `<div class="status ${a.type}">${a.text}</div>`);
+
+  const stepData = [
+    { t: 'Passo 1 — UDC per vano da massa ammessa',
+      f: `n = floor(Portata correnti / Peso UDC)\n  = floor(${fmtNum(result.inputs.portata,0)} / ${fmtNum(result.inputs.peso,0)}) = ${fmtNum(result.nUDCvano,0)}`,
+      r: `Risultato: ${fmtNum(result.nUDCvano,0)} UDC/vano.` },
+    { t: 'Passo 2 — Cella e campata',
+      f: `Xeff = X · (1 + debordo) = ${fmtNum(result.inputs.x,0)} · (1 + ${fmtNum(result.inputs.debordo,2)}%) = ${fmtNum(result.xEff,0)} mm\nLvano = n·Xeff + (n-1)·d_vano + 2·d_mont = ${fmtNum(result.lungVano,0)} mm\nLcampata = Lv + 2·sp_mont = ${fmtNum(result.lungCampata,0)} mm\nProfondità cella = Y + d_prof = ${fmtNum(result.profCella,0)} mm`,
+      r: `Campata: ${fmtMM(result.lungCampata)}. Profondità cella: ${fmtMM(result.profCella)}.` },
+    { t: 'Passo 3 — Numero livelli',
+      f: `Hdisp = Hsottotrave - quota non sfruttabile = ${fmtNum(result.inputs.hSottotrave,0)} - ${fmtNum(result.inputs.quotaNon,0)} = ${fmtNum(result.Hdisp,0)} mm\nHliv = Z + lv + sp_corr = ${fmtNum(result.hLiv,0)} mm\nNL = floor(Hdisp / Hliv) = floor(${fmtNum(result.Hdisp,0)} / ${fmtNum(result.hLiv,0)}) = ${fmtNum(result.nLivelli,0)}`,
+      r: `Numero livelli: ${fmtNum(result.nLivelli,0)}.` },
+    { t: 'Passo 4 — Modulo unitario e CUS',
+      f: `A_mod = Lcampata · (2·P + Lc)\n      = ${(result.lungCampata/1000).toFixed(3)} · ${(2*result.profCella/1000 + result.inputs.lc/1000).toFixed(3)} = ${fmtNum(result.modArea,3)} m²\nPosti/campata = n · 2 · NL = ${fmtNum(result.postiCampata,0)}\nCUS = Posti/campata / A_mod = ${fmtNum(result.cus,3)} UDC/m²`,
+      r: `Modulo unitario: ${fmtNum(result.modArea,3)} m². CUS: ${fmtNum(result.cus,3)} UDC/m².` },
+    { t: result.inputs.layoutMode === 'existing' ? 'Passo 5 — PR da layout noto' : 'Passo 5 — Area e forma ottimale',
+      f: result.inputs.layoutMode === 'existing'
+        ? `Ncampate = floor(Lcorsia / Lcampata) = floor(${fmtNum(result.inputs.lenCorsia,2)} / ${fmtNum(result.lungCampata/1000,3)}) = ${fmtNum(result.nCampate,0)}\nPR = N_batterie · Ncampate · posti/campata = ${fmtNum(result.inputs.nBatterie,0)} · ${fmtNum(result.nCampate,0)} · ${fmtNum(result.postiCampata,0)} = ${fmtNum(result.pr,0)} UDC\nArea approssimata = N_batterie · Ncampate · A_mod = ${fmtNum(result.area,2)} m²`
+        : `A = PR / CUS = ${fmtNum(result.inputs.prTarget,0)} / ${fmtNum(result.inputs.cusKnown,2)} = ${fmtNum(result.area,2)} m²\nr = U/V = ${fmtNum(ratioByIO(result.inputs.ioType),2)}\nU = √(A·r) = ${fmtNum(result.U,2)} m\nV = √(A/r) = ${fmtNum(result.V,2)} m`,
+      r: `Area: ${fmtNum(result.area,2)} m². U = ${fmtNum(result.U,2)} m, V = ${fmtNum(result.V,2)} m.` },
+    { t: 'Passo 6 — Percorso medio, ciclo e mezzi',
+      f: `P = percorso medio A/R con I/O ${ioLabel(result.inputs.ioType)} = ${fmtNum(result.percorso,2)} m\nS = percorrenza attesa salita/discesa = ${fmtNum(result.S,2)} m\nTtrasf = P / Vo = ${fmtNum(result.tTrasf,2)} s\nTvert = 2·S / Vv = ${fmtNum(result.tVert,2)} s\nTciclo = Ttrasf + Tvert + Tf = ${fmtNum(result.tCiclo,2)} s\nPM1 = (3600 / Tciclo) · Fu = ${fmtNum(result.pmCar,2)} UDC/h\nNcarrelli = ceil(PMrichiesta / PM1) = ${fmtNum(result.nCarrelli,0)}\nPMtot = Ncarrelli · PM1 = ${fmtNum(result.pmTot,2)} UDC/h`,
+      r: `Tempo ciclo: ${fmtNum(result.tCiclo,2)} s. Potenzialità singolo mezzo: ${fmtNum(result.pmCar,2)} UDC/h. Carrelli: ${fmtNum(result.nCarrelli,0)}.` },
+    { t: 'Passo 7 — Altezza minima di sollevamento e costo',
+      f: `Hsol min ≈ (NL-1)·Hliv + Z = ${fmtNum(result.altezzaSollev,2)} m\nCosto missione = Costo orario / PM1 = ${fmtNum(result.inputs.costoH,2)} / ${fmtNum(result.pmCar,2)} = ${fmtNum(result.costoMissione,2)} €/missione`,
+      r: `Altezza minima di sollevamento: ${fmtNum(result.altezzaSollev,2)} m. Costo missione: ${fmtNum(result.costoMissione,2)} €/missione.` }
+  ];
+  stepData.forEach(s => {
+    steps.innerHTML += `<div class="step"><h3>${s.t}</h3><div class="formula">${s.f}</div><div>${s.r}</div></div>`;
+  });
+
+  report.innerHTML = `
+    <p><strong>Scenario:</strong> ${result.inputs.layoutMode === 'existing' ? 'layout noto' : 'area/forma ottimale'}, I/O ${ioLabel(result.inputs.ioType)}.</p>
+    <p><strong>Risultati chiave:</strong> ${fmtNum(result.nUDCvano,0)} UDC/vano, ${fmtNum(result.nLivelli,0)} livelli, CUS ${fmtNum(result.cus,2)} UDC/m², PR ${fmtNum(result.pr,0)} UDC.</p>
+    <p><strong>Prestazioni:</strong> percorso medio ${fmtNum(result.percorso,2)} m, tempo ciclo ${fmtNum(result.tCiclo,2)} s, potenzialità singolo mezzo ${fmtNum(result.pmCar,2)} UDC/h, carrelli necessari ${fmtNum(result.nCarrelli,0)}, potenzialità totale ${fmtNum(result.pmTot,2)} UDC/h.</p>
+    <p><strong>Economia:</strong> costo medio missione ${fmtNum(result.costoMissione,2)} €/missione.</p>
+    <p><strong>Layout rappresentato:</strong> ${fmtNum(result.nBatterieDraw,0)} batterie bifronti, ${fmtNum(result.nAislesDraw,0)} corridoi, lunghezza corsie ${fmtNum(result.lenCorsiaDraw,2)} m.</p>
+  `;
+
+  el('jsonOut').value = JSON.stringify({inputs: result.inputs, outputs: {
+    nUDCvano: result.nUDCvano, nLivelli: result.nLivelli, lungCampata_mm: round(result.lungCampata,0), profCella_mm: round(result.profCella,0),
+    CUS_udc_m2: round(result.cus,3), PR_udc: round(result.pr,0), percorso_m: round(result.percorso,2), tempoCiclo_s: round(result.tCiclo,2),
+    potenzialitaSingolo_udc_h: round(result.pmCar,2), nCarrelli: result.nCarrelli, potenzialitaTot_udc_h: round(result.pmTot,2), costoMissione_euro: round(result.costoMissione,2)
+  }}, null, 2);
+
+  drawPlant(result);
+}
+
+function drawPlant(result){
+  const svg = el('plantSvg');
+  const note = el('plantNote');
+  svg.innerHTML = '';
+  if (!result || result.validation) {
+    svg.innerHTML = '<text x="40" y="60" font-size="18" fill="#5b6472">Inserisci dati validi per visualizzare la pianta.</text>';
+    note.textContent = '';
+    return;
+  }
+
+  const W = 980, H = 520, padL = 80, padR = 40, padT = 45, padB = 65;
+  const drawW = W - padL - padR, drawH = H - padT - padB;
+  const planU = Math.max(result.U, result.lenCorsiaDraw || 1);
+  const planV = Math.max(result.V, result.nBatterieDraw * result.widthModuleM || 1);
+  const s = Math.min(drawW / planU, drawH / planV);
+  const ox = padL + (drawW - planU * s) / 2;
+  const oy = padT + (drawH - planV * s) / 2;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  function add(name, attrs, parent=svg){ const n=document.createElementNS(ns,name); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); parent.appendChild(n); return n; }
+
+  add('rect', {x: ox, y: oy, width: planU*s, height: planV*s, fill: '#ffffff', stroke: '#64748b', 'stroke-width': 1.5, rx: 4});
+
+  const battW = (2 * result.profCella) / 1000;
+  const aisleW = result.inputs.lc / 1000;
+  const totalNominalV = result.nBatterieDraw * battW + result.nAislesDraw * aisleW;
+  const vScale = totalNominalV > 0 ? (planV / totalNominalV) : 1;
+  const battDrawW = battW * vScale;
+  const aisleDrawW = aisleW * vScale;
+
+  let y = oy;
+  for (let b = 0; b < result.nBatterieDraw; b++) {
+    const bh = battDrawW * s;
+    add('rect', {x: ox, y, width: result.lenCorsiaDraw * s, height: bh, fill: 'var(--rack)', stroke: 'var(--rack-stroke)', 'stroke-width': 1});
+    const nSeg = Math.max(1, result.nCampate || Math.floor(result.lenCorsiaDraw / (result.lungCampata/1000)) || 1);
+    for (let c = 1; c < nSeg; c++) {
+      const cx = ox + (result.lenCorsiaDraw * s) * c / nSeg;
+      add('line', {x1: cx, y1: y, x2: cx, y2: y + bh, stroke: '#8aa4d8', 'stroke-width': 0.8});
+    }
+    add('text', {x: ox + 6, y: y + Math.max(14, bh/2 + 4), fill: '#214f9c', 'font-size': 11}).textContent = `B${b+1}`;
+    y += bh;
+    if (b < result.nAislesDraw) {
+      const ah = aisleDrawW * s;
+      add('rect', {x: ox, y, width: result.lenCorsiaDraw * s, height: ah, fill: 'var(--aisle)', stroke: '#d7deea', 'stroke-width': 0.8});
+      add('text', {x: ox + result.lenCorsiaDraw * s - 36, y: y + Math.max(14, ah/2 + 4), fill: '#64748b', 'font-size': 10}).textContent = `C${b+1}`;
+      y += ah;
+    }
+  }
+
+  let ioX = ox + (result.lenCorsiaDraw * s) / 2;
+  if (result.inputs.ioType === 'vertex') ioX = ox + 14;
+  if (result.inputs.ioType === 'distributed') ioX = ox + (result.lenCorsiaDraw * s) / 2;
+  const ioY = oy + planV*s + 18;
+  add('circle', {cx: ioX, cy: ioY, r: 7, fill: 'var(--io)'});
+  add('text', {x: ioX + 10, y: ioY + 4, fill: '#b42318', 'font-size': 12, 'font-weight': '700'}).textContent = 'I/O';
+
+  const pathTargetX = ox + (result.inputs.ioType === 'vertex' ? planU*s*0.5 : planU*s*0.35);
+  const pathTargetY = oy + planV*s*0.45;
+  add('line', {x1: ioX, y1: ioY, x2: pathTargetX, y2: pathTargetY, stroke: 'var(--path)', 'stroke-width': 2, 'stroke-dasharray': '7 5'});
+  add('text', {x: pathTargetX + 8, y: pathTargetY - 6, fill: '#214f9c', 'font-size': 11}).textContent = `Percorso medio ≈ ${fmtNum(result.percorso,1)} m`;
+
+  add('line', {x1: ox, y1: oy - 18, x2: ox + planU*s, y2: oy - 18, stroke: '#334155', 'stroke-width': 1});
+  add('line', {x1: ox, y1: oy - 24, x2: ox, y2: oy - 12, stroke: '#334155', 'stroke-width': 1});
+  add('line', {x1: ox + planU*s, y1: oy - 24, x2: ox + planU*s, y2: oy - 12, stroke: '#334155', 'stroke-width': 1});
+  add('text', {x: ox + planU*s/2, y: oy - 24, 'text-anchor': 'middle', fill: '#334155', 'font-size': 12}).textContent = `U = ${fmtNum(planU,2)} m`;
+
+  add('line', {x1: ox - 24, y1: oy, x2: ox - 24, y2: oy + planV*s, stroke: '#334155', 'stroke-width': 1});
+  add('line', {x1: ox - 30, y1: oy, x2: ox - 18, y2: oy, stroke: '#334155', 'stroke-width': 1});
+  add('line', {x1: ox - 30, y1: oy + planV*s, x2: ox - 18, y2: oy + planV*s, stroke: '#334155', 'stroke-width': 1});
+  const vText = add('text', {x: ox - 38, y: oy + planV*s/2, fill: '#334155', 'font-size': 12, transform: `rotate(-90 ${ox - 38} ${oy + planV*s/2})`, 'text-anchor': 'middle'});
+  vText.textContent = `V = ${fmtNum(planV,2)} m`;
+
+  add('text', {x: ox, y: oy + planV*s + 42, fill: '#475569', 'font-size': 12}).textContent = `Campata ≈ ${fmtNum(result.lungCampata/1000,2)} m`; 
+  add('text', {x: ox + 170, y: oy + planV*s + 42, fill: '#475569', 'font-size': 12}).textContent = `Batteria bifronte ≈ ${fmtNum(battW,2)} m`;
+  add('text', {x: ox + 390, y: oy + planV*s + 42, fill: '#475569', 'font-size': 12}).textContent = `Corridoio ≈ ${fmtNum(aisleW,2)} m`;
+
+  note.textContent = result.inputs.layoutMode === 'existing'
+    ? `Pianta schematica del layout noto: ${result.nBatterieDraw} batterie bifronti, ${result.nAislesDraw} corridoi, ${fmtNum(result.nCampate,0)} campate per batteria.`
+    : `Pianta schematica della forma ottimale: il numero di batterie è stimato a partire da V e dal passo della batteria/corridoio.`;
+}
+
+function runCalc(){ render(calculateAll()); }
+function resetDefaults(){ Object.entries(defaults).forEach(([k,v]) => { if (el(k)) el(k).value = v; }); toggleMode(); runCalc(); }
+function exportJSON(){ runCalc(); el('jsonOut').select(); document.execCommand('copy'); }
+function toggleMode(){ const mode = el('layoutMode').value; el('existingBox').style.display = mode === 'existing' ? 'block' : 'none'; el('optimalBox').style.display = mode === 'optimal' ? 'block' : 'none'; }
+(function addHeightField(){ const grid = el('udcGrid'); const div = document.createElement('div'); div.innerHTML = '<label>Altezza utile sottotrave [mm]</label><input id="hSottotrave" type="number" value="12400">'; grid.appendChild(div); })();
+el('layoutMode').addEventListener('change', () => { toggleMode(); runCalc(); });
+el('ioType').addEventListener('change', runCalc);
+window.addEventListener('load', () => { toggleMode(); runCalc(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calcolatore Percorrenza Picking</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      background: #f0f5f1;
+      color: #1a1a18;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .page-wrap { max-width: 680px; margin: 0 auto; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: #1d9e75;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .header-icon svg { width: 20px; height: 20px; }
+
+    h1 { font-size: 17px; font-weight: 500; color: #085041; }
+    .subtitle { font-size: 12px; color: #3b6d11; margin-top: 2px; }
+
+    .section {
+      background: #ffffff;
+      border: 0.5px solid #9fe1cb;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: #0f6e56;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 12px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 0.5px solid #e1f5ee;
+    }
+
+    .field-row:last-child { border-bottom: none; }
+    .field-label { font-size: 13px; color: #1a1a18; }
+
+    .field-sym {
+      font-size: 12px;
+      color: #0f6e56;
+      font-style: italic;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    input[type=number] {
+      width: 72px;
+      padding: 4px 8px;
+      border: 0.5px solid #9fe1cb;
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: right;
+      background: #f0f5f1;
+      color: #1a1a18;
+    }
+
+    input[type=number]:focus {
+      outline: none;
+      border-color: #1d9e75;
+      background: #ffffff;
+    }
+
+    .radio-group { display: flex; gap: 16px; margin: 8px 0 4px; flex-wrap: wrap; }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #1a1a18;
+    }
+
+    input[type=radio] { accent-color: #1d9e75; }
+    .schema-note { font-size: 12px; color: #3b6d11; margin-top: 4px; }
+
+    .prob-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+
+    .prob-table th {
+      text-align: left;
+      font-weight: 500;
+      font-size: 12px;
+      color: #0f6e56;
+      padding: 4px 6px;
+      border-bottom: 0.5px solid #9fe1cb;
+    }
+
+    .prob-table td { padding: 3px 6px; }
+    .prob-table input { width: 80px; }
+
+    .warn { color: #993c1d; font-size: 12px; margin-top: 6px; }
+    .hidden { display: none; }
+
+    .calc-btn {
+      width: 100%;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: #1d9e75;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+      transition: background 0.15s;
+    }
+
+    .calc-btn:hover { background: #0f6e56; }
+    .calc-btn:active { transform: scale(0.99); }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      background: #e1f5ee;
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 0.5px solid #9fe1cb;
+    }
+
+    .metric-label { font-size: 12px; color: #0f6e56; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 500; color: #085041; }
+    .metric-unit  { font-size: 12px; color: #0f6e56; margin-left: 2px; }
+
+    .metric-total { background: #1d9e75; border: none; }
+    .metric-total .metric-label { color: #9fe1cb; }
+    .metric-total .metric-value { color: #ffffff; }
+    .metric-total .metric-unit  { color: #9fe1cb; }
+
+    .formula-box {
+      background: #f0f5f1;
+      border: 0.5px solid #9fe1cb;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #085041;
+      font-family: 'Courier New', monospace;
+      line-height: 1.8;
+      white-space: pre;
+    }
+
+    /* Layout 2D */
+    #layout-wrap {
+      margin-top: 1rem;
+    }
+
+    #layout-canvas-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    svg#layout { display: block; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #0f6e56;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="4" width="3" height="12" rx="1" fill="white" opacity="0.5"/>
+        <rect x="8" y="4" width="3" height="12" rx="1" fill="white" opacity="0.75"/>
+        <rect x="13" y="4" width="3" height="12" rx="1" fill="white"/>
+        <line x1="2" y1="17" x2="18" y2="17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Calcolatore percorrenza picking</h1>
+      <p class="subtitle">Narrow-aisle · schema traversal o return</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Parametri magazzino</p>
+    <div class="field-row">
+      <span class="field-label">Lunghezza corridoi di lavoro</span>
+      <span class="field-sym">l [m]</span>
+      <input type="number" id="l" value="28" min="1">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Larghezza corridoi di collegamento</span>
+      <span class="field-sym">e [m]</span>
+      <input type="number" id="e" value="3" min="0.5" step="0.5">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Larghezza modulo unitario</span>
+      <span class="field-sym">w [m]</span>
+      <input type="number" id="w" value="5" min="0.5" step="0.5">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Distanza I/O dal primo corridoio</span>
+      <span class="field-sym">D<sub>io</sub> [m]</span>
+      <input type="number" id="dio" value="0" min="0" step="0.5">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Numero di corridoi</span>
+      <span class="field-sym">a</span>
+      <input type="number" id="a" value="8" min="2" max="40" onchange="onAChange()">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Linee d'ordine per missione</span>
+      <span class="field-sym">N</span>
+      <input type="number" id="N" value="8" min="1">
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Schema di percorrenza</p>
+    <div class="radio-group">
+      <label><input type="radio" name="schema" value="traversal" checked onchange="onSchemaChange()"> Traversal</label>
+      <label><input type="radio" name="schema" value="return" onchange="onSchemaChange()"> Return</label>
+    </div>
+    <p class="schema-note" id="schema-note">Traversal: l'operatore attraversa interamente i corridoi visitati.</p>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Allocazione articoli ai vani</p>
+    <div class="radio-group">
+      <label><input type="radio" name="alloc" value="random" checked onchange="onAllocChange()"> Casuale (equiprobabile)</label>
+      <label><input type="radio" name="alloc" value="abc" onchange="onAllocChange()"> ABC / ottimizzata</label>
+    </div>
+    <div id="prob-section" class="hidden" style="margin-top:10px;">
+      <p style="font-size:12px;color:#3b6d11;margin:0 0 6px;">Probabilità di accesso p<sub>i</sub> per ciascun corridoio (somma = 1).</p>
+      <table class="prob-table">
+        <thead><tr><th>Corridoio i</th><th>p<sub>i</sub></th></tr></thead>
+        <tbody id="prob-body"></tbody>
+      </table>
+      <p id="sum-warn" class="warn hidden">La somma delle probabilità deve essere 1.00</p>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calcola()">Calcola percorrenza</button>
+
+  <div id="results" class="hidden" style="margin-top:1rem;">
+    <div class="section">
+      <p class="section-title">Risultati</p>
+      <div class="results-grid">
+        <div class="metric">
+          <div class="metric-label">Corridoi visitati attesi (v)</div>
+          <div class="metric-value" id="out-v">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Coppia più lontana (f)</div>
+          <div class="metric-value" id="out-f">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Percorrenza interna P<sub>i</sub></div>
+          <div class="metric-value" id="out-pi">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Percorrenza esterna P<sub>e</sub></div>
+          <div class="metric-value" id="out-pe">—</div>
+        </div>
+        <div class="metric metric-total" style="grid-column: span 2;">
+          <div class="metric-label">Percorrenza totale P</div>
+          <div class="metric-value" id="out-p">—</div>
+        </div>
+      </div>
+      <div class="formula-box" id="formula-used"></div>
+    </div>
+
+    <!-- 2D Layout -->
+    <div id="layout-wrap" class="section">
+      <p class="section-title">Layout magazzino</p>
+      <div id="layout-canvas-wrap">
+        <svg id="layout" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#c0dd97;border:1px solid #639922;"></div> Scaffalature</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#e1f5ee;border:1px solid #9fe1cb;"></div> Corridoi non visitati</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#1d9e75;"></div> Corridoi visitati (v)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#085041;"></div> Coppia più lontana (f)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#ef9f27;border-radius:50%;"></div> Punto I/O</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function onAChange() {
+    const a = Math.min(40, Math.max(2, parseInt(document.getElementById('a').value) || 2));
+    const tbody = document.getElementById('prob-body');
+    tbody.innerHTML = '';
+    const eq = (1 / a).toFixed(4);
+    for (let i = 1; i <= a; i++) {
+      tbody.innerHTML += `<tr><td style="font-size:13px;">${i}</td><td><input type="number" class="prob-input" step="0.001" min="0" max="1" value="${eq}"></td></tr>`;
+    }
+  }
+
+  function onAllocChange() {
+    const isABC = document.querySelector('input[name=alloc]:checked').value === 'abc';
+    document.getElementById('prob-section').classList.toggle('hidden', !isABC);
+    if (isABC) onAChange();
+  }
+
+  function onSchemaChange() {
+    const s = document.querySelector('input[name=schema]:checked').value;
+    document.getElementById('schema-note').textContent = s === 'traversal'
+      ? "Traversal: l'operatore attraversa interamente i corridoi visitati."
+      : "Return: l'operatore entra e ritorna sullo stesso corridoio di collegamento.";
+  }
+
+  function calcF(a, N) {
+    let f = 0;
+    const half = Math.floor(a / 2);
+    for (let i = 2; i <= half; i++) {
+      f += (i - 1) * (Math.pow((2 * i) / a, N) - Math.pow((2 * i - 2) / a, N));
+    }
+    return f;
+  }
+
+  function disegnaLayout(a, v, f, schema) {
+    const svg = document.getElementById('layout');
+    svg.innerHTML = '';
+
+    const maxCorridors = Math.min(a, 30);
+
+    // Layout dimensions (px)
+    const padL = 36, padR = 16, padT = 40, padB = 48;
+    const aisleH = 80;   // corridor height (= l direction)
+    const shelfW = 18;   // shelf width on each side
+    const corridorW = 20; // walking corridor width
+    const crossW = 14;   // cross-aisle width (top and bottom, = e)
+    const moduleW = shelfW * 2 + corridorW; // one full module = w
+
+    const totalW = padL + maxCorridors * moduleW + padR;
+    const totalH = padT + crossW + aisleH + crossW + padB;
+
+    svg.setAttribute('width', totalW);
+    svg.setAttribute('height', totalH);
+    svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+    const crossTopY = padT;
+    const aisleTopY = padT + crossW;
+    const aisleBottomY = aisleTopY + aisleH;
+    const crossBottomY = aisleBottomY;
+
+    // how many corridors are "visited" (round v) and farthest pair (round f)
+    const vRound = Math.round(v);
+    const fRound = Math.round(f);
+    // farthest pair index: pair f means corridors 2f-1 and 2f (1-indexed)
+    const farthestLeft  = 2 * fRound - 1; // 1-indexed
+    const farthestRight = 2 * fRound;
+
+    function corridorColor(i) {
+      // i is 1-indexed
+      if (i === farthestLeft || i === farthestRight) return '#085041';
+      if (i <= vRound) return '#1d9e75';
+      return '#e1f5ee';
+    }
+
+    function shelfColor(i) {
+      if (i === farthestLeft || i === farthestRight) return '#085041';
+      if (i <= vRound) return '#3b6d11';
+      return '#c0dd97';
+    }
+
+    // Draw cross-aisles (top and bottom)
+    const rect = (x, y, w, h, fill, stroke, rx) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('width', w); el.setAttribute('height', h);
+      el.setAttribute('fill', fill);
+      if (stroke) el.setAttribute('stroke', stroke);
+      if (stroke) el.setAttribute('stroke-width', '0.5');
+      if (rx) el.setAttribute('rx', rx);
+      svg.appendChild(el);
+      return el;
+    };
+
+    const text = (x, y, content, fill, size, anchor, weight) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('fill', fill || '#085041');
+      el.setAttribute('font-size', size || 10);
+      el.setAttribute('text-anchor', anchor || 'middle');
+      el.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
+      if (weight) el.setAttribute('font-weight', weight);
+      el.textContent = content;
+      svg.appendChild(el);
+      return el;
+    };
+
+    const line = (x1, y1, x2, y2, stroke, w, dash) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+      el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+      el.setAttribute('stroke', stroke || '#1d9e75');
+      el.setAttribute('stroke-width', w || 1.5);
+      if (dash) el.setAttribute('stroke-dasharray', dash);
+      svg.appendChild(el);
+      return el;
+    };
+
+    // Top cross-aisle background
+    rect(padL, crossTopY, maxCorridors * moduleW, crossW, '#f0f5f1', '#9fe1cb');
+    // Bottom cross-aisle background
+    rect(padL, crossBottomY, maxCorridors * moduleW, crossW, '#f0f5f1', '#9fe1cb');
+
+    // Draw each module (shelf left + corridor + shelf right)
+    for (let i = 1; i <= maxCorridors; i++) {
+      const x = padL + (i - 1) * moduleW;
+      const cColor = corridorColor(i);
+      const sColor = shelfColor(i);
+
+      // Left shelf
+      rect(x, aisleTopY, shelfW, aisleH, sColor, '#ffffff', 0);
+      // Walking corridor
+      rect(x + shelfW, aisleTopY, corridorW, aisleH, cColor, null, 0);
+      // Right shelf
+      rect(x + shelfW + corridorW, aisleTopY, shelfW, aisleH, sColor, '#ffffff', 0);
+
+      // Corridor number
+      const labelColor = (i <= vRound) ? '#ffffff' : '#3b6d11';
+      text(x + moduleW / 2, aisleTopY + aisleH / 2 + 4, i, labelColor, 9, 'middle');
+    }
+
+    // Outer border
+    rect(padL, crossTopY, maxCorridors * moduleW, crossW + aisleH + crossW, 'none', '#0f6e56');
+
+    // I/O point — bottom left
+    const ioX = padL;
+    const ioY = crossBottomY + crossW;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', ioX); circle.setAttribute('cy', ioY + 10);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', '#ef9f27');
+    circle.setAttribute('stroke', '#854f0b');
+    circle.setAttribute('stroke-width', '1');
+    svg.appendChild(circle);
+    text(ioX, ioY + 26, 'I/O', '#854f0b', 9, 'middle', '500');
+
+    // Draw traversal path if traversal
+    if (schema === 'traversal' && vRound > 0) {
+      // horizontal run along bottom cross-aisle from I/O to last visited corridor
+      const pathEndX = padL + vRound * moduleW - moduleW / 2;
+      line(ioX, ioY + 10, pathEndX, ioY + 10, '#ef9f27', 1.5, '4 2');
+
+      // vertical runs for each visited corridor
+      for (let i = 1; i <= vRound; i++) {
+        const cx = padL + (i - 1) * moduleW + moduleW / 2;
+        if (i % 2 === 1) {
+          // enters from bottom, exits top
+          line(cx, crossBottomY + crossW, cx, crossTopY, '#ef9f27', 1.5, '4 2');
+        } else {
+          // enters from top, exits bottom
+          line(cx, crossTopY, cx, crossBottomY + crossW, '#ef9f27', 1.5, '4 2');
+        }
+      }
+      // top run connecting traversal corridors
+      if (vRound >= 2) {
+        line(padL + moduleW / 2, crossTopY, padL + (vRound - (vRound % 2 === 0 ? 0 : 1)) * moduleW + moduleW / 2, crossTopY, '#ef9f27', 1.5, '4 2');
+      }
+    }
+
+    // Return path
+    if (schema === 'return' && vRound > 0) {
+      const bottomY = crossBottomY + crossW + 10;
+      const topY    = crossTopY;
+      // base line along bottom
+      const pathEndX = padL + vRound * moduleW;
+      line(ioX, bottomY, pathEndX, bottomY, '#ef9f27', 1.5, '4 2');
+      // each visited corridor: enter from bottom, go up and return
+      for (let i = 1; i <= vRound; i++) {
+        const cx = padL + (i - 1) * moduleW + moduleW / 2;
+        const depth = (i <= Math.ceil(vRound / 2)) ? aisleH * 0.7 : aisleH * 0.4;
+        line(cx, crossBottomY + crossW, cx, crossBottomY + crossW - depth, '#ef9f27', 1.5, '4 2');
+        line(cx, crossBottomY + crossW - depth, cx + corridorW * 0.4, crossBottomY + crossW - depth, '#ef9f27', 1, '3 2');
+      }
+    }
+
+    // Labels
+    // "e" label on cross-aisle
+    text(padL - 4, crossTopY + crossW / 2 + 4, 'e', '#0f6e56', 9, 'end');
+    line(padL - 2, crossTopY, padL - 2, crossTopY + crossW, '#0f6e56', 0.5);
+
+    // "l" label on side
+    text(padL - 4, aisleTopY + aisleH / 2 + 4, 'l', '#0f6e56', 9, 'end');
+    line(padL - 2, aisleTopY, padL - 2, aisleBottomY, '#0f6e56', 0.5);
+
+    // "w" label on top for one module
+    text(padL + moduleW / 2, crossTopY - 6, 'w', '#0f6e56', 9, 'middle');
+
+    // Farthest pair bracket
+    if (fRound > 0 && farthestRight <= maxCorridors) {
+      const bx1 = padL + (farthestLeft - 1) * moduleW;
+      const bx2 = padL + farthestRight * moduleW;
+      const by  = crossTopY - 18;
+      line(bx1, by + 4, bx2, by + 4, '#085041', 1);
+      line(bx1, by, bx1, by + 8, '#085041', 1);
+      line(bx2, by, bx2, by + 8, '#085041', 1);
+      text((bx1 + bx2) / 2, by, `coppia f=${fRound}`, '#085041', 8, 'middle');
+    }
+
+    // v bracket at bottom
+    if (vRound > 0 && vRound <= maxCorridors) {
+      const bx1 = padL;
+      const bx2 = padL + vRound * moduleW;
+      const by  = crossBottomY + crossW + 30;
+      line(bx1, by, bx2, by, '#1d9e75', 1);
+      line(bx1, by - 4, bx1, by + 4, '#1d9e75', 1);
+      line(bx2, by - 4, bx2, by + 4, '#1d9e75', 1);
+      text((bx1 + bx2) / 2, by + 12, `v ≈ ${vRound} corridoi visitati`, '#1d9e75', 8, 'middle');
+    }
+
+    svg.setAttribute('height', totalH + 10);
+  }
+
+  function calcola() {
+    const l   = parseFloat(document.getElementById('l').value);
+    const e   = parseFloat(document.getElementById('e').value);
+    const w   = parseFloat(document.getElementById('w').value);
+    const dio = parseFloat(document.getElementById('dio').value);
+    const a   = parseInt(document.getElementById('a').value);
+    const N   = parseInt(document.getElementById('N').value);
+    const schema = document.querySelector('input[name=schema]:checked').value;
+    const isABC  = document.querySelector('input[name=alloc]:checked').value === 'abc';
+
+    let v = 0;
+
+    if (isABC) {
+      const inputs = document.getElementsByClassName('prob-input');
+      let sum = 0, probs = [];
+      for (let inp of inputs) { const p = parseFloat(inp.value) || 0; probs.push(p); sum += p; }
+      const warn = document.getElementById('sum-warn');
+      if (Math.abs(sum - 1) > 0.02) { warn.classList.remove('hidden'); return; }
+      warn.classList.add('hidden');
+      for (let p of probs) v += (1 - Math.pow(1 - p, N));
+    } else {
+      v = a * (1 - Math.pow(1 - 1 / a, N));
+    }
+
+    const f  = calcF(a, N);
+    const Pi = l * v;
+    const Pe = 2 * f * w + 2 * dio;
+    const P  = Pi + Pe;
+
+    document.getElementById('out-v').textContent = v.toFixed(3);
+    document.getElementById('out-f').textContent = f.toFixed(3);
+    document.getElementById('out-pi').innerHTML  = `${Pi.toFixed(2)}<span class="metric-unit">m</span>`;
+    document.getElementById('out-pe').innerHTML  = `${Pe.toFixed(2)}<span class="metric-unit">m</span>`;
+    document.getElementById('out-p').innerHTML   = `${P.toFixed(2)}<span class="metric-unit">m</span>`;
+
+    document.getElementById('formula-used').textContent =
+      `v  = a·[1−(1−1/a)^N] = ${v.toFixed(3)}\n` +
+      `f  = Σ(i=2..a/2) (i−1)·[(2i/a)^N−((2i−2)/a)^N] = ${f.toFixed(3)}\n\n` +
+      `Pi = l × v            = ${l} × ${v.toFixed(3)} = ${Pi.toFixed(2)} m\n` +
+      `Pe = 2·f·w + 2·Dio    = 2×${f.toFixed(3)}×${w} + 2×${dio} = ${Pe.toFixed(2)} m\n` +
+      `P  = Pi + Pe          = ${P.toFixed(2)} m`;
+
+    document.getElementById('results').classList.remove('hidden');
+    disegnaLayout(a, v, f, schema);
+  }
+
+  onAChange();
+</script>
+</body>
+</html>

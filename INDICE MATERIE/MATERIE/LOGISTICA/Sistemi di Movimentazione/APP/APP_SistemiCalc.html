@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solver Generico - Linee in Serie con Stazioni Configurabili</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe4f0;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --ok: #0f766e;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #eef4ff 0px, var(--bg) 240px);
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero { margin-bottom: 22px; }
+    .hero h1 { margin: 0 0 8px; font-size: 2rem; }
+    .hero p { margin: 0; max-width: 1000px; color: var(--muted); line-height: 1.6; }
+    .layout {
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 1.15rem; }
+    .section-title {
+      margin: 18px 0 10px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .field { display: grid; gap: 6px; margin-bottom: 12px; }
+    .field label { font-size: .94rem; font-weight: 600; }
+    .field input, .field select {
+      width: 100%; padding: 12px 13px; border: 1px solid var(--border);
+      border-radius: 12px; font-size: .97rem; background: #fff; outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    .row2, .row3 { display: grid; gap: 12px; }
+    .row2 { grid-template-columns: 1fr 1fr; }
+    .row3 { grid-template-columns: repeat(3, 1fr); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    button {
+      border: none; border-radius: 12px; padding: 12px 16px; font-weight: 800;
+      cursor: pointer; transition: transform .12s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .primary { background: var(--primary); color: white; }
+    .secondary { background: #eef2ff; color: #1e3a8a; }
+    .danger { background: #fee2e2; color: var(--danger); }
+    .metrics {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 16px;
+    }
+    .metric {
+      border: 1px solid var(--border); border-radius: 16px; padding: 16px;
+      background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+    }
+    .metric .label { color: var(--muted); font-size: .84rem; margin-bottom: 8px; }
+    .metric .value { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+    .metric .sub { margin-top: 6px; color: var(--muted); font-size: .86rem; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .tab {
+      padding: 10px 12px; border-radius: 999px; background: #f3f4f6; color: #334155;
+      font-size: .9rem; font-weight: 700; cursor: pointer; border: 1px solid transparent;
+    }
+    .tab.active { background: var(--primary-soft); color: #1e3a8a; border-color: #bfdbfe; }
+    .panel {
+      display: none; border: 1px solid var(--border); border-radius: 18px; padding: 18px; background: #fcfdff;
+    }
+    .panel.active { display: block; }
+    .formula {
+      background: var(--primary-soft); color: #1e3a8a; border-radius: 14px; padding: 14px;
+      line-height: 1.7; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .94rem; margin-bottom: 14px;
+    }
+    .small { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+    .badge {
+      display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: .82rem;
+      font-weight: 800; margin-bottom: 10px;
+    }
+    .ok { background: #d1fae5; color: #065f46; }
+    .warn { background: #ffedd5; color: #9a3412; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .94rem; }
+    th, td {
+      padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top;
+    }
+    th { color: var(--muted); font-size: .84rem; text-transform: uppercase; letter-spacing: .03em; }
+    .grid2 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
+    .box { border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: white; }
+    .box h3 { margin: 0 0 10px; font-size: 1rem; }
+    .line { display: grid; grid-template-columns: 140px 1fr 84px; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .bar { width: 100%; height: 14px; background: #e5edff; border-radius: 999px; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: linear-gradient(90deg,#60a5fa,#2563eb); border-radius: 999px; }
+    .station-card {
+      border: 1px solid var(--border); border-radius: 16px; padding: 14px; background: #fbfdff; margin-bottom: 12px;
+    }
+    .station-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;
+    }
+    .station-title { font-weight: 800; font-size: .96rem; }
+    .inline-note { font-size: .82rem; color: var(--muted); }
+    .station-grid { display: grid; grid-template-columns: 1.2fr .9fr .9fr; gap: 10px; }
+    .transport-card {
+      border: 1px dashed #c7d2fe; border-radius: 14px; padding: 12px; margin-bottom: 10px; background: #f8fbff;
+    }
+    ul { margin: 0; padding-left: 18px; line-height: 1.7; }
+    @media (max-width: 1180px) {
+      .layout, .grid2, .metrics { grid-template-columns: 1fr; }
+      .station-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Solver — Problemi di linea in serie con stazioni configurabili</h1>
+      <p>
+        Dashboard per esercizi analoghi di logistica e automazione: puoi configurare quante stazioni vuoi,
+        impostare per ogni stazione una modalità singola o doppia in parallelo, definire i nastri intermedi,
+        calcolare il collo di bottiglia della linea, i tempi ciclo, la capacità dei tratti di accumulo,
+        la saturazione in caso di fermo dell'ultima stazione, il ritorno a regime e la palletizzazione finale.
+      </p>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <h2>Configurazione del sistema</h2>
+
+        <div class="section-title">Stazioni</div>
+        <div id="stationsContainer"></div>
+        <div class="actions">
+          <button class="secondary" id="addStationBtn">Aggiungi stazione</button>
+          <button class="danger" id="removeStationBtn">Rimuovi ultima</button>
+        </div>
+
+        <div class="section-title">Nastri intermedi</div>
+        <div id="transportContainer"></div>
+
+        <div class="section-title">Collo / unità movimentata</div>
+        <div class="row3">
+          <div class="field">
+            <label for="a">Dimensione a [mm]</label>
+            <input id="a" type="number" min="1" step="1" value="550" />
+          </div>
+          <div class="field">
+            <label for="b">Dimensione b [mm]</label>
+            <input id="b" type="number" min="1" step="1" value="750" />
+          </div>
+          <div class="field">
+            <label for="c">Dimensione c [mm]</label>
+            <input id="c" type="number" min="1" step="1" value="350" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="latoParallelo">Lato parallelo al moto sui nastri [mm]</label>
+          <input id="latoParallelo" type="number" min="1" step="1" value="550" />
+        </div>
+
+        <div class="section-title">UDC / pallet</div>
+        <div class="row3">
+          <div class="field">
+            <label for="udcX">UDC lato X [mm]</label>
+            <input id="udcX" type="number" min="1" step="1" value="1200" />
+          </div>
+          <div class="field">
+            <label for="udcY">UDC lato Y [mm]</label>
+            <input id="udcY" type="number" min="1" step="1" value="800" />
+          </div>
+          <div class="field">
+            <label for="udcZ">UDC altezza Z [mm]</label>
+            <input id="udcZ" type="number" min="1" step="1" value="1656" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="calcBtn">Calcola</button>
+          <button class="secondary" id="presetBtn">Carica esempio base</button>
+        </div>
+
+        <p class="small" style="margin-top:14px;">
+          Regola usata per le stazioni doppie: la potenzialità effettiva della stazione è moltiplicata per il numero di rami paralleli.
+          Esempio: una stazione da 360 pz/h impostata come doppia vale 720 pz/h.
+        </p>
+      </div>
+
+      <div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="label">Q linea</div>
+            <div class="value" id="mQlinea">360</div>
+            <div class="sub">pz/h</div>
+          </div>
+          <div class="metric">
+            <div class="label">Collo di bottiglia</div>
+            <div class="value" id="mBottleneck">Staz. 1</div>
+            <div class="sub">stazione limitante</div>
+          </div>
+          <div class="metric">
+            <div class="label">t ciclo di linea</div>
+            <div class="value" id="mTciclo">10,00</div>
+            <div class="sub">s/pezzo</div>
+          </div>
+          <div class="metric">
+            <div class="label">Pezzi/UDC</div>
+            <div class="value" id="mPezziUdc">9</div>
+            <div class="sub">configurazione ottima</div>
+          </div>
+          <div class="metric">
+            <div class="label">UDC prodotte</div>
+            <div class="value" id="mUdcOra">40</div>
+            <div class="sub">UDC/h</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs">
+            <div class="tab active" data-tab="capPanel">Potenzialità e tempi ciclo</div>
+            <div class="tab" data-tab="nastroPanel">Capacità dei nastri</div>
+            <div class="tab" data-tab="satPanel">Saturazione in caso di fermo</div>
+            <div class="tab" data-tab="regimePanel">Ritorno a regime</div>
+            <div class="tab" data-tab="palletPanel">Palletizzazione e UDC/h</div>
+          </div>
+
+          <div class="panel active" id="capPanel">
+            <div class="grid2">
+              <div class="box">
+                <h3>Potenzialità totale e tempi ciclo delle stazioni</h3>
+                <div class="badge ok">Prestazioni globali della linea</div>
+                <div class="formula" id="formulaCap"></div>
+              </div>
+              <div class="box">
+                <h3>Confronto capacità stazioni</h3>
+                <div id="stationBars"></div>
+                <p class="small" id="stationText"></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="nastroPanel">
+            <div class="grid2">
+              <div class="box">
+                <h3>Capacità dei nastri a regime e a saturazione</h3>
+                <div class="formula" id="formulaNastri"></div>
+              </div>
+              <div class="box">
+                <h3>Sintesi tratti intermedi</h3>
+                <table>
+                  <thead>
+                    <tr><th>Tratto</th><th>A regime</th><th>A saturazione</th><th>Note</th></tr>
+                  </thead>
+                  <tbody id="tableNastri"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="satPanel">
+            <div class="grid2">
+              <div class="box">
+                <h3>Tempo di saturazione dopo il fermo della stazione finale</h3>
+                <div class="formula" id="formulaSat"></div>
+              </div>
+              <div class="box">
+                <h3>Lettura operativa</h3>
+                <div class="badge warn">Effetto domino del fermo</div>
+                <p class="small" id="textSat"></p>
+                <table>
+                  <thead>
+                    <tr><th>Tratto</th><th>Da regime a sat.</th><th>Tempo</th></tr>
+                  </thead>
+                  <tbody id="tableSat"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="regimePanel">
+            <div class="grid2">
+              <div class="box">
+                <h3>Tempo di ritorno a regime dopo la ripartenza</h3>
+                <div class="formula" id="formulaRegime"></div>
+              </div>
+              <div class="box">
+                <h3>Transitorio di svuotamento</h3>
+                <table>
+                  <thead>
+                    <tr><th>Tratto</th><th>Δ pezzi da smaltire</th><th>Portata netta</th><th>T ritorno</th></tr>
+                  </thead>
+                  <tbody id="tableRegime"></tbody>
+                </table>
+                <p class="small" id="textRegime"></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="palletPanel">
+            <div class="grid2">
+              <div class="box">
+                <h3>Configurazione ottima di palletizzazione</h3>
+                <div class="formula" id="formulaPallet"></div>
+                <table>
+                  <thead>
+                    <tr><th>Orientamento</th><th>Righe</th><th>Colonne</th><th>Piani</th><th>Pezzi/UDC</th></tr>
+                  </thead>
+                  <tbody id="tablePallet"></tbody>
+                </table>
+              </div>
+              <div class="box">
+                <h3>Produzione di UDC per ora</h3>
+                <div class="formula" id="formulaUdc"></div>
+                <p class="small" id="textUdc"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    let stations = [];
+    let conveyors = [];
+
+    const defaults = {
+      stations: [
+        { name: 'Stazione 1', q: 360, mode: 1 },
+        { name: 'Stazione 2', q: 450, mode: 1 },
+        { name: 'Stazione finale', q: 514, mode: 1 }
+      ],
+      conveyors: [
+        { length: 5, speed: 0.4 },
+        { length: 10, speed: 0.4 }
+      ],
+      a: 550, b: 750, c: 350, latoParallelo: 550,
+      udcX: 1200, udcY: 800, udcZ: 1656
+    };
+
+    function fmt(n, d = 2) {
+      return Number(n).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+    function fmt0(n) { return Number(Math.round(n)).toLocaleString('it-IT'); }
+    function ceilTol(x, eps = 1e-9) { return Math.ceil(x - eps); }
+
+    function makeStation(idx, s) {
+      return `
+        <div class="station-card">
+          <div class="station-head">
+            <div>
+              <div class="station-title">${s.name}</div>
+              <div class="inline-note">La potenzialità effettiva dipende dalla modalità scelta.</div>
+            </div>
+          </div>
+          <div class="station-grid">
+            <div class="field">
+              <label>Nome stazione</label>
+              <input data-station-name="${idx}" type="text" value="${s.name}" />
+            </div>
+            <div class="field">
+              <label>Q nominale [pz/h]</label>
+              <input data-station-q="${idx}" type="number" min="1" step="1" value="${s.q}" />
+            </div>
+            <div class="field">
+              <label>Configurazione</label>
+              <select data-station-mode="${idx}">
+                <option value="1" ${s.mode === 1 ? 'selected' : ''}>Singola</option>
+                <option value="2" ${s.mode === 2 ? 'selected' : ''}>Doppia / parallelo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function makeConveyor(idx, c) {
+      return `
+        <div class="transport-card">
+          <div class="station-title" style="margin-bottom:8px;">Tratto ${idx + 1}</div>
+          <div class="inline-note" style="margin-bottom:10px;">Tra ${stations[idx]?.name || 'stazione'} e ${stations[idx+1]?.name || 'stazione successiva'}</div>
+          <div class="row2">
+            <div class="field">
+              <label>Lunghezza [m]</label>
+              <input data-conv-length="${idx}" type="number" min="0" step="0.1" value="${c.length}" />
+            </div>
+            <div class="field">
+              <label>Velocità [m/s]</label>
+              <input data-conv-speed="${idx}" type="number" min="0.01" step="0.01" value="${c.speed}" />
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function syncConveyors() {
+      const needed = Math.max(0, stations.length - 1);
+      if (conveyors.length < needed) {
+        const last = conveyors[conveyors.length - 1] || { length: 5, speed: 0.4 };
+        while (conveyors.length < needed) conveyors.push({ ...last });
+      } else if (conveyors.length > needed) {
+        conveyors = conveyors.slice(0, needed);
+      }
+    }
+
+    function renderInputs() {
+      syncConveyors();
+      $('stationsContainer').innerHTML = stations.map((s, i) => makeStation(i, s)).join('');
+      $('transportContainer').innerHTML = conveyors.length
+        ? conveyors.map((c, i) => makeConveyor(i, c)).join('')
+        : `<p class="small">Con una sola stazione non ci sono tratti intermedi.</p>`;
+
+      document.querySelectorAll('[data-station-name]').forEach(inp => {
+        inp.addEventListener('input', () => { stations[Number(inp.dataset.stationName)].name = inp.value || `Stazione ${Number(inp.dataset.stationName)+1}`; renderInputs(); render(); });
+      });
+      document.querySelectorAll('[data-station-q]').forEach(inp => {
+        inp.addEventListener('input', () => { stations[Number(inp.dataset.stationQ)].q = Number(inp.value); render(); });
+      });
+      document.querySelectorAll('[data-station-mode]').forEach(inp => {
+        inp.addEventListener('change', () => { stations[Number(inp.dataset.stationMode)].mode = Number(inp.value); render(); });
+      });
+      document.querySelectorAll('[data-conv-length]').forEach(inp => {
+        inp.addEventListener('input', () => { conveyors[Number(inp.dataset.convLength)].length = Number(inp.value); render(); });
+      });
+      document.querySelectorAll('[data-conv-speed]').forEach(inp => {
+        inp.addEventListener('input', () => { conveyors[Number(inp.dataset.convSpeed)].speed = Number(inp.value); render(); });
+      });
+    }
+
+    function bestPallet(udc, pack) {
+      const perms = [
+        ['a','b','c'], ['a','c','b'], ['b','a','c'], ['b','c','a'], ['c','a','b'], ['c','b','a']
+      ];
+      let best = null;
+      const all = perms.map(p => {
+        const dx = pack[p[0]], dy = pack[p[1]], dz = pack[p[2]];
+        const rows = Math.floor(udc.x / dx);
+        const cols = Math.floor(udc.y / dy);
+        const levels = Math.floor(udc.z / dz);
+        const total = rows * cols * levels;
+        const item = { perm: p.join(''), rows, cols, levels, total };
+        if (!best || item.total > best.total) best = item;
+        return item;
+      });
+      return { best, perms: all };
+    }
+
+    function solve() {
+      const L = Number($('latoParallelo').value) / 1000;
+      const effectiveStations = stations.map((s, idx) => {
+        const effQ = s.q * s.mode;
+        return {
+          index: idx,
+          name: s.name,
+          qNominal: s.q,
+          mode: s.mode,
+          qEffective: effQ,
+          tCycle: 3600 / effQ
+        };
+      });
+
+      const qLine = Math.min(...effectiveStations.map(s => s.qEffective));
+      const bottleneckIndex = effectiveStations.findIndex(s => s.qEffective === qLine);
+      const bottleneck = effectiveStations[bottleneckIndex];
+      const tInput = 3600 / qLine;
+
+      const conveyorResults = conveyors.map((c, idx) => {
+        const i = c.speed * tInput;
+        const d = i - L;
+        const regimeRaw = c.length / (L + d);
+        const satRaw = c.length / L;
+        const regime = ceilTol(regimeRaw);
+        const saturation = ceilTol(satRaw);
+        const upstreamQ = effectiveStations[idx].qEffective;
+        const downstreamQ = effectiveStations[idx + 1].qEffective;
+        const deltaSat = saturation - regime;
+        const tSaturationSec = deltaSat * tInput;
+        const netDrain = downstreamQ - upstreamQ;
+        const tRecoverH = netDrain > 0 ? deltaSat / netDrain : null;
+        return {
+          index: idx,
+          from: effectiveStations[idx].name,
+          to: effectiveStations[idx + 1].name,
+          length: c.length,
+          speed: c.speed,
+          i, d,
+          regimeRaw, regime,
+          satRaw, saturation,
+          deltaSat,
+          tSaturationSec,
+          upstreamQ,
+          downstreamQ,
+          netDrain,
+          tRecoverH,
+          tRecoverMin: tRecoverH !== null ? tRecoverH * 60 : null
+        };
+      });
+
+      const stopCascade = [...conveyorResults].reverse();
+      let cumulativeStop = 0;
+      const saturationChain = stopCascade.map(seg => {
+        cumulativeStop += seg.tSaturationSec;
+        return { ...seg, cumulativeStopSec: cumulativeStop, cumulativeStopMin: cumulativeStop / 60 };
+      });
+
+      const pack = { a: Number($('a').value), b: Number($('b').value), c: Number($('c').value) };
+      const udc = { x: Number($('udcX').value), y: Number($('udcY').value), z: Number($('udcZ').value) };
+      const pallet = bestPallet(udc, pack);
+      const piecesPerUdc = pallet.best.total || 0;
+      const udcPerHour = piecesPerUdc > 0 ? qLine / piecesPerUdc : 0;
+
+      return {
+        effectiveStations,
+        qLine,
+        bottleneck,
+        tInput,
+        conveyorResults,
+        saturationChain,
+        pallet,
+        piecesPerUdc,
+        udcPerHour
+      };
+    }
+
+    function render() {
+      if (stations.length === 0) return;
+      const r = solve();
+
+      $('mQlinea').textContent = fmt0(r.qLine);
+      $('mBottleneck').textContent = r.bottleneck.name;
+      $('mTciclo').textContent = fmt(r.tInput, 2);
+      $('mPezziUdc').textContent = fmt0(r.piecesPerUdc);
+      $('mUdcOra').textContent = fmt(r.udcPerHour, 2);
+
+      $('formulaCap').textContent =
+`Potenzialità effettiva di ciascuna stazione = Q_nominale × numero rami paralleli
+Potenzialità totale della linea in serie = minimo delle potenzialità effettive
+
+${r.effectiveStations.map(s => `${s.name}: ${fmt0(s.qNominal)} × ${s.mode} = ${fmt0(s.qEffective)} pz/h  →  t = ${fmt(s.tCycle,2)} s`).join('\n')}
+
+Q_linea = min(${r.effectiveStations.map(s => fmt0(s.qEffective)).join(', ')}) = ${fmt0(r.qLine)} pz/h
+Collo di bottiglia = ${r.bottleneck.name}
+Tempo ciclo di linea = 3600 / ${fmt0(r.qLine)} = ${fmt(r.tInput,2)} s/pezzo`;
+
+      const maxQ = Math.max(...r.effectiveStations.map(s => s.qEffective));
+      $('stationBars').innerHTML = r.effectiveStations.map(s => `
+        <div class="line">
+          <div>${s.name}</div>
+          <div class="bar"><span style="width:${(s.qEffective/maxQ)*100}%"></span></div>
+          <div>${fmt0(s.qEffective)}</div>
+        </div>
+      `).join('');
+      $('stationText').textContent = `Ogni stazione può essere singola o doppia. La linea in serie è governata dalla potenzialità effettiva più bassa, che in questo caso è ${r.bottleneck.name} con ${fmt0(r.qLine)} pz/h.`;
+
+      if (r.conveyorResults.length === 0) {
+        $('formulaNastri').textContent = 'Non ci sono nastri intermedi da analizzare.';
+        $('tableNastri').innerHTML = '<tr><td colspan="4">Aggiungi almeno due stazioni per avere un tratto intermedio.</td></tr>';
+        $('formulaSat').textContent = 'Non ci sono nastri intermedi: il modello di saturazione a cascata non si applica.';
+        $('textSat').textContent = 'Con una sola stazione non c’è accumulo intermedio.';
+        $('tableSat').innerHTML = '<tr><td colspan="3">Nessun tratto intermedio disponibile.</td></tr>';
+        $('formulaRegime').textContent = 'Non ci sono nastri intermedi: nessun transitorio di ritorno a regime da calcolare.';
+        $('tableRegime').innerHTML = '<tr><td colspan="4">Nessun tratto intermedio disponibile.</td></tr>';
+        $('textRegime').textContent = 'Il ritorno a regime richiede almeno un tratto di accumulo.';
+      } else {
+        $('formulaNastri').textContent =
+`Per ogni tratto intermedio:
+interasse i = v · t_input
+spazio libero d = i - L_collo
+capacità a regime = L_nastro / (L_collo + d)
+capacità a saturazione = L_nastro / L_collo
+
+${r.conveyorResults.map(seg => `${seg.from} → ${seg.to}:  i=${fmt(seg.i,2)} m, d=${fmt(seg.d,2)} m, C_reg=${fmt(seg.regimeRaw,2)}→${fmt0(seg.regime)}, C_sat=${fmt(seg.satRaw,2)}→${fmt0(seg.saturation)}`).join('\n')}`;
+
+        $('tableNastri').innerHTML = r.conveyorResults.map((seg, idx) => `
+          <tr>
+            <td>Tratto ${idx + 1}</td>
+            <td>${fmt0(seg.regime)}</td>
+            <td>${fmt0(seg.saturation)}</td>
+            <td>${seg.from} → ${seg.to}</td>
+          </tr>
+        `).join('');
+
+        $('formulaSat').textContent =
+`Se la stazione finale si ferma, l'ultimo tratto si satura per primo. Poi il fermo risale verso monte.
+Per ogni tratto:
+T_sat = (C_sat - C_regime) · t_input
+
+${r.saturationChain.map((seg, idx) => `Passo ${idx + 1} - ${seg.from} → ${seg.to}: (${fmt0(seg.saturation)} - ${fmt0(seg.regime)}) · ${fmt(r.tInput,2)} = ${fmt(seg.tSaturationSec,2)} s`).join('\n')}
+
+Tempo fino all'arresto completo della linea = ${fmt(r.saturationChain[r.saturationChain.length - 1].cumulativeStopMin,2)} min`;
+
+        $('textSat').textContent = `Il fermo della stazione finale genera una saturazione progressiva dei tratti intermedi. Il tratto più vicino alla stazione finale si riempie per primo, poi il blocco risale verso monte.`;
+        $('tableSat').innerHTML = r.saturationChain.map((seg, idx) => `
+          <tr>
+            <td>Passo ${idx + 1}: ${seg.from} → ${seg.to}</td>
+            <td>${fmt0(seg.deltaSat)} pezzi</td>
+            <td>${fmt(seg.tSaturationSec,2)} s</td>
+          </tr>
+        `).join('');
+
+        $('formulaRegime').textContent =
+`Alla ripartenza della stazione finale, i tratti si svuotano con portata netta:
+T_ritorno = (C_sat - C_regime) / (Q_downstream - Q_upstream)
+
+${r.conveyorResults.map(seg => seg.netDrain > 0
+  ? `${seg.from} → ${seg.to}: (${fmt0(seg.saturation)} - ${fmt0(seg.regime)}) / (${fmt0(seg.downstreamQ)} - ${fmt0(seg.upstreamQ)}) = ${fmt(seg.tRecoverH,3)} h = ${fmt(seg.tRecoverMin,2)} min`
+  : `${seg.from} → ${seg.to}: il tratto non si svuota autonomamente perché Q_downstream ≤ Q_upstream`
+).join('\n')}`;
+
+        $('tableRegime').innerHTML = r.conveyorResults.map((seg, idx) => `
+          <tr>
+            <td>Tratto ${idx + 1}</td>
+            <td>${fmt0(seg.deltaSat)}</td>
+            <td>${seg.netDrain > 0 ? fmt0(seg.netDrain) + ' pz/h' : 'non positiva'}</td>
+            <td>${seg.tRecoverMin !== null ? fmt(seg.tRecoverMin,2) + ' min' : 'non definito'}</td>
+          </tr>
+        `).join('');
+        $('textRegime').textContent = `Il ritorno a regime è possibile solo se la stazione a valle ha potenzialità effettiva maggiore di quella a monte sul tratto considerato.`;
+      }
+
+      $('formulaPallet').textContent =
+`Si provano le 6 permutazioni orientando il collo dentro la UDC.
+La configurazione migliore è ${r.pallet.best.perm} con:
+righe = ${fmt0(r.pallet.best.rows)}
+colonne = ${fmt0(r.pallet.best.cols)}
+piani = ${fmt0(r.pallet.best.levels)}
+
+Pezzi per UDC = ${fmt0(r.pallet.best.rows)} · ${fmt0(r.pallet.best.cols)} · ${fmt0(r.pallet.best.levels)} = ${fmt0(r.piecesPerUdc)}`;
+
+      $('tablePallet').innerHTML = r.pallet.perms.map(item => `
+        <tr style="font-weight:${item.total===r.pallet.best.total ? '800' : '500'}; background:${item.total===r.pallet.best.total ? '#f0fdf4' : 'transparent'};">
+          <td>${item.perm}</td>
+          <td>${fmt0(item.rows)}</td>
+          <td>${fmt0(item.cols)}</td>
+          <td>${fmt0(item.levels)}</td>
+          <td>${fmt0(item.total)}</td>
+        </tr>
+      `).join('');
+
+      $('formulaUdc').textContent =
+`UDC prodotte in 1 h = Q_linea / pezzi per UDC
+= ${fmt0(r.qLine)} / ${fmt0(r.piecesPerUdc)}
+= ${fmt(r.udcPerHour,2)} UDC/h`;
+      $('textUdc').textContent = `Il valore mostrato rappresenta la produzione teorica di UDC per ora, a partire dalla potenzialità della linea e dalla configurazione ottima del pallet.`;
+    }
+
+    function loadDefaults() {
+      stations = defaults.stations.map(s => ({ ...s }));
+      conveyors = defaults.conveyors.map(c => ({ ...c }));
+      $('a').value = defaults.a;
+      $('b').value = defaults.b;
+      $('c').value = defaults.c;
+      $('latoParallelo').value = defaults.latoParallelo;
+      $('udcX').value = defaults.udcX;
+      $('udcY').value = defaults.udcY;
+      $('udcZ').value = defaults.udcZ;
+      renderInputs();
+      render();
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        $(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    $('addStationBtn').addEventListener('click', () => {
+      stations.push({ name: `Stazione ${stations.length + 1}`, q: 300, mode: 1 });
+      renderInputs();
+      render();
+    });
+
+    $('removeStationBtn').addEventListener('click', () => {
+      if (stations.length <= 1) return;
+      stations.pop();
+      renderInputs();
+      render();
+    });
+
+    ['a','b','c','latoParallelo','udcX','udcY','udcZ'].forEach(id => {
+      $(id).addEventListener('input', render);
+    });
+
+    $('calcBtn').addEventListener('click', render);
+    $('presetBtn').addEventListener('click', loadDefaults);
+
+    loadDefaults();
+  </script>
+</body>
+</html>

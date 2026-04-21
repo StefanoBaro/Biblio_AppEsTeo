@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreightCalc — Logistica Intermodale</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════════ */
+:root {
+  --ink:    #0f0e0c;
+  --paper:  #f5f0e8;
+  --card:   #ffffff;
+  --accent: #c84b2f;
+  --blue:   #2f5dc8;
+  --green:  #2a7a4b;
+  --muted:  #8a8278;
+  --line:   #d8d0c4;
+  --lineli: #ece7de;
+  --serif:  'Fraunces', serif;
+  --mono:   'DM Mono', monospace;
+  --r: 4px;
+  /* Map palette */
+  --truck-c: #c84b2f;
+  --rail-c:  #f0a500;
+  --ship-c:  #3b82f6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:13px;}
+body{background:var(--paper);color:var(--ink);font-family:var(--mono);min-height:100vh;}
+
+/* ─── HEADER ─────────────────────────────── */
+.header{background:var(--ink);color:var(--paper);padding:0 36px;height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--accent);position:sticky;top:0;z-index:200;}
+.logo{font-family:var(--serif);font-size:26px;font-weight:900;letter-spacing:-1px;display:flex;align-items:baseline;gap:8px;}
+.logo-sub{font-family:var(--mono);font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;}
+.nav{display:flex;gap:2px;}
+.nav-btn{background:transparent;border:none;color:#888;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 16px;cursor:pointer;border-radius:2px;transition:all .15s;}
+.nav-btn:hover{color:var(--paper);background:#1e1d1b;}
+.nav-btn.active{color:var(--accent);background:rgba(200,75,47,.12);}
+
+/* ─── PAGES ──────────────────────────────── */
+.page{display:none;}
+.page.active{display:block;animation:rise .2s ease;}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ════════════════════════════════════════════
+   INPUT PAGE
+════════════════════════════════════════════ */
+.ipage{max-width:1200px;margin:0 auto;padding:36px 36px 60px;}
+.sec-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--line);}
+.blk{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px;overflow:hidden;}
+.blk-head{padding:12px 20px;border-bottom:1px solid var(--lineli);display:flex;align-items:center;gap:10px;background:var(--paper);}
+.blk-icon{font-size:15px;}
+.blk-label{font-family:var(--serif);font-size:16px;font-weight:700;flex:1;}
+.blk-sub{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.blk-body{padding:20px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:500;}
+.fi{position:relative;}
+.fi input,.fi select{width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:13px;padding:8px 10px;border-radius:var(--r);outline:none;transition:border-color .15s;-moz-appearance:textfield;appearance:none;}
+.fi input::-webkit-outer-spin-button,.fi input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.fi input:focus,.fi select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(200,75,47,.1);}
+.fi .sfx{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted);pointer-events:none;letter-spacing:1px;}
+.fi input.sp{padding-right:38px;}
+.fi select{cursor:pointer;padding-right:24px;}
+.fi select option{background:#fff;}
+.fi .arr{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted);pointer-events:none;}
+.hint-line{font-size:10px;color:var(--muted);margin-top:8px;}
+.hint-line strong{color:var(--ink);}
+.div{height:1px;background:var(--lineli);margin:16px 0;}
+
+/* container cards */
+.ctr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.ctr-card{border:2px solid var(--line);border-radius:var(--r);padding:18px 20px;cursor:pointer;transition:all .2s;display:flex;gap:16px;align-items:flex-start;position:relative;background:var(--paper);}
+.ctr-card:hover{border-color:var(--muted);background:#ede8e0;}
+.ctr-card.sel-teu{border-color:var(--blue);background:rgba(47,93,200,.04);box-shadow:0 0 0 1px var(--blue);}
+.ctr-card.sel-feu{border-color:var(--accent);background:rgba(200,75,47,.04);box-shadow:0 0 0 1px var(--accent);}
+.ctr-em{font-size:32px;flex-shrink:0;}
+.ctr-name{font-family:var(--serif);font-size:22px;font-weight:900;line-height:1;}
+.ctr-name.teu{color:var(--blue);}
+.ctr-name.feu{color:var(--accent);}
+.ctr-desc{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.5px;}
+.ctr-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.ctr-tag{font-size:9px;background:var(--lineli);color:var(--muted);padding:2px 8px;border-radius:20px;}
+.ctr-chk{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;opacity:0;transition:opacity .2s;}
+.sel-teu .ctr-chk{background:var(--blue);color:#fff;opacity:1;}
+.sel-feu .ctr-chk{background:var(--accent);color:#fff;opacity:1;}
+.ctr-params{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.cpb{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.cpb-head{padding:7px 14px;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:500;border-bottom:1px solid var(--line);}
+.cpb-head.teu{color:var(--blue);background:rgba(47,93,200,.05);}
+.cpb-head.feu{color:var(--accent);background:rgba(200,75,47,.05);}
+.cpb-body{padding:14px;display:flex;flex-direction:column;gap:10px;}
+
+/* tariff table */
+.tt{width:100%;border-collapse:collapse;}
+.tt th{text-align:left;padding:7px 10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);}
+.tt td{padding:7px 10px;border-bottom:1px solid var(--lineli);}
+.tt tr:last-child td{border-bottom:none;}
+.rp{background:var(--lineli);color:var(--muted);font-size:11px;padding:3px 8px;border-radius:2px;display:inline-block;}
+.ti{background:var(--paper);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:var(--r);width:110px;outline:none;text-align:right;-moz-appearance:textfield;}
+.ti::-webkit-outer-spin-button,.ti::-webkit-inner-spin-button{-webkit-appearance:none;}
+.ti:focus{border-color:var(--accent);}
+.tu{font-size:10px;color:var(--muted);margin-left:4px;}
+
+/* cost table */
+.ct{width:100%;border-collapse:collapse;font-size:12px;}
+.ct th{text-align:left;padding:7px 9px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);}
+.ct td{padding:5px 7px;border-bottom:1px solid var(--lineli);vertical-align:middle;}
+.ct tr:last-child td{border-bottom:none;}
+.ct input[type=text],.ct input[type=number]{background:var(--paper);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:12px;padding:4px 7px;border-radius:var(--r);outline:none;width:100%;-moz-appearance:textfield;}
+.ct input::-webkit-outer-spin-button,.ct input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.ct input:focus{border-color:var(--accent);}
+.ct select{background:var(--paper);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:var(--r);outline:none;cursor:pointer;width:100%;appearance:none;}
+.ct select option{background:#fff;}
+.ct select:focus{border-color:var(--accent);}
+.bp{font-size:9px;padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:.5px;white-space:nowrap;display:inline-block;}
+.bp-CTR {background:rgba(42,122,75,.12); color:var(--green);}
+.bp-TEU {background:rgba(47,93,200,.12); color:var(--blue);}
+.bp-SET {background:rgba(120,60,180,.12);color:#7830b4;}
+.bp-TON {background:rgba(180,100,0,.12); color:#a05f00;}
+.bp-CTRp{background:rgba(200,75,47,.12); color:var(--accent);}
+.add-btn{background:transparent;border:1px dashed var(--line);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:7px 16px;border-radius:var(--r);cursor:pointer;width:100%;margin-top:10px;transition:all .15s;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);}
+.rm{background:none;border:none;color:var(--line);cursor:pointer;font-size:14px;padding:2px 4px;transition:color .12s;border-radius:2px;}
+.rm:hover{color:var(--accent);background:rgba(200,75,47,.08);}
+
+/* legend */
+.legend-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.leg-item{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--paper);}
+.leg-name{font-family:var(--serif);font-size:14px;font-weight:700;margin:6px 0 3px;}
+.leg-full{font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4;}
+.leg-desc{font-size:10px;color:#555;line-height:1.5;}
+
+/* exchanges */
+.ex-row{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:7px 12px;margin-bottom:8px;background:var(--paper);}
+.ex-ccy{width:46px;background:transparent;border:none;color:var(--ink);font-family:var(--mono);font-size:12px;text-align:center;font-weight:500;letter-spacing:1px;outline:none;}
+.ex-rate{width:78px;background:transparent;border:none;color:var(--accent);font-family:var(--mono);font-size:12px;text-align:right;outline:none;-moz-appearance:textfield;font-weight:500;}
+.ex-rate::-webkit-outer-spin-button,.ex-rate::-webkit-inner-spin-button{-webkit-appearance:none;}
+.ex-sep{color:var(--muted);font-size:11px;}
+
+/* calc btn */
+.calc-wrap{display:flex;justify-content:flex-end;padding:20px 0 4px;}
+.calc-btn{background:var(--ink);color:var(--paper);border:none;font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:1px;padding:13px 44px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.calc-btn::after{content:' ▶';font-size:12px;}
+.calc-btn:hover{background:var(--accent);transform:translateY(-1px);}
+
+/* ════════════════════════════════════════════
+   RESULTS PAGE
+════════════════════════════════════════════ */
+.rpage{max-width:1200px;margin:0 auto;padding:36px;}
+.back-btn{background:transparent;border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;border-radius:var(--r);cursor:pointer;transition:all .15s;display:inline-block;margin-bottom:28px;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+.ctr-box{background:var(--ink);color:var(--paper);border-radius:var(--r);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+.ctr-stat{text-align:center;flex-shrink:0;}
+.ctr-stat-num{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1;}
+.ctr-stat-lbl{font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.ctr-sep{width:1px;height:54px;background:#333;flex-shrink:0;}
+.ctr-formula{flex:1;font-size:11px;color:#aaa;line-height:1.9;font-family:var(--mono);}
+.ctr-formula .ha{color:var(--accent);font-weight:500;}
+.ctr-formula .hb{color:#6fa8ff;font-weight:500;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.kpi.ka::before{background:var(--accent);}
+.kpi.kb::before{background:var(--blue);}
+.kpi.kg::before{background:var(--green);}
+.kpi.km::before{background:var(--muted);}
+.kpi-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.kpi-val{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1;}
+.kpi-val.ka{color:var(--accent);}
+.kpi-val.kb{color:var(--blue);}
+.kpi-val.kg{color:var(--green);}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.res-col{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.res-col.winner{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
+.res-hdr{padding:13px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--lineli);background:var(--paper);}
+.res-hdr.ha{border-left:4px solid var(--accent);}
+.res-hdr.hb{border-left:4px solid var(--blue);}
+.res-title{font-family:var(--serif);font-size:16px;font-weight:700;flex:1;}
+.win-badge{background:var(--green);color:#fff;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;font-weight:500;}
+.r-table{width:100%;border-collapse:collapse;font-size:12px;}
+.r-table th{text-align:left;padding:8px 14px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:400;}
+.r-table th:last-child,.r-table td:last-child{text-align:right;}
+.r-table td{padding:8px 14px;border-top:1px solid var(--lineli);}
+.r-name{color:var(--ink);}
+.r-note{font-size:10px;color:var(--muted);}
+.r-val{font-weight:500;}
+.res-foot{padding:13px 18px;display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--line);background:var(--paper);}
+.res-foot-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.res-foot-val{font-family:var(--serif);font-size:24px;font-weight:900;}
+.res-foot-val.va{color:var(--accent);}
+.res-foot-val.vb{color:var(--blue);}
+.res-unit{font-size:10px;color:var(--muted);text-align:right;}
+
+/* ════════════════════════════════════════════
+   MAP PAGE
+════════════════════════════════════════════ */
+.mpage{height:calc(100vh - 58px);display:flex;}
+
+/* MAP SIDEBAR */
+.msb{width:340px;flex-shrink:0;background:var(--ink);color:var(--paper);display:flex;flex-direction:column;border-right:3px solid var(--accent);overflow:hidden;}
+.msb-head{padding:16px 20px;border-bottom:1px solid #222;}
+.msb-title{font-family:var(--serif);font-size:20px;font-weight:900;letter-spacing:-0.5px;}
+.msb-sub{font-size:9px;color:#666;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.msb-body{flex:1;overflow-y:auto;padding:16px;}
+.msb-body::-webkit-scrollbar{width:4px;}
+.msb-body::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+.msb-foot{padding:14px 16px;border-top:1px solid #222;display:flex;flex-direction:column;gap:8px;}
+
+/* stats strip */
+.stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.stat-box{background:#0f0f0f;border:1px solid #1a1a1a;border-radius:3px;padding:10px 12px;text-align:center;}
+.stat-box-val{font-family:var(--serif);font-size:18px;font-weight:900;line-height:1;}
+.stat-box-lbl{font-size:8px;color:#555;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;}
+.stat-box.v-km  .stat-box-val{color:#aaa;}
+.stat-box.v-co2 .stat-box-val{color:#ff6b6b;}
+.stat-box.v-eur .stat-box-val{color:var(--accent);}
+
+/* hub rows */
+.hub-label-row{display:flex;gap:5px;font-size:8px;color:#555;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;padding:0 2px;}
+.hub-row{display:flex;gap:5px;align-items:center;background:#0c0c0c;border:1px solid #1a1a1a;border-radius:3px;padding:7px 8px;margin-bottom:6px;transition:border-color .15s;cursor:default;}
+.hub-row:hover{border-color:#333;}
+.hub-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:2px;}
+.hub-inp-name{width:85px;background:transparent;border:none;color:var(--paper);font-family:var(--mono);font-size:11px;outline:none;letter-spacing:.5px;}
+.hub-inp-coord{width:52px;background:transparent;border:none;color:#888;font-family:var(--mono);font-size:10px;outline:none;-moz-appearance:textfield;text-align:right;}
+.hub-inp-coord::-webkit-outer-spin-button,.hub-inp-coord::-webkit-inner-spin-button{-webkit-appearance:none;}
+.hub-sel{background:#111;border:1px solid #222;color:var(--paper);font-family:var(--mono);font-size:10px;padding:3px 5px;border-radius:2px;outline:none;cursor:pointer;width:68px;appearance:none;}
+.hub-sel option{background:#111;}
+.hub-rm{background:none;border:none;color:#333;cursor:pointer;font-size:12px;padding:2px 3px;transition:color .1s;margin-left:2px;}
+.hub-rm:hover{color:#ff6b6b;}
+.hub-mode-truck{border-color: rgba(200,75,47,.4) !important;}
+.hub-mode-rail {border-color: rgba(240,165,0,.4)  !important;}
+.hub-mode-ship {border-color: rgba(59,130,246,.4) !important;}
+
+/* map action buttons */
+.map-act-btn{background:transparent;border:1px solid #333;color:#888;font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:8px 12px;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase;width:100%;}
+.map-act-btn:hover{border-color:#555;color:var(--paper);}
+.map-act-btn.primary{border-color:var(--accent);color:var(--accent);}
+.map-act-btn.primary:hover{background:var(--accent);color:#000;}
+.map-act-btn.anim-on{border-color:var(--accent);background:rgba(200,75,47,.1);color:var(--accent);}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+
+/* load input */
+.load-row{display:flex;align-items:center;gap:8px;background:#0c0c0c;border:1px solid #1a1a1a;border-radius:3px;padding:8px 10px;}
+.load-lbl{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;}
+.load-inp{background:transparent;border:none;color:var(--paper);font-family:var(--serif);font-size:20px;font-weight:700;width:70px;outline:none;-moz-appearance:textfield;text-align:right;}
+.load-inp::-webkit-outer-spin-button,.load-inp::-webkit-inner-spin-button{-webkit-appearance:none;}
+.load-unit{color:#555;font-size:10px;}
+
+/* legend strip */
+.map-legend{display:flex;gap:14px;padding:8px 12px;background:#070707;border-top:1px solid #111;}
+.ml-item{display:flex;align-items:center;gap:5px;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;}
+.ml-line{width:20px;height:2px;border-radius:1px;flex-shrink:0;}
+.ml-line.truck{background:var(--truck-c);}
+.ml-line.rail {background:var(--rail-c); background: repeating-linear-gradient(90deg,var(--rail-c) 0,var(--rail-c) 4px,transparent 4px,transparent 7px);}
+.ml-line.ship {background:var(--ship-c); background: repeating-linear-gradient(90deg,var(--ship-c) 0,var(--ship-c) 3px,transparent 3px,transparent 7px);}
+
+/* canvas wrap */
+.map-canvas-wrap{flex:1;position:relative;background:#05090e;overflow:hidden;}
+#mapCanvas{width:100%;height:100%;display:block;}
+.map-overlay{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;}
+.map-zoom-btn{background:rgba(15,14,12,.85);border:1px solid #333;color:#888;width:32px;height:32px;border-radius:3px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.map-zoom-btn:hover{border-color:#555;color:var(--paper);}
+.tooltip{position:absolute;background:rgba(15,14,12,.92);border:1px solid #333;color:var(--paper);font-family:var(--mono);font-size:10px;padding:6px 10px;border-radius:3px;pointer-events:none;display:none;z-index:50;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<!-- ════ HEADER ════ -->
+<header class="header">
+  <div class="logo">FreightCalc <span class="logo-sub">Logistica Intermodale</span></div>
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-input"   onclick="showPage('input')">① Parametri</button>
+    <button class="nav-btn"        id="nav-results" onclick="showPage('results')">② Risultati</button>
+    <button class="nav-btn"        id="nav-map"     onclick="showPage('map')">③ Mappa Rotta</button>
+  </nav>
+</header>
+
+<!-- ════════════ INPUT PAGE ════════════ -->
+<div id="page-input" class="page active">
+<div class="ipage">
+
+  <div class="sec-title">① Dati Merce</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">📦</span><span class="blk-label">Unità di Carico (UDC)</span><span class="blk-sub">merce da spedire</span></div>
+    <div class="blk-body">
+      <div class="g4">
+        <div class="field"><span class="field-lbl">Quantità UDC</span><div class="fi"><input type="number" id="qty-udc" value="100" min="1" class="sp"><span class="sfx">pz</span></div></div>
+        <div class="field"><span class="field-lbl">Peso merce / UDC</span><div class="fi"><input type="number" id="w-goods" value="1100" step="0.1" class="sp"><span class="sfx">kg</span></div></div>
+        <div class="field"><span class="field-lbl">Peso pedana (E-Pallet)</span><div class="fi"><input type="number" id="w-pallet" value="22" step="0.1" class="sp"><span class="sfx">kg</span></div></div>
+        <div class="field"><span class="field-lbl">UDC sovrapponibili?</span><div class="fi"><select id="stackable"><option value="no">No — non sovrap.</option><option value="yes">Sì — sovrap.</option></select><span class="arr">▾</span></div></div>
+      </div>
+      <p class="hint-line" id="whint" style="margin-top:10px">Peso/UDC: <strong id="wudc">1122</strong> kg · Peso totale: <strong id="wtot">112.200</strong> kg</p>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:28px">② Tipo Container</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">🗳</span><span class="blk-label">Seleziona Container</span><span class="blk-sub">tutti i calcoli saranno rapportati al container selezionato</span></div>
+    <div class="blk-body">
+      <div class="ctr-grid">
+        <div class="ctr-card" id="card-teu" onclick="selCtr('teu')"><div class="ctr-em">📦</div><div><div class="ctr-name teu">TEU — 20′</div><div class="ctr-desc">Twenty-foot Equivalent Unit · 1 TEU per container</div><div class="ctr-tags"><span class="ctr-tag">≈ 33 m³</span><span class="ctr-tag">max ≈ 28.200 kg lordo</span><span class="ctr-tag" id="teu-udc-tag">10 UDC</span><span class="ctr-tag">1 TEU</span></div></div><div class="ctr-chk">✓</div></div>
+        <div class="ctr-card sel-feu" id="card-feu" onclick="selCtr('feu')"><div class="ctr-em">🚢</div><div><div class="ctr-name feu">FEU — 40′</div><div class="ctr-desc">Forty-foot Equivalent Unit · 2 TEU per container</div><div class="ctr-tags"><span class="ctr-tag">≈ 67 m³</span><span class="ctr-tag">max ≈ 30.480 kg lordo</span><span class="ctr-tag" id="feu-udc-tag">20 UDC</span><span class="ctr-tag">2 TEU</span></div></div><div class="ctr-chk">✓</div></div>
+      </div>
+      <div class="ctr-params">
+        <div class="cpb"><div class="cpb-head teu">Capacità TEU (20′)</div><div class="cpb-body"><div class="field"><span class="field-lbl">Portata netta max</span><div class="fi"><input type="number" id="teu-kg" value="21700" class="sp"><span class="sfx">kg</span></div></div><div class="field"><span class="field-lbl">Tara container</span><div class="fi"><input type="number" id="teu-tara" value="2300" class="sp"><span class="sfx">kg</span></div></div><div class="field"><span class="field-lbl">Capacità UDC</span><div class="fi"><input type="number" id="teu-udc" value="10" class="sp" onchange="updCtrTags()"><span class="sfx">UDC</span></div></div></div></div>
+        <div class="cpb"><div class="cpb-head feu">Capacità FEU (40′)</div><div class="cpb-body"><div class="field"><span class="field-lbl">Portata netta max</span><div class="fi"><input type="number" id="feu-kg" value="22500" class="sp"><span class="sfx">kg</span></div></div><div class="field"><span class="field-lbl">Tara container</span><div class="fi"><input type="number" id="feu-tara" value="2500" class="sp"><span class="sfx">kg</span></div></div><div class="field"><span class="field-lbl">Capacità UDC</span><div class="fi"><input type="number" id="feu-udc" value="20" class="sp" onchange="updCtrTags()"><span class="sfx">UDC</span></div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:28px">③ Percorsi & Tariffe Stradali</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">🗺</span><span class="blk-label">Soluzioni di Trasporto</span></div>
+    <div class="blk-body">
+      <div class="g2" style="gap:28px;margin-bottom:20px">
+        <div>
+          <p class="field-lbl" style="color:var(--accent);margin-bottom:12px">▸ SOLUZIONE A — Solo Strada</p>
+          <div class="g2"><div class="field"><span class="field-lbl">Distanza totale</span><div class="fi"><input type="number" id="dist-a" value="390" class="sp"><span class="sfx">km</span></div></div><div class="field"><span class="field-lbl">Sconto su strada</span><div class="fi"><input type="number" id="disc-a" value="0" min="0" max="100" step="0.1" class="sp"><span class="sfx">%</span></div></div></div>
+        </div>
+        <div>
+          <p class="field-lbl" style="color:var(--blue);margin-bottom:12px">▸ SOLUZIONE B — Gomma + Rotaia + Nave</p>
+          <div class="g3"><div class="field"><span class="field-lbl">Tratto stradale</span><div class="fi"><input type="number" id="dist-b" value="60" class="sp"><span class="sfx">km</span></div></div><div class="field"><span class="field-lbl">Tariffa rotaia / ctr</span><div class="fi"><input type="number" id="rail-t" value="200" class="sp"><span class="sfx">€</span></div></div><div class="field"><span class="field-lbl">Sconto su strada</span><div class="fi"><input type="number" id="disc-b" value="0" min="0" max="100" step="0.1" class="sp"><span class="sfx">%</span></div></div></div>
+        </div>
+      </div>
+      <div class="div"></div>
+      <p class="field-lbl" style="margin-bottom:12px">Tariffe camionistiche per fascia distanza</p>
+      <table class="tt">
+        <thead><tr><th>Fascia</th><th>Tariffa</th></tr></thead>
+        <tbody>
+          <tr><td><span class="rp">0–100 km</span></td><td><input class="ti" type="number" id="t1" value="1.695" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+          <tr><td><span class="rp">101–150 km</span></td><td><input class="ti" type="number" id="t2" value="1.382" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+          <tr><td><span class="rp">151–250 km</span></td><td><input class="ti" type="number" id="t3" value="1.153" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+          <tr><td><span class="rp">251–350 km</span></td><td><input class="ti" type="number" id="t4" value="1.047" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+          <tr><td><span class="rp">351–500 km</span></td><td><input class="ti" type="number" id="t5" value="0.906" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+          <tr><td><span class="rp">Oltre 500 km</span></td><td><input class="ti" type="number" id="t6" value="0.833" step="0.001"><span class="tu">€/km·ctr</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:28px">④ Voci di Costo</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">💶</span><span class="blk-label">Costi Marittimi & Extra</span><span class="blk-sub">editabili</span></div>
+    <div class="blk-body">
+      <table class="ct">
+        <thead><tr><th style="width:27%">Voce</th><th style="width:13%">Importo</th><th style="width:10%">Valuta</th><th style="width:13%">Base calcolo</th><th style="width:8%">Tipo</th><th style="width:20%">Applica a</th><th style="width:5%"></th></tr></thead>
+        <tbody id="cost-tbody"></tbody>
+      </table>
+      <button class="add-btn" onclick="addCR()">+ Aggiungi voce di costo</button>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:28px">⑤ Legenda Voci di Costo</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">📖</span><span class="blk-label">Glossario</span><span class="blk-sub">significato di ogni voce standard</span></div>
+    <div class="blk-body">
+      <div class="legend-grid">
+        <div class="leg-item"><div><span class="bp bp-TEU">TEU</span></div><div class="leg-name">Nolo Mare</div><div class="leg-full">Ocean Freight</div><div class="leg-desc">Costo base trasporto marittimo pagato all'armatore. Calcolato per TEU (FEU = 2 TEU).</div></div>
+        <div class="leg-item"><div><span class="bp bp-TEU">TEU</span></div><div class="leg-name">BAF</div><div class="leg-full">Bunker Adjustment Factor</div><div class="leg-desc">Sovrapprezzo sul nolo legato al costo del carburante. Varia con il prezzo del petrolio, deciso dall'armatore.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span></div><div class="leg-name">CAF</div><div class="leg-full">Currency Adjustment Factor</div><div class="leg-desc">Adeguamento del nolo per compensare le fluttuazioni delle valute estere. Protegge l'armatore dal rischio di cambio.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span></div><div class="leg-name">THC</div><div class="leg-full">Terminal Handling Charge</div><div class="leg-desc">Costo movimentazione container nel terminal portuale: carico/scarico gru, stoccaggio in banchina.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span></div><div class="leg-name">ISPS</div><div class="leg-full">International Ship & Port Security</div><div class="leg-desc">Diritti di sicurezza portuale (codice ISPS-IMO). Coprono misure anti-terrorismo e controllo accessi.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span></div><div class="leg-name">Diritti Agenzia</div><div class="leg-full">Agency / Handling Fees</div><div class="leg-desc">Compenso allo spedizioniere per gestione pratiche doganali, documenti e coordinamento operativo.</div></div>
+        <div class="leg-item"><div><span class="bp bp-SET">SET</span></div><div class="leg-name">B/L</div><div class="leg-full">Bill of Lading</div><div class="leg-desc">Polizza di carico: documento titolo della merce. Emessa una volta per commessa, a prescindere dai container.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span> <span class="bp bp-CTRp" style="margin-left:3px">CTR+</span></div><div class="leg-name">Dogana</div><div class="leg-full">Spese Doganali</div><div class="leg-desc">Oneri sdoganamento: quota base fissa/container + maggiorazione per ogni container aggiuntivo oltre il primo.</div></div>
+        <div class="leg-item"><div><span class="bp bp-TON">TON</span></div><div class="leg-name">Tasse Erariali</div><div class="leg-full">Port Dues / Tasse imbarco</div><div class="leg-desc">Diritti portuali calcolati sul peso lordo imbarcato (€/tonnellata). Variano per porto e tipologia merce.</div></div>
+        <div class="leg-item"><div><span class="bp bp-CTR">CTR</span></div><div class="leg-name">VGM</div><div class="leg-full">Verified Gross Mass</div><div class="leg-desc">Pesatura obbligatoria del container prima imbarco (SOLAS 2016). Copre operazione e certificazione.</div></div>
+      </div>
+      <div class="div" style="margin-top:20px"></div>
+      <p class="field-lbl" style="margin-bottom:10px">Basi di calcolo</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <span><span class="bp bp-CTR">CTR</span> <span style="font-size:11px;color:var(--muted);margin-left:4px">per container</span></span>
+        <span><span class="bp bp-TEU">TEU</span> <span style="font-size:11px;color:var(--muted);margin-left:4px">per TEU (FEU=×2)</span></span>
+        <span><span class="bp bp-SET">SET</span> <span style="font-size:11px;color:var(--muted);margin-left:4px">per commessa</span></span>
+        <span><span class="bp bp-TON">TON</span> <span style="font-size:11px;color:var(--muted);margin-left:4px">per tonnellata</span></span>
+        <span><span class="bp bp-CTRp">CTR+</span> <span style="font-size:11px;color:var(--muted);margin-left:4px">per container aggiuntivo</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:28px">⑥ Cambi Valuta & Output</div>
+  <div class="blk">
+    <div class="blk-head"><span class="blk-icon">💱</span><span class="blk-label">Cambi & Valuta di Output</span></div>
+    <div class="blk-body g2">
+      <div><div id="ex-list"></div><button class="add-btn" style="margin-top:0" onclick="addEx()">+ Aggiungi tasso di cambio</button></div>
+      <div><div class="field"><span class="field-lbl">Valuta di output</span><div class="fi"><select id="out-curr"><option value="EUR">EUR — Euro €</option><option value="USD">USD — Dollaro $</option><option value="GBP">GBP — Sterlina £</option></select><span class="arr">▾</span></div></div><p class="hint-line" style="margin-top:8px">Il cambio doganale (art. 53 CDU / 146 R.E.) può differire dal cambio di mercato.</p></div>
+    </div>
+  </div>
+
+  <div class="calc-wrap"><button class="calc-btn" onclick="calculate()">Calcola costi</button></div>
+</div></div>
+
+
+<!-- ════════════ RESULTS PAGE ════════════ -->
+<div id="page-results" class="page">
+<div class="rpage">
+  <button class="back-btn" onclick="showPage('input')">← Torna ai parametri</button>
+  <div id="res-ctr"></div>
+  <div class="kpi-row" id="res-kpi"></div>
+  <div class="res-grid" id="res-grid"></div>
+</div>
+</div>
+
+
+<!-- ════════════ MAP PAGE ════════════ -->
+<div id="page-map" class="page">
+<div class="mpage">
+
+  <!-- sidebar -->
+  <div class="msb">
+    <div class="msb-head">
+      <div class="msb-title">Route Simulator</div>
+      <div class="msb-sub">Trascina gli hub · Modifica mezzo</div>
+    </div>
+    <div class="msb-body">
+
+      <!-- load -->
+      <div class="load-row" style="margin-bottom:14px">
+        <span class="load-lbl">Carico</span>
+        <input type="number" class="load-inp" id="mapLoad" value="110" min="0.1" step="1" oninput="mapCalc()">
+        <span class="load-unit">tonnellate</span>
+      </div>
+
+      <!-- stats -->
+      <div class="stat-strip">
+        <div class="stat-box v-km"><div class="stat-box-val" id="m-dist">0</div><div class="stat-box-lbl">km totali</div></div>
+        <div class="stat-box v-co2"><div class="stat-box-val" id="m-co2">0</div><div class="stat-box-lbl">CO₂ kg</div></div>
+        <div class="stat-box v-eur"><div class="stat-box-val" id="m-eur">0</div><div class="stat-box-lbl">costo €</div></div>
+      </div>
+
+      <!-- hub list -->
+      <div class="hub-label-row">
+        <div style="width:98px">Città</div>
+        <div style="width:57px;text-align:right">Lat</div>
+        <div style="width:57px;text-align:right">Lon</div>
+        <div style="margin-left:5px">Mezzo</div>
+      </div>
+      <div id="hub-list"></div>
+
+    </div>
+    <div class="msb-foot">
+      <div class="map-legend">
+        <div class="ml-item"><div class="ml-line truck"></div>Gomma</div>
+        <div class="ml-item"><div class="ml-line rail"></div>Rotaia</div>
+        <div class="ml-item"><div class="ml-line ship"></div>Nave</div>
+      </div>
+      <div class="btn-row">
+        <button class="map-act-btn" onclick="addHub()">+ Hub</button>
+        <button class="map-act-btn primary" id="anim-btn" onclick="toggleAnim()">▶ Simula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- canvas -->
+  <div class="map-canvas-wrap" id="map-wrap">
+    <canvas id="mapCanvas"></canvas>
+    <div class="map-overlay">
+      <button class="map-zoom-btn" onclick="mapZoom(1.2)" title="Zoom in">+</button>
+      <button class="map-zoom-btn" onclick="mapZoom(0.83)" title="Zoom out">−</button>
+      <button class="map-zoom-btn" onclick="mapReset()" title="Reset" style="font-size:12px">⌂</button>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+/* ═══ COST CALC STATE ═══ */
+let selCtrType='feu', costRows=[], exchanges=[], crId=0, exId=0;
+const DEFAULTS=[
+  {label:'Nolo mare',         value:200,  cur:'USD',basis:'TEU', inA:true, inB:true},
+  {label:'BAF',               value:15,   cur:'USD',basis:'TEU', inA:true, inB:true},
+  {label:'CAF',               value:30,   cur:'USD',basis:'CTR', inA:true, inB:true},
+  {label:'THC',               value:180,  cur:'EUR',basis:'CTR', inA:true, inB:true},
+  {label:'ISPS',              value:18,   cur:'EUR',basis:'CTR', inA:true, inB:true},
+  {label:'Diritti Agenzia',   value:40,   cur:'EUR',basis:'CTR', inA:true, inB:true},
+  {label:'B/L',               value:40,   cur:'EUR',basis:'SET', inA:true, inB:true},
+  {label:'Dogana base',       value:35,   cur:'EUR',basis:'CTR', inA:true, inB:true},
+  {label:'Dogana aggiuntiva', value:10,   cur:'EUR',basis:'CTR+',inA:true, inB:true},
+  {label:'Tasse erariali',    value:0.9,  cur:'EUR',basis:'TON', inA:true, inB:true},
+  {label:'VGM',               value:45,   cur:'EUR',basis:'CTR', inA:false,inB:true},
+];
+const BASIS=['CTR','TEU','SET','TON','CTR+'], CURS=['EUR','USD','GBP','CHF'];
+
+function appInit(){
+  costRows=DEFAULTS.map(d=>({id:crId++,...d}));
+  exchanges=[{id:exId++,from:'USD',to:'EUR',rate:1.1354}];
+  selCtr('feu'); renderCosts(); renderEx(); bindHints();
+}
+
+/* container */
+function selCtr(t){selCtrType=t;document.getElementById('card-teu').className='ctr-card'+(t==='teu'?' sel-teu':'');document.getElementById('card-feu').className='ctr-card'+(t==='feu'?' sel-feu':'');}
+function updCtrTags(){document.getElementById('teu-udc-tag').textContent=(document.getElementById('teu-udc').value||10)+' UDC';document.getElementById('feu-udc-tag').textContent=(document.getElementById('feu-udc').value||20)+' UDC';}
+
+/* weight hints */
+function bindHints(){const u=()=>{const g=+document.getElementById('w-goods').value||0,p=+document.getElementById('w-pallet').value||0,q=+document.getElementById('qty-udc').value||0;document.getElementById('wudc').textContent=fmt(g+p,1);document.getElementById('wtot').textContent=fmt((g+p)*q,0);};['w-goods','w-pallet','qty-udc'].forEach(i=>document.getElementById(i).addEventListener('input',u));u();}
+
+/* cost table */
+function renderCosts(){document.getElementById('cost-tbody').innerHTML=costRows.map(r=>`<tr><td><input type="text" value="${esc(r.label)}" onchange="updCR(${r.id},'label',this.value)"></td><td><input type="number" value="${r.value}" step="0.01" style="text-align:right" onchange="updCR(${r.id},'value',+this.value)"></td><td><select onchange="updCR(${r.id},'cur',this.value)">${CURS.map(c=>`<option ${c===r.cur?'selected':''}>${c}</option>`).join('')}</select></td><td><select onchange="updCR(${r.id},'basis',this.value);renderCosts()">${BASIS.map(b=>`<option ${b===r.basis?'selected':''}>${b}</option>`).join('')}</select></td><td><span class="bp bp-${r.basis.replace('+','p')}">${r.basis}</span></td><td style="white-space:nowrap;font-size:11px"><label style="color:var(--muted);cursor:pointer;margin-right:10px"><input type="checkbox" ${r.inA?'checked':''} onchange="updCR(${r.id},'inA',this.checked)" style="margin-right:3px">Sol.A</label><label style="color:var(--muted);cursor:pointer"><input type="checkbox" ${r.inB?'checked':''} onchange="updCR(${r.id},'inB',this.checked)" style="margin-right:3px">Sol.B</label></td><td><button class="rm" onclick="rmCR(${r.id})">✕</button></td></tr>`).join('');}
+function updCR(id,k,v){const r=costRows.find(r=>r.id===id);if(r)r[k]=v;if(k==='basis')renderCosts();}
+function rmCR(id){costRows=costRows.filter(r=>r.id!==id);renderCosts();}
+function addCR(){costRows.push({id:crId++,label:'Nuova voce',value:0,cur:'EUR',basis:'CTR',inA:true,inB:true});renderCosts();}
+
+/* exchanges */
+function renderEx(){document.getElementById('ex-list').innerHTML=exchanges.map((e,i)=>`<div class="ex-row"><span style="font-size:10px;color:var(--muted)">1</span><input class="ex-ccy" value="${e.from}" onchange="exchanges[${i}].from=this.value.toUpperCase()"><span class="ex-sep">→</span><input class="ex-ccy" value="${e.to}" onchange="exchanges[${i}].to=this.value.toUpperCase()"><span class="ex-sep">=</span><input class="ex-rate" type="number" step="0.0001" value="${e.rate}" onchange="exchanges[${i}].rate=+this.value||1"><button class="rm" style="margin-left:6px" onclick="exchanges.splice(${i},1);renderEx()">✕</button></div>`).join('');}
+function addEx(){exchanges.push({id:exId++,from:'USD',to:'EUR',rate:1});renderEx();}
+
+/* page nav */
+function showPage(p){['input','results','map'].forEach(k=>{document.getElementById('page-'+k).classList.toggle('active',k===p);document.getElementById('nav-'+k).classList.toggle('active',k===p);});if(p==='map'){setTimeout(()=>{initMap();},50);}if(p==='results')window.scrollTo(0,0);}
+
+/* conv */
+function conv(a,f,t){if(f===t)return a;const d=exchanges.find(e=>e.from===f&&e.to===t);if(d)return a*d.rate;const inv=exchanges.find(e=>e.from===t&&e.to===f);if(inv)return a/inv.rate;return a;}
+function truckRate(km){const b=[{m:100,i:'t1'},{m:150,i:'t2'},{m:250,i:'t3'},{m:350,i:'t4'},{m:500,i:'t5'},{m:Infinity,i:'t6'}];return +(document.getElementById((b.find(x=>km<=x.m)||b[5]).i).value)||0;}
+function gv(id){return parseFloat(document.getElementById(id).value)||0;}
+
+/* calculate */
+function calculate(){
+  const oc=document.getElementById('out-curr').value, sym={EUR:'€',USD:'$',GBP:'£'}[oc]||oc+' ';
+  const isFEU=selCtrType==='feu', teuMul=isFEU?2:1, ctrLbl=isFEU?'FEU (40′)':'TEU (20′)';
+  const capKg=gv(isFEU?'feu-kg':'teu-kg'), capUDC=gv(isFEU?'feu-udc':'teu-udc');
+  const qty=gv('qty-udc'),wG=gv('w-goods'),wP=gv('w-pallet'),wUDC=wG+wP,totKg=qty*wUDC;
+  const byW=Math.ceil(totKg/capKg), byU=Math.ceil(qty/capUDC), nCtr=Math.max(byW,byU), nTEU=nCtr*teuMul;
+  const dA=gv('dist-a'),dB=gv('dist-b'),dscA=gv('disc-a')/100,dscB=gv('disc-b')/100,railPer=conv(gv('rail-t'),'EUR',oc);
+  const rA=truckRate(dA),rB=truckRate(dB),trA=rA*dA*(1-dscA),trB=rB*dB*(1-dscB);
+  let rowsA=[],rowsB=[],xA=0,xB=0;
+  for(const c of costRows){const vo=conv(c.value,c.cur,oc);let pc=0,note='';
+    switch(c.basis){case'CTR':pc=vo;note=`${c.value} ${c.cur}/ctr`;break;case'TEU':pc=vo*teuMul;note=`${c.value} ${c.cur}/TEU×${teuMul}→${sym}${fmt(pc)}/ctr`;break;case'SET':pc=vo/nCtr;note=`${c.value} ${c.cur}/commessa÷${nCtr}`;break;case'TON':pc=vo*(totKg/1000)/nCtr;note=`${c.value} ${c.cur}/t×${fmt(totKg/1000,1)}t÷${nCtr}`;break;case'CTR+':pc=nCtr>1?vo:0;note=nCtr>1?`${c.value} ${c.cur}/ctr agg.`:'— (1 ctr)';break;}
+    const tot=pc*nCtr,entry={label:c.label,basis:c.basis,pc,tot,note};
+    if(c.inA){rowsA.push(entry);xA+=tot;}if(c.inB){rowsB.push(entry);xB+=tot;}
+  }
+  const ttA=trA*nCtr+xA,ttB=(trB+railPer)*nCtr+xB,uA=ttA/nCtr,uB=ttB/nCtr,cheapA=ttA<=ttB;
+  document.getElementById('res-ctr').innerHTML=`<div class="ctr-box" style="margin-bottom:20px"><div class="ctr-stat"><div class="ctr-stat-num" style="color:${isFEU?'var(--accent)':'#6fa8ff'}">${nCtr}</div><div class="ctr-stat-lbl">Container ${ctrLbl}</div></div><div class="ctr-sep"></div><div class="ctr-stat"><div class="ctr-stat-num" style="color:#6fa8ff">${nTEU}</div><div class="ctr-stat-lbl">TEU Totali</div></div><div class="ctr-sep"></div><div class="ctr-formula">Peso/UDC: ${wG}+${wP}=<span class="ha">${fmt(wUDC,1)} kg</span> · Tot: ${qty}×${fmt(wUDC,1)}=<span class="ha">${fmt(totKg,0)} kg</span><br>Per peso: ⌈${fmt(totKg,0)}/${fmt(capKg,0)}⌉=<span class="hb">${byW}</span> · Per UDC: ⌈${qty}/${capUDC}⌉=<span class="hb">${byU}</span><br><strong style="color:#fff">Necessari: max(${byW},${byU})=<span class="ha">${nCtr}×${ctrLbl}=${nTEU} TEU</span></strong></div></div>`;
+  document.getElementById('res-kpi').innerHTML=`<div class="kpi km"><div class="kpi-lbl">Container</div><div class="kpi-val">${nCtr}</div><div class="kpi-sub">${nTEU} TEU · ${fmt(totKg/1000,1)} t</div></div><div class="kpi ka"><div class="kpi-lbl">Totale Sol. A</div><div class="kpi-val ka">${sym}${fmt(ttA)}</div><div class="kpi-sub">${sym}${fmt(uA)}/container</div></div><div class="kpi kb"><div class="kpi-lbl">Totale Sol. B</div><div class="kpi-val kb">${sym}${fmt(ttB)}</div><div class="kpi-sub">${sym}${fmt(uB)}/container</div></div><div class="kpi kg"><div class="kpi-lbl">Soluzione migliore</div><div class="kpi-val kg">Sol. ${cheapA?'A':'B'}</div><div class="kpi-sub">Risparmio ${sym}${fmt(Math.abs(ttA-ttB))} (${fmt(Math.abs(ttA-ttB)/Math.max(ttA,ttB)*100,1)}%)</div></div>`;
+  const mkT=(rows,trPer,trTot,isB)=>`<table class="r-table"><thead><tr><th>Voce</th><th>Dettaglio</th><th>/Container</th><th>Totale (${nCtr})</th></tr></thead><tbody><tr><td class="r-name">🚛 Strada</td><td class="r-note">${fmt(isB?rB:rA,3)} €/km×${isB?dB:dA}km${(isB?dscB:dscA)>0?' −'+fmt((isB?dscB:dscA)*100,1)+'%':''}</td><td class="r-val">${sym}${fmt(trPer)}</td><td class="r-val">${sym}${fmt(trTot)}</td></tr>${isB?`<tr><td class="r-name">🚂 Rotaia</td><td class="r-note">tariffa fissa</td><td class="r-val">${sym}${fmt(railPer)}</td><td class="r-val">${sym}${fmt(railPer*nCtr)}</td></tr>`:''}${rows.map(r=>`<tr><td class="r-name">${r.label}</td><td class="r-note">${r.note}</td><td class="r-val">${sym}${fmt(r.pc)}</td><td class="r-val">${sym}${fmt(r.tot)}</td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('res-grid').innerHTML=`<div class="res-col ${cheapA?'winner':''}"><div class="res-hdr ha"><span class="res-title">Soluzione A — Solo Strada</span>${cheapA?'<span class="win-badge">✓ Più economica</span>':''}</div>${mkT(rowsA,trA,trA*nCtr,false)}<div class="res-foot"><div><div class="res-foot-lbl">Totale</div><div class="res-foot-val va">${sym}${fmt(ttA)}</div></div><div class="res-unit">${sym}${fmt(uA)}<br><span style="font-size:9px;color:var(--muted)">per container</span></div></div></div><div class="res-col ${!cheapA?'winner':''}"><div class="res-hdr hb"><span class="res-title">Soluzione B — Intermodale</span>${!cheapA?'<span class="win-badge">✓ Più economica</span>':''}</div>${mkT(rowsB,trB,trB*nCtr,true)}<div class="res-foot"><div><div class="res-foot-lbl">Totale</div><div class="res-foot-val vb">${sym}${fmt(ttB)}</div></div><div class="res-unit">${sym}${fmt(uB)}<br><span style="font-size:9px;color:var(--muted)">per container</span></div></div></div>`;
+  showPage('results');
+}
+
+/* ═══ UTILS ═══ */
+function fmt(n,d=2){return isNaN(n)?'—':n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+/* ═══════════════════════════════════════
+   MAP ENGINE
+═══════════════════════════════════════ */
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+const mapImg = new Image();
+mapImg.crossOrigin = 'anonymous';
+mapImg.src = 'https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg';
+
+let hubs=[
+  {id:0,n:'BERGAMO',   lat:45.69, lon:9.67,  modo:'GOMMA'},
+  {id:1,n:'MILANO',    lat:45.46, lon:9.19,  modo:'GOMMA'},
+  {id:2,n:'TRIESTE',   lat:45.65, lon:13.77, modo:'NAVE'},
+  {id:3,n:'SUEZ',      lat:29.97, lon:32.52, modo:'NAVE'},
+  {id:4,n:'ALESSANDRIA D.',lat:31.20,lon:29.92, modo:'NAVE'},
+];
+let hubId=hubs.length;
+
+const VETTORI={
+  'GOMMA':{c:'#c84b2f',dash:[],     co2:85, fc:0.48, icon:'🚛', lbl:'Gomma'},
+  'ROTAIA':{c:'#f0a500',dash:[6,5], co2:25, fc:0.12, icon:'🚂', lbl:'Rotaia'},
+  'NAVE':  {c:'#3b82f6',dash:[4,6], co2:15, fc:0.08, icon:'🚢', lbl:'Nave'},
+};
+
+// pan/zoom state
+let camX=0, camY=0, camScale=1;
+let isDragging=false, lastMx=0, lastMy=0;
+let dragHub=null, dragOffX=0, dragOffY=0;
+let animRaf=null, animLeg=0, animProg=0, animRunning=false;
+let mapReady=false;
+
+function initMap(){
+  const wrap=document.getElementById('map-wrap');
+  canvas.width=wrap.clientWidth;
+  canvas.height=wrap.clientHeight;
+  if(mapImg.complete&&mapImg.naturalWidth>0){mapReady=true;mapCalc();drawMap();}
+  else{mapImg.onload=()=>{mapReady=true;mapCalc();drawMap();};}
+}
+
+/* project lat/lon → canvas pixels (before pan/zoom) */
+function project(lat,lon){
+  const mx=lon,my=lat;
+  // Mercator-like (simple equirectangular)
+  const W=canvas.width/camScale, H=canvas.height/camScale;
+  const x=(mx+180)*(W/360);
+  const latRad=lat*Math.PI/180;
+  const mercN=Math.log(Math.tan(Math.PI/4+latRad/2));
+  const y=H/2-(W*mercN/(2*Math.PI));
+  return {x,y};
+}
+
+/* world → screen */
+function w2s(wx,wy){return{x:wx*camScale+camX, y:wy*camScale+camY};}
+/* screen → world */
+function s2w(sx,sy){return{x:(sx-camX)/camScale, y:(sy-camY)/camScale};}
+
+/* world-space hub position */
+function hubWP(h){return project(h.lat,h.lon);}
+
+function drawMap(){
+  if(!mapReady)return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#05090e'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  /* map image */
+  ctx.save();
+  ctx.translate(camX,camY); ctx.scale(camScale,camScale);
+  const W=canvas.width/camScale;
+  ctx.filter='brightness(0.15) saturate(0.3)';
+  ctx.drawImage(mapImg,0,0,W,canvas.height/camScale);
+  ctx.filter='none';
+
+  /* draw ocean grid lines */
+  ctx.strokeStyle='rgba(59,130,246,0.04)'; ctx.lineWidth=1/camScale; ctx.setLineDash([]);
+  for(let lon=-180;lon<=180;lon+=30){const p1=project(-80,lon),p2=project(80,lon);ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+  for(let lat=-60;lat<=80;lat+=20){const p1=project(lat,-180),p2=project(lat,180);ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+
+  /* draw legs */
+  for(let i=0;i<hubs.length-1;i++){
+    const h=hubs[i], v=VETTORI[h.modo], p1=hubWP(h), p2=hubWP(hubs[i+1]);
+    ctx.strokeStyle=v.c; ctx.lineWidth=2/camScale; ctx.setLineDash(v.dash.map(d=>d/camScale));
+    ctx.shadowBlur=8/camScale; ctx.shadowColor=v.c+'88';
+    /* curved arc for long haul */
+    const dx=p2.x-p1.x, dy=p2.y-p1.y, dist=Math.hypot(dx,dy);
+    if(h.modo==='NAVE'&&dist>100/camScale){
+      const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2-dist*0.12;
+      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.quadraticCurveTo(mx,my,p2.x,p2.y); ctx.stroke();
+    }else{ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+    ctx.shadowBlur=0;
+  }
+
+  /* draw hubs */
+  hubs.forEach((h,i)=>{
+    const p=hubWP(h);
+    const v=VETTORI[h.modo];
+    const r=5/camScale;
+    /* outer glow */
+    ctx.beginPath(); ctx.arc(p.x,p.y,r*2.2,0,Math.PI*2);
+    ctx.fillStyle=v.c+'22'; ctx.fill();
+    /* ring */
+    ctx.beginPath(); ctx.arc(p.x,p.y,r*1.4,0,Math.PI*2);
+    ctx.strokeStyle=v.c; ctx.lineWidth=1.5/camScale; ctx.setLineDash([]); ctx.stroke();
+    /* dot */
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle=v.c; ctx.fill();
+    /* label */
+    ctx.font=`bold ${11/camScale}px "DM Mono", monospace`;
+    ctx.fillStyle='#ffffff';
+    ctx.shadowBlur=4/camScale; ctx.shadowColor='#000';
+    ctx.fillText(h.n, p.x+r*2, p.y+r*0.5);
+    ctx.shadowBlur=0;
+    /* index badge */
+    ctx.font=`${9/camScale}px monospace`;
+    ctx.fillStyle=v.c;
+    ctx.fillText(`${i+1}`, p.x-r*0.6, p.y+r*0.4);
+  });
+
+  /* animated vehicle */
+  if(animRunning&&animLeg<hubs.length-1){
+    const h=hubs[animLeg], p1=hubWP(h), p2=hubWP(hubs[animLeg+1]);
+    const v=VETTORI[h.modo];
+    let cx,cy;
+    const dist=Math.hypot(p2.x-p1.x,p2.y-p1.y);
+    if(h.modo==='NAVE'&&dist>100/camScale){
+      const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2-dist*0.12;
+      const t=animProg;
+      cx=(1-t)*(1-t)*p1.x+2*(1-t)*t*mx+t*t*p2.x;
+      cy=(1-t)*(1-t)*p1.y+2*(1-t)*t*my+t*t*p2.y;
+    }else{
+      cx=p1.x+(p2.x-p1.x)*animProg;
+      cy=p1.y+(p2.y-p1.y)*animProg;
+    }
+    ctx.font=`${22/camScale}px Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowBlur=12/camScale; ctx.shadowColor=v.c;
+    ctx.fillText(v.icon,cx,cy);
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.shadowBlur=0;
+  }
+
+  ctx.restore();
+}
+
+function animStep(){
+  if(!animRunning)return;
+  animProg+=0.008;
+  if(animProg>=1){animProg=0;animLeg++;if(animLeg>=hubs.length-1){animLeg=0;}}
+  drawMap();
+  animRaf=requestAnimationFrame(animStep);
+}
+
+function toggleAnim(){
+  const btn=document.getElementById('anim-btn');
+  if(animRunning){animRunning=false;if(animRaf)cancelAnimationFrame(animRaf);btn.textContent='▶ Simula';btn.classList.remove('anim-on');}
+  else{animRunning=true;animLeg=0;animProg=0;btn.textContent='■ Stop';btn.classList.add('anim-on');animStep();}
+}
+
+/* ── PAN / DRAG ── */
+canvas.addEventListener('mousedown',e=>{
+  const wrap=document.getElementById('map-wrap');
+  const rect=canvas.getBoundingClientRect();
+  const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+  const wp=s2w(sx,sy);
+  // check if near a hub
+  dragHub=null;
+  for(const h of hubs){
+    const p=hubWP(h);
+    const sp=w2s(p.x,p.y);
+    if(Math.hypot(sx-sp.x,sy-sp.y)<12){dragHub=h;dragOffX=p.x-wp.x;dragOffY=p.y-wp.y;break;}
+  }
+  if(!dragHub){isDragging=true;lastMx=sx;lastMy=sy;}
+});
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+  const tt=document.getElementById('tooltip');
+  if(dragHub){
+    const wp=s2w(sx,sy);
+    // reverse-project world → lat/lon
+    const W=canvas.width/camScale;
+    const wx=wp.x+dragOffX;
+    dragHub.lon=wx*(360/W)-180;
+    const wy=wp.y+dragOffY;
+    const H=canvas.height/camScale;
+    const mercN=(H/2-wy)*(2*Math.PI/W);
+    dragHub.lat=(2*Math.atan(Math.exp(mercN))-Math.PI/2)*180/Math.PI;
+    renderHubs(); mapCalc(); drawMap();
+    tt.style.display='none';
+  }else if(isDragging){
+    camX+=sx-lastMx; camY+=sy-lastMy; lastMx=sx; lastMy=sy; drawMap();
+    tt.style.display='none';
+  }else{
+    // tooltip
+    let found=null;
+    for(const h of hubs){const p=hubWP(h);const sp=w2s(p.x,p.y);if(Math.hypot(sx-sp.x,sy-sp.y)<14){found=h;break;}}
+    if(found){
+      tt.style.display='block'; tt.style.left=(sx+14)+'px'; tt.style.top=(sy-8)+'px';
+      tt.innerHTML=`<strong>${found.n}</strong><br>${found.lat.toFixed(2)}°N ${found.lon.toFixed(2)}°E<br>${VETTORI[found.modo].icon} ${VETTORI[found.modo].lbl}`;
+    }else{tt.style.display='none';}
+  }
+});
+canvas.addEventListener('mouseup',()=>{dragHub=null;isDragging=false;});
+canvas.addEventListener('mouseleave',()=>{dragHub=null;isDragging=false;document.getElementById('tooltip').style.display='none';});
+canvas.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:0.9;const rect=canvas.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;camX=sx-f*(sx-camX);camY=sy-f*(sy-camY);camScale*=f;drawMap();},{passive:false});
+
+function mapZoom(f){camX=canvas.width/2-f*(canvas.width/2-camX);camY=canvas.height/2-f*(canvas.height/2-camY);camScale*=f;drawMap();}
+function mapReset(){camX=0;camY=0;camScale=1;drawMap();}
+
+/* ── HUB UI ── */
+function renderHubs(){
+  document.getElementById('hub-list').innerHTML=hubs.map((h,i)=>{
+    const opts=Object.keys(VETTORI).map(v=>`<option value="${v}" ${h.modo===v?'selected':''}>${v}</option>`).join('');
+    const modeClass={'GOMMA':'hub-mode-truck','ROTAIA':'hub-mode-rail','NAVE':'hub-mode-ship'}[h.modo]||'';
+    const dotColor=VETTORI[h.modo].c;
+    return `<div class="hub-row ${modeClass}">
+      <div class="hub-dot" style="background:${dotColor}"></div>
+      <input class="hub-inp-name" value="${esc(h.n)}" onchange="hubs[${i}].n=this.value;drawMap()">
+      <input type="number" class="hub-inp-coord" value="${h.lat.toFixed(2)}" step="0.1" onchange="hubs[${i}].lat=+this.value||0;mapCalc();drawMap()">
+      <input type="number" class="hub-inp-coord" value="${h.lon.toFixed(2)}" step="0.1" onchange="hubs[${i}].lon=+this.value||0;mapCalc();drawMap()">
+      <select class="hub-sel" onchange="hubs[${i}].modo=this.value;renderHubs();mapCalc();drawMap()">${opts}</select>
+      ${hubs.length>2?`<button class="hub-rm" onclick="removeHub(${i})">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function addHub(){
+  const last=hubs[hubs.length-1];
+  hubs.push({id:hubId++,n:'NUOVO HUB',lat:last.lat-4,lon:last.lon+8,modo:'NAVE'});
+  renderHubs(); mapCalc(); drawMap();
+}
+function removeHub(i){if(hubs.length>2){hubs.splice(i,1);renderHubs();mapCalc();drawMap();}}
+
+/* haversine */
+function hav(la1,lo1,la2,lo2){const R=6371,dL=(la2-la1)*Math.PI/180,dO=(lo2-lo1)*Math.PI/180,a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+
+function mapCalc(){
+  const tons=parseFloat(document.getElementById('mapLoad').value)||0;
+  let dist=0,co2=0,eur=0;
+  for(let i=0;i<hubs.length-1;i++){
+    const d=hav(hubs[i].lat,hubs[i].lon,hubs[i+1].lat,hubs[i+1].lon)||0;
+    const v=VETTORI[hubs[i].modo];
+    dist+=d; co2+=(d*v.co2*tons)/1000; eur+=d*v.fc*tons;
+  }
+  const fmtSI=n=>n>=1000?Math.round(n/100)/10+'k':Math.round(n).toString();
+  document.getElementById('m-dist').textContent=fmtSI(dist);
+  document.getElementById('m-co2').textContent=fmtSI(co2);
+  document.getElementById('m-eur').textContent=fmtSI(eur);
+}
+
+window.addEventListener('resize',()=>{if(document.getElementById('page-map').classList.contains('active')){const wrap=document.getElementById('map-wrap');canvas.width=wrap.clientWidth;canvas.height=wrap.clientHeight;drawMap();}});
+
+/* ═══ BOOT ═══ */
+appInit();
+renderHubs();
+mapCalc();
+</script>
+</body>
+</html>
